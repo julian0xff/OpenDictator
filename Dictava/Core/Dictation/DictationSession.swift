@@ -141,6 +141,7 @@ final class DictationSession: ObservableObject {
         longDictationTimer?.invalidate()
         longDictationTimer = nil
         liveTextCancellable = nil
+        error = nil
 
         state = .transcribing
 
