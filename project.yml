@@ -1,0 +1,77 @@
+name: Dictava
+options:
+  bundleIdPrefix: com.dictava
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+  defaultConfig: Release
+
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    SWIFT_VERSION: "5.9"
+    ARCHS: arm64
+    VALID_ARCHS: arm64
+    EXCLUDED_ARCHS[sdk=macosx*]: x86_64
+
+packages:
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit
+    from: "0.9.0"
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: "2.0.0"
+  Yams:
+    url: https://github.com/jpsim/Yams
+    from: "5.0.0"
+
+targets:
+  Dictava:
+    type: application
+    platform: macOS
+    sources:
+      - path: Dictava
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dictava.app
+        PRODUCT_NAME: Dictava
+        MARKETING_VERSION: "0.2.2"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: Dictava/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Dictava/Resources/Dictava.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        ENABLE_HARDENED_RUNTIME: true
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: false
+    dependencies:
+      - package: WhisperKit
+      - package: KeyboardShortcuts
+      - package: Yams
+    entitlements:
+      path: Dictava/Resources/Dictava.entitlements
+  DictavaDev:
+    type: application
+    platform: macOS
+    sources:
+      - path: Dictava
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dictava.app.dev
+        PRODUCT_NAME: "Dictava Dev"
+        MARKETING_VERSION: "0.2.2"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: Dictava/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Dictava/Resources/Dictava.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        ENABLE_HARDENED_RUNTIME: true
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: false
+    dependencies:
+      - package: WhisperKit
+      - package: KeyboardShortcuts
+      - package: Yams
+    entitlements:
+      path: Dictava/Resources/Dictava.entitlements

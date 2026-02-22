@@ -1,0 +1,819 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0124A6F6008B86487A80ED95 /* StreamingTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */; };
+		02A1D17A8EABC937A93335B5 /* SnippetSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED596A1F29C180D97E03FB46 /* SnippetSettingsView.swift */; };
+		05E3C47AF70B9706B40443B4 /* DictationIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */; };
+		0C18E03079899A3585F48E5E /* SyntheticEventMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */; };
+		0C792786701FEF7256B531CA /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */; };
+		0E41EF235EB4F0B6C9A66BC5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E348CC874FC30990AE842AE8 /* Assets.xcassets */; };
+		11F49D5226E4943FFD2F5BB0 /* VoiceCommandParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27F978B46CCD37A1FEBAD /* VoiceCommandParser.swift */; };
+		12AFEDF2610DFAFF87F2E871 /* LLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80AA0B3B29E4040B4C5CE316 /* LLMProcessor.swift */; };
+		20DC1ABC956EB2D648552B93 /* SpeechRecognitionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB33EDFA4554F79AE698569 /* SpeechRecognitionSettingsView.swift */; };
+		217551F3CC9A1681D10551DF /* TextProcessingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE9827E8762F1E55592834F7 /* TextProcessingSettingsView.swift */; };
+		231FCCB3CBEAE6F2479C05E6 /* TranscriptionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */; };
+		256730F85BE0F8194FDF8E26 /* CustomVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08415F23D6473C9F994302CC /* CustomVocabulary.swift */; };
+		2581A72E2585FD0B67387397 /* DictationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20CDF900DF97A6261574F336 /* DictationState.swift */; };
+		2A7F9A944F0CC24E1CAED41D /* CustomVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08415F23D6473C9F994302CC /* CustomVocabulary.swift */; };
+		2D76C5A8C95C0BE9C2B02A7E /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */; };
+		2EE64F235C621F7D99EB36E8 /* FillerWordFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */; };
+		301C58ED73878474BFF4F698 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2004F7447FFD231B4CFB2FD9 /* AppDelegate.swift */; };
+		3070E955C588F682A0C2AC6D /* DictationIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */; };
+		31C369A5615793801F8A228F /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */; };
+		34D288E36CCBAB681043F4DC /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56AE2EBCAF070ADC834EDD4 /* StatusBarController.swift */; };
+		35E07AF97B1EA9807344383C /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8F50BFF44F64FD257A5937A /* PermissionManager.swift */; };
+		35ED92CBFA301B264B401F63 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CA7A99543E8B9321D18DCB /* HistoryView.swift */; };
+		3A7C0563D5A8DBDB102D1D3D /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = B2BD654CD310B99ED71CD81E /* Yams */; };
+		3AA1DF010D9819972C091304 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E348CC874FC30990AE842AE8 /* Assets.xcassets */; };
+		3D8264AD46EBB77122A8944F /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 04A058B8425217ACE2AE3030 /* WhisperKit */; };
+		43C201DEA2B93D69365130E5 /* FillerWordFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */; };
+		442CF2539DEE4A1C9A2EDD89 /* LLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80AA0B3B29E4040B4C5CE316 /* LLMProcessor.swift */; };
+		46E0FB86B634ED403FE917F4 /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D50C477267EB8588340623C /* TranscriptionEngine.swift */; };
+		4878F6CEADA1C030CF8A0AA2 /* TextProcessingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE9827E8762F1E55592834F7 /* TextProcessingSettingsView.swift */; };
+		51E722B58EFF46E5A5C41DBB /* TextPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3137E44A43DC69AC14FACF30 /* TextPipeline.swift */; };
+		54127D626F322F10723D15CA /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D50C477267EB8588340623C /* TranscriptionEngine.swift */; };
+		54331680874A9EE7DDE65680 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56AE2EBCAF070ADC834EDD4 /* StatusBarController.swift */; };
+		54946F6A625C8B2679CF8FD1 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */; };
+		558E731E4914FA072C559191 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8F50BFF44F64FD257A5937A /* PermissionManager.swift */; };
+		55E9FB0F292E301C51751794 /* TranscriptionLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD3B409B2D0086526AB0CCA /* TranscriptionLogStore.swift */; };
+		5ED35F13B4CEDB7672BF3BE7 /* AudioCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD004E0223CFDA23C2258ADD /* AudioCaptureEngine.swift */; };
+		74157C94191B78F457BE4BF4 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F80C839322FA2AA57AC993F /* WhisperKit */; };
+		750AA6E809DBBFE08758072A /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766D8FEFF28A6A543C7C5169 /* ModelManager.swift */; };
+		7C7DF7535A7AF593C613696D /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766D8FEFF28A6A543C7C5169 /* ModelManager.swift */; };
+		7CBB9083BDC90F0BBCD42F33 /* VoiceCommandParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27F978B46CCD37A1FEBAD /* VoiceCommandParser.swift */; };
+		80DABB15E1AE572D0C1196C2 /* DictationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF116476811FC7227E9C87A4 /* DictationSession.swift */; };
+		8845B1054F5F907ED8C96465 /* VoiceCommandExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CC63CBAD70A444F1FEDDDE /* VoiceCommandExecutor.swift */; };
+		8ABA4F78B0B3152BAC09951E /* SnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF2234116CD7B5C603509FC /* SnippetStore.swift */; };
+		8DB224067189C61227D5FC84 /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */; };
+		8E6C60206DF46D59068D09D7 /* VoiceCommandSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C95F7C49106781B6F7A1FE /* VoiceCommandSettingsView.swift */; };
+		8F12D07FCDDDDB2BFDE2A4C4 /* TranscriptionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */; };
+		940E9DD3E460F2ECA0DC00A2 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */; };
+		9952C2B031BD57AA0476B89F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464A3455A8BAE5A03D11E51C /* SettingsView.swift */; };
+		9BEACBF601B845A20CC3C7B9 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB9907E0419A361C87AA53C3 /* SettingsStore.swift */; };
+		A28D25F791A3C07A38F924C6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CA7A99543E8B9321D18DCB /* HistoryView.swift */; };
+		A465F93CFA9150539A0D62D3 /* VoiceCommandSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C95F7C49106781B6F7A1FE /* VoiceCommandSettingsView.swift */; };
+		A5106D7260857B68506CE4AC /* PunctuationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273512E63E5C6F75BB362D6C /* PunctuationHandler.swift */; };
+		A618130C51918A433B8EFFED /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F2217B76C79636DF1410E3 /* TextInjector.swift */; };
+		A67C5943B36546EFE07E9D42 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */; };
+		A71D7776D33B2BBA16AEE146 /* SpeechRecognitionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB33EDFA4554F79AE698569 /* SpeechRecognitionSettingsView.swift */; };
+		A9D00BF29069B134C97C725B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2004F7447FFD231B4CFB2FD9 /* AppDelegate.swift */; };
+		B5DCF1485B7C394D9A55614D /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */; };
+		BB937C144FF2AD6A15B8C508 /* SnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */; };
+		BE3537C0CAE4E3B3EAE5FED3 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 7F9DEB2DA2E94C0C36292209 /* Yams */; };
+		BFC24A4FDCDEF2946592CA86 /* SnippetSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED596A1F29C180D97E03FB46 /* SnippetSettingsView.swift */; };
+		C2D55D0F400B9B5AD4FED922 /* TranscriptionLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD3B409B2D0086526AB0CCA /* TranscriptionLogStore.swift */; };
+		C40D28FA7F14815B9FE7E01A /* AudioCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD004E0223CFDA23C2258ADD /* AudioCaptureEngine.swift */; };
+		C5DB960C96312D94AEA60F1C /* SyntheticEventMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */; };
+		D33B8F4C5F725993EC6FECF8 /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F2217B76C79636DF1410E3 /* TextInjector.swift */; };
+		D806CC4747FCABA01D067770 /* DictavaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C0B3D32DDE6577A293F812 /* DictavaApp.swift */; };
+		D866784B8120D9160CB91ACA /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 1173387602ED1DF1A719908A /* KeyboardShortcuts */; };
+		DB74BD869E151BACEAA9706B /* VoiceCommandExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CC63CBAD70A444F1FEDDDE /* VoiceCommandExecutor.swift */; };
+		DE24F5D2A1950886931C13F4 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 2369B16221ED520A36788BF7 /* KeyboardShortcuts */; };
+		DF5183CEB41E42A3411CBF1A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464A3455A8BAE5A03D11E51C /* SettingsView.swift */; };
+		DFDACE3888700B42FE3FD750 /* SnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF2234116CD7B5C603509FC /* SnippetStore.swift */; };
+		DFDBA90E1797FB9C9F72B1AA /* StreamingTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */; };
+		E3888C3A3CE55BE3586EFA80 /* PunctuationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273512E63E5C6F75BB362D6C /* PunctuationHandler.swift */; };
+		E6DFF1A7D91061B326652B81 /* VocabularyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */; };
+		E79BF0DDA63AB3DB30B15D0D /* DictationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF116476811FC7227E9C87A4 /* DictationSession.swift */; };
+		EABE2A46AC3C71F2BD6E94E1 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB9907E0419A361C87AA53C3 /* SettingsStore.swift */; };
+		F042111F24EF22D864D3BEF7 /* DictavaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C0B3D32DDE6577A293F812 /* DictavaApp.swift */; };
+		F112F00A41939A66020DF02F /* SnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */; };
+		F8501E689E7AC84BF2F2B4F2 /* DictationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20CDF900DF97A6261574F336 /* DictationState.swift */; };
+		F9152371541477F855E0EBF2 /* VocabularyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */; };
+		FC443E565DAD20E152DE03D1 /* TextPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3137E44A43DC69AC14FACF30 /* TextPipeline.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		08415F23D6473C9F994302CC /* CustomVocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomVocabulary.swift; sourceTree = "<group>"; };
+		0B9E0A1F948AFADCF50FDE9A /* Dictava.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Dictava.entitlements; sourceTree = "<group>"; };
+		0D50C477267EB8588340623C /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
+		2004F7447FFD231B4CFB2FD9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		20CDF900DF97A6261574F336 /* DictationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationState.swift; sourceTree = "<group>"; };
+		20D5EF504D1E5D275E9A468E /* Dictava.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dictava.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		273512E63E5C6F75BB362D6C /* PunctuationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunctuationHandler.swift; sourceTree = "<group>"; };
+		2EB33EDFA4554F79AE698569 /* SpeechRecognitionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionSettingsView.swift; sourceTree = "<group>"; };
+		3137E44A43DC69AC14FACF30 /* TextPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPipeline.swift; sourceTree = "<group>"; };
+		3BD27F978B46CCD37A1FEBAD /* VoiceCommandParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCommandParser.swift; sourceTree = "<group>"; };
+		464A3455A8BAE5A03D11E51C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		48CA7A99543E8B9321D18DCB /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		4CF2234116CD7B5C603509FC /* SnippetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetStore.swift; sourceTree = "<group>"; };
+		4DBE7E2ECABE160C9BD75565 /* DictavaDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DictavaDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		61F2217B76C79636DF1410E3 /* TextInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInjector.swift; sourceTree = "<group>"; };
+		6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionLog.swift; sourceTree = "<group>"; };
+		6BD3B409B2D0086526AB0CCA /* TranscriptionLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionLogStore.swift; sourceTree = "<group>"; };
+		6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetExpander.swift; sourceTree = "<group>"; };
+		766D8FEFF28A6A543C7C5169 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
+		7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyStore.swift; sourceTree = "<group>"; };
+		7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		80AA0B3B29E4040B4C5CE316 /* LLMProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProcessor.swift; sourceTree = "<group>"; };
+		82CC63CBAD70A444F1FEDDDE /* VoiceCommandExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCommandExecutor.swift; sourceTree = "<group>"; };
+		880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingTranscriber.swift; sourceTree = "<group>"; };
+		88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FillerWordFilter.swift; sourceTree = "<group>"; };
+		9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticEventMarker.swift; sourceTree = "<group>"; };
+		AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationIndicatorWindow.swift; sourceTree = "<group>"; };
+		AD972980806897E9246B00FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
+		BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
+		C56AE2EBCAF070ADC834EDD4 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
+		D7C95F7C49106781B6F7A1FE /* VoiceCommandSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCommandSettingsView.swift; sourceTree = "<group>"; };
+		E348CC874FC30990AE842AE8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E3C0B3D32DDE6577A293F812 /* DictavaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictavaApp.swift; sourceTree = "<group>"; };
+		E8F50BFF44F64FD257A5937A /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		EB9907E0419A361C87AA53C3 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		ED596A1F29C180D97E03FB46 /* SnippetSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetSettingsView.swift; sourceTree = "<group>"; };
+		FD004E0223CFDA23C2258ADD /* AudioCaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureEngine.swift; sourceTree = "<group>"; };
+		FE9827E8762F1E55592834F7 /* TextProcessingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessingSettingsView.swift; sourceTree = "<group>"; };
+		FF116476811FC7227E9C87A4 /* DictationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationSession.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		25A7609261CB43FBC67F394C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				74157C94191B78F457BE4BF4 /* WhisperKit in Frameworks */,
+				D866784B8120D9160CB91ACA /* KeyboardShortcuts in Frameworks */,
+				3A7C0563D5A8DBDB102D1D3D /* Yams in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7ACBC38DAC56F5B032000884 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D8264AD46EBB77122A8944F /* WhisperKit in Frameworks */,
+				DE24F5D2A1950886931C13F4 /* KeyboardShortcuts in Frameworks */,
+				BE3537C0CAE4E3B3EAE5FED3 /* Yams in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		165CCAAD93CE620C18EB0346 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				FD004E0223CFDA23C2258ADD /* AudioCaptureEngine.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		201097DC9B1B41B123322A52 /* TextInjection */ = {
+			isa = PBXGroup;
+			children = (
+				9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */,
+				61F2217B76C79636DF1410E3 /* TextInjector.swift */,
+			);
+			path = TextInjection;
+			sourceTree = "<group>";
+		};
+		29D51D5723D5D6F9C8563E67 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		372D499ABF65005449D47E5F /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */,
+				C56AE2EBCAF070ADC834EDD4 /* StatusBarController.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		455E0C97FC11328730F74343 /* Dictation */ = {
+			isa = PBXGroup;
+			children = (
+				FF116476811FC7227E9C87A4 /* DictationSession.swift */,
+				20CDF900DF97A6261574F336 /* DictationState.swift */,
+				82CC63CBAD70A444F1FEDDDE /* VoiceCommandExecutor.swift */,
+			);
+			path = Dictation;
+			sourceTree = "<group>";
+		};
+		4F17A9805E63E9455BC3AD40 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				20D5EF504D1E5D275E9A468E /* Dictava.app */,
+				4DBE7E2ECABE160C9BD75565 /* DictavaDev.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		515C3E338F475F92E515139D /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */,
+				E8F50BFF44F64FD257A5937A /* PermissionManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		583C8438F819FC0BB30F9C1F /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */,
+				88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */,
+				464A3455A8BAE5A03D11E51C /* SettingsView.swift */,
+				ED596A1F29C180D97E03FB46 /* SnippetSettingsView.swift */,
+				2EB33EDFA4554F79AE698569 /* SpeechRecognitionSettingsView.swift */,
+				FE9827E8762F1E55592834F7 /* TextProcessingSettingsView.swift */,
+				D7C95F7C49106781B6F7A1FE /* VoiceCommandSettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		7D7833C27DA9B669CE9BA989 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E348CC874FC30990AE842AE8 /* Assets.xcassets */,
+				0B9E0A1F948AFADCF50FDE9A /* Dictava.entitlements */,
+				AD972980806897E9246B00FD /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A3C7CEA3635CBFA6FF7155F2 /* TextProcessing */ = {
+			isa = PBXGroup;
+			children = (
+				08415F23D6473C9F994302CC /* CustomVocabulary.swift */,
+				8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */,
+				80AA0B3B29E4040B4C5CE316 /* LLMProcessor.swift */,
+				273512E63E5C6F75BB362D6C /* PunctuationHandler.swift */,
+				6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */,
+				3137E44A43DC69AC14FACF30 /* TextPipeline.swift */,
+				3BD27F978B46CCD37A1FEBAD /* VoiceCommandParser.swift */,
+			);
+			path = TextProcessing;
+			sourceTree = "<group>";
+		};
+		BF27DE1941BD5CE0AFB6C29E = {
+			isa = PBXGroup;
+			children = (
+				F421524AF6EA6B373B1FF59B /* Dictava */,
+				4F17A9805E63E9455BC3AD40 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C1AFC24445CCA9C27F33FB18 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				48CA7A99543E8B9321D18DCB /* HistoryView.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+		D016ED9F7976D78D3D699D1A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				165CCAAD93CE620C18EB0346 /* Audio */,
+				455E0C97FC11328730F74343 /* Dictation */,
+				201097DC9B1B41B123322A52 /* TextInjection */,
+				A3C7CEA3635CBFA6FF7155F2 /* TextProcessing */,
+				D916F3B0EE1648E08EEE43EE /* Transcription */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		D4EEB089781FA1A773724664 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				EB9907E0419A361C87AA53C3 /* SettingsStore.swift */,
+				4CF2234116CD7B5C603509FC /* SnippetStore.swift */,
+				6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */,
+				6BD3B409B2D0086526AB0CCA /* TranscriptionLogStore.swift */,
+				7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		D916F3B0EE1648E08EEE43EE /* Transcription */ = {
+			isa = PBXGroup;
+			children = (
+				766D8FEFF28A6A543C7C5169 /* ModelManager.swift */,
+				880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */,
+				0D50C477267EB8588340623C /* TranscriptionEngine.swift */,
+			);
+			path = Transcription;
+			sourceTree = "<group>";
+		};
+		E5AE3B12836B6625528C1A5E /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				C1AFC24445CCA9C27F33FB18 /* History */,
+				372D499ABF65005449D47E5F /* MenuBar */,
+				29D51D5723D5D6F9C8563E67 /* Onboarding */,
+				583C8438F819FC0BB30F9C1F /* Settings */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		F421524AF6EA6B373B1FF59B /* Dictava */ = {
+			isa = PBXGroup;
+			children = (
+				2004F7447FFD231B4CFB2FD9 /* AppDelegate.swift */,
+				E3C0B3D32DDE6577A293F812 /* DictavaApp.swift */,
+				D016ED9F7976D78D3D699D1A /* Core */,
+				7D7833C27DA9B669CE9BA989 /* Resources */,
+				515C3E338F475F92E515139D /* Services */,
+				D4EEB089781FA1A773724664 /* Storage */,
+				E5AE3B12836B6625528C1A5E /* UI */,
+			);
+			path = Dictava;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		026C1011C3265A9F5C7DE719 /* DictavaDev */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B1D4B2FE64DAD152C4892E2 /* Build configuration list for PBXNativeTarget "DictavaDev" */;
+			buildPhases = (
+				2B347F150B7DE73324F15298 /* Sources */,
+				98C5A98EF955143CFEBFF7E8 /* Resources */,
+				25A7609261CB43FBC67F394C /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DictavaDev;
+			packageProductDependencies = (
+				3F80C839322FA2AA57AC993F /* WhisperKit */,
+				1173387602ED1DF1A719908A /* KeyboardShortcuts */,
+				B2BD654CD310B99ED71CD81E /* Yams */,
+			);
+			productName = DictavaDev;
+			productReference = 4DBE7E2ECABE160C9BD75565 /* DictavaDev.app */;
+			productType = "com.apple.product-type.application";
+		};
+		51B2E9A8B813839FF3E2BE3B /* Dictava */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 074651DE7C8499C732440E99 /* Build configuration list for PBXNativeTarget "Dictava" */;
+			buildPhases = (
+				59514C5845DFAEC3829DAB59 /* Sources */,
+				196CFF71F4EF9F1E42AC1048 /* Resources */,
+				7ACBC38DAC56F5B032000884 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Dictava;
+			packageProductDependencies = (
+				04A058B8425217ACE2AE3030 /* WhisperKit */,
+				2369B16221ED520A36788BF7 /* KeyboardShortcuts */,
+				7F9DEB2DA2E94C0C36292209 /* Yams */,
+			);
+			productName = Dictava;
+			productReference = 20D5EF504D1E5D275E9A468E /* Dictava.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FAD83207C16C39A4C2F0EF44 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = B409FEE0CA2C2AAA1753D81E /* Build configuration list for PBXProject "Dictava" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BF27DE1941BD5CE0AFB6C29E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2D7AA96A2B8E82348A8ECE4B /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				33095D349F183D7F16987C1C /* XCRemoteSwiftPackageReference "WhisperKit" */,
+				BE21211A721237BE4BE593AA /* XCRemoteSwiftPackageReference "Yams" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				51B2E9A8B813839FF3E2BE3B /* Dictava */,
+				026C1011C3265A9F5C7DE719 /* DictavaDev */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		196CFF71F4EF9F1E42AC1048 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3AA1DF010D9819972C091304 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		98C5A98EF955143CFEBFF7E8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0E41EF235EB4F0B6C9A66BC5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2B347F150B7DE73324F15298 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8DB224067189C61227D5FC84 /* AdvancedSettingsView.swift in Sources */,
+				A9D00BF29069B134C97C725B /* AppDelegate.swift in Sources */,
+				5ED35F13B4CEDB7672BF3BE7 /* AudioCaptureEngine.swift in Sources */,
+				256730F85BE0F8194FDF8E26 /* CustomVocabulary.swift in Sources */,
+				05E3C47AF70B9706B40443B4 /* DictationIndicatorWindow.swift in Sources */,
+				E79BF0DDA63AB3DB30B15D0D /* DictationSession.swift in Sources */,
+				F8501E689E7AC84BF2F2B4F2 /* DictationState.swift in Sources */,
+				D806CC4747FCABA01D067770 /* DictavaApp.swift in Sources */,
+				2EE64F235C621F7D99EB36E8 /* FillerWordFilter.swift in Sources */,
+				940E9DD3E460F2ECA0DC00A2 /* GeneralSettingsView.swift in Sources */,
+				A28D25F791A3C07A38F924C6 /* HistoryView.swift in Sources */,
+				54946F6A625C8B2679CF8FD1 /* HotkeyManager.swift in Sources */,
+				442CF2539DEE4A1C9A2EDD89 /* LLMProcessor.swift in Sources */,
+				750AA6E809DBBFE08758072A /* ModelManager.swift in Sources */,
+				2D76C5A8C95C0BE9C2B02A7E /* OnboardingView.swift in Sources */,
+				35E07AF97B1EA9807344383C /* PermissionManager.swift in Sources */,
+				E3888C3A3CE55BE3586EFA80 /* PunctuationHandler.swift in Sources */,
+				EABE2A46AC3C71F2BD6E94E1 /* SettingsStore.swift in Sources */,
+				9952C2B031BD57AA0476B89F /* SettingsView.swift in Sources */,
+				BB937C144FF2AD6A15B8C508 /* SnippetExpander.swift in Sources */,
+				BFC24A4FDCDEF2946592CA86 /* SnippetSettingsView.swift in Sources */,
+				DFDACE3888700B42FE3FD750 /* SnippetStore.swift in Sources */,
+				A71D7776D33B2BBA16AEE146 /* SpeechRecognitionSettingsView.swift in Sources */,
+				54331680874A9EE7DDE65680 /* StatusBarController.swift in Sources */,
+				0124A6F6008B86487A80ED95 /* StreamingTranscriber.swift in Sources */,
+				C5DB960C96312D94AEA60F1C /* SyntheticEventMarker.swift in Sources */,
+				A618130C51918A433B8EFFED /* TextInjector.swift in Sources */,
+				51E722B58EFF46E5A5C41DBB /* TextPipeline.swift in Sources */,
+				4878F6CEADA1C030CF8A0AA2 /* TextProcessingSettingsView.swift in Sources */,
+				54127D626F322F10723D15CA /* TranscriptionEngine.swift in Sources */,
+				8F12D07FCDDDDB2BFDE2A4C4 /* TranscriptionLog.swift in Sources */,
+				C2D55D0F400B9B5AD4FED922 /* TranscriptionLogStore.swift in Sources */,
+				F9152371541477F855E0EBF2 /* VocabularyStore.swift in Sources */,
+				DB74BD869E151BACEAA9706B /* VoiceCommandExecutor.swift in Sources */,
+				7CBB9083BDC90F0BBCD42F33 /* VoiceCommandParser.swift in Sources */,
+				A465F93CFA9150539A0D62D3 /* VoiceCommandSettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59514C5845DFAEC3829DAB59 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				31C369A5615793801F8A228F /* AdvancedSettingsView.swift in Sources */,
+				301C58ED73878474BFF4F698 /* AppDelegate.swift in Sources */,
+				C40D28FA7F14815B9FE7E01A /* AudioCaptureEngine.swift in Sources */,
+				2A7F9A944F0CC24E1CAED41D /* CustomVocabulary.swift in Sources */,
+				3070E955C588F682A0C2AC6D /* DictationIndicatorWindow.swift in Sources */,
+				80DABB15E1AE572D0C1196C2 /* DictationSession.swift in Sources */,
+				2581A72E2585FD0B67387397 /* DictationState.swift in Sources */,
+				F042111F24EF22D864D3BEF7 /* DictavaApp.swift in Sources */,
+				43C201DEA2B93D69365130E5 /* FillerWordFilter.swift in Sources */,
+				0C792786701FEF7256B531CA /* GeneralSettingsView.swift in Sources */,
+				35ED92CBFA301B264B401F63 /* HistoryView.swift in Sources */,
+				B5DCF1485B7C394D9A55614D /* HotkeyManager.swift in Sources */,
+				12AFEDF2610DFAFF87F2E871 /* LLMProcessor.swift in Sources */,
+				7C7DF7535A7AF593C613696D /* ModelManager.swift in Sources */,
+				A67C5943B36546EFE07E9D42 /* OnboardingView.swift in Sources */,
+				558E731E4914FA072C559191 /* PermissionManager.swift in Sources */,
+				A5106D7260857B68506CE4AC /* PunctuationHandler.swift in Sources */,
+				9BEACBF601B845A20CC3C7B9 /* SettingsStore.swift in Sources */,
+				DF5183CEB41E42A3411CBF1A /* SettingsView.swift in Sources */,
+				F112F00A41939A66020DF02F /* SnippetExpander.swift in Sources */,
+				02A1D17A8EABC937A93335B5 /* SnippetSettingsView.swift in Sources */,
+				8ABA4F78B0B3152BAC09951E /* SnippetStore.swift in Sources */,
+				20DC1ABC956EB2D648552B93 /* SpeechRecognitionSettingsView.swift in Sources */,
+				34D288E36CCBAB681043F4DC /* StatusBarController.swift in Sources */,
+				DFDBA90E1797FB9C9F72B1AA /* StreamingTranscriber.swift in Sources */,
+				0C18E03079899A3585F48E5E /* SyntheticEventMarker.swift in Sources */,
+				D33B8F4C5F725993EC6FECF8 /* TextInjector.swift in Sources */,
+				FC443E565DAD20E152DE03D1 /* TextPipeline.swift in Sources */,
+				217551F3CC9A1681D10551DF /* TextProcessingSettingsView.swift in Sources */,
+				46E0FB86B634ED403FE917F4 /* TranscriptionEngine.swift in Sources */,
+				231FCCB3CBEAE6F2479C05E6 /* TranscriptionLog.swift in Sources */,
+				55E9FB0F292E301C51751794 /* TranscriptionLogStore.swift in Sources */,
+				E6DFF1A7D91061B326652B81 /* VocabularyStore.swift in Sources */,
+				8845B1054F5F907ED8C96465 /* VoiceCommandExecutor.swift in Sources */,
+				11F49D5226E4943FFD2F5BB0 /* VoiceCommandParser.swift in Sources */,
+				8E6C60206DF46D59068D09D7 /* VoiceCommandSettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		13630FF637EBCED8B1B574C1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Dictava/Resources/Dictava.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Dictava/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 0.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
+				PRODUCT_NAME = Dictava;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		32F3091A7CC3B0E1A2D17AB8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				"EXCLUDED_ARCHS[sdk=macosx*]" = x86_64;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				VALID_ARCHS = arm64;
+			};
+			name = Release;
+		};
+		7A81B77B74E0BFE7AFED11E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Dictava/Resources/Dictava.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Dictava/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 0.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
+				PRODUCT_NAME = Dictava;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		8CE0CBAF0A832322A3F2B45C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Dictava/Resources/Dictava.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Dictava/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 0.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
+				PRODUCT_NAME = "Dictava Dev";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A3D32B09FC480B2EA074A803 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Dictava/Resources/Dictava.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Dictava/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 0.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
+				PRODUCT_NAME = "Dictava Dev";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E2D680B5B95980106120FEE0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				"EXCLUDED_ARCHS[sdk=macosx*]" = x86_64;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				VALID_ARCHS = arm64;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		074651DE7C8499C732440E99 /* Build configuration list for PBXNativeTarget "Dictava" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A81B77B74E0BFE7AFED11E3 /* Debug */,
+				13630FF637EBCED8B1B574C1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2B1D4B2FE64DAD152C4892E2 /* Build configuration list for PBXNativeTarget "DictavaDev" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8CE0CBAF0A832322A3F2B45C /* Debug */,
+				A3D32B09FC480B2EA074A803 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B409FEE0CA2C2AAA1753D81E /* Build configuration list for PBXProject "Dictava" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E2D680B5B95980106120FEE0 /* Debug */,
+				32F3091A7CC3B0E1A2D17AB8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2D7AA96A2B8E82348A8ECE4B /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		33095D349F183D7F16987C1C /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.0;
+			};
+		};
+		BE21211A721237BE4BE593AA /* XCRemoteSwiftPackageReference "Yams" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jpsim/Yams";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		04A058B8425217ACE2AE3030 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 33095D349F183D7F16987C1C /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
+		};
+		1173387602ED1DF1A719908A /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2D7AA96A2B8E82348A8ECE4B /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
+		};
+		2369B16221ED520A36788BF7 /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2D7AA96A2B8E82348A8ECE4B /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
+		};
+		3F80C839322FA2AA57AC993F /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 33095D349F183D7F16987C1C /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
+		};
+		7F9DEB2DA2E94C0C36292209 /* Yams */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE21211A721237BE4BE593AA /* XCRemoteSwiftPackageReference "Yams" */;
+			productName = Yams;
+		};
+		B2BD654CD310B99ED71CD81E /* Yams */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE21211A721237BE4BE593AA /* XCRemoteSwiftPackageReference "Yams" */;
+			productName = Yams;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = FAD83207C16C39A4C2F0EF44 /* Project object */;
+}
