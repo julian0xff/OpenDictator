@@ -62,6 +62,22 @@ The only time Dictava touches the network is the initial WhisperKit model downlo
 
 ## Installation
 
+### Download DMG
+
+Download the latest `.dmg` from [Releases](https://github.com/julian0xff/Dictava/releases), open it, and drag Dictava to your Applications folder.
+
+### Homebrew
+
+```bash
+brew install --cask julian0xff/tap/dictava
+```
+
+Update to the latest version:
+
+```bash
+brew upgrade --cask dictava
+```
+
 ### Build from source
 
 ```bash
@@ -72,6 +88,8 @@ xcodebuild -project Dictava.xcodeproj -scheme Dictava -destination 'platform=mac
 ```
 
 The built app will be in `~/Library/Developer/Xcode/DerivedData/Dictava-*/Build/Products/Debug/Dictava.app`. Copy it to `/Applications` to install.
+
+> **Note:** Dictava is ad-hoc signed (not notarized). On first launch, macOS may show a security warning. Right-click the app and select **Open**, or go to **System Settings > Privacy & Security** and click **Open Anyway**.
 
 ## Setup
 

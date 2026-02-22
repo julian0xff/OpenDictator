@@ -12,10 +12,12 @@ A macOS menu bar dictation app that uses WhisperKit for local, on-device speech-
 
 | Object | Role |
 |--------|------|
-| `DictationSession` | Central orchestrator — manages state machine (idle → listening → transcribing → processing → injecting → idle), audio capture, streaming transcription, text pipeline, and text injection |
-| `SettingsStore` | `@AppStorage`-backed preferences, including voice command enabled/disabled state |
+| `DictationSession` | Central orchestrator — manages state machine (idle → listening → transcribing → processing → injecting → idle), audio capture, streaming transcription, text pipeline, text injection, and transcription logging |
+| `SettingsStore` | `@AppStorage`-backed preferences, including voice command enabled/disabled state, audio settings, UI preferences |
 | `ModelManager` | Downloads, lists, deletes WhisperKit CoreML models |
-| `SnippetStore` / `VocabularyStore` | User-defined text snippets and custom vocabulary (YAML-backed) |
+| `SnippetStore` | User-defined text snippets (YAML-backed) with template variable support (`{{date}}`, `{{time}}`, `{{clipboard}}`) |
+| `VocabularyStore` | Custom vocabulary entries for word corrections (JSON-backed) |
+| `TranscriptionLogStore` | Persists all dictation history with metadata — duration, raw/processed text, model used, voice command status (JSON-backed) |
 
 ### Dictation Flow
 
@@ -24,9 +26,10 @@ A macOS menu bar dictation app that uses WhisperKit for local, on-device speech-
 3. `AudioCaptureEngine` starts capturing mic input via `AVAudioEngine`
 4. `StreamingTranscriber` feeds audio chunks to `TranscriptionEngine` (WhisperKit)
 5. `TranscriptionEngine` strips non-speech artifacts before returning text
-6. Live partial transcripts update `DictationSession.liveText`
+6. Live partial transcripts update `DictationSession.liveText` every 1.5 seconds
 7. On stop (manual or silence detection): final transcription → `TextPipeline` processing → `TextInjector` types text at cursor via CGEvents
-8. Floating indicator (`DictationIndicatorWindow`) shows state throughout
+8. Session logged to `TranscriptionLogStore` with full metadata (duration, raw/processed text, model, voice command status)
+9. Floating indicator (`DictationIndicatorWindow`) shows state throughout with audio waveform visualization
 
 ### Text Pipeline
 
@@ -51,7 +54,8 @@ These are hallucinated by Whisper from its YouTube subtitle training data when i
 
 - **`StatusBarController`** — NSPopover from menu bar icon, shows dictation status and audio level
 - **`DictationIndicatorWindow`** — Floating NSPanel (capsule shape, `.ultraThinMaterial` with white border outline), shows pulsing red dot + audio waveform during listening, spinner during processing
-- **`SettingsView`** — macOS System Settings-style `NavigationSplitView` with sidebar (General, Speech Recognition, Text Processing, Snippets, Commands, Advanced)
+- **`SettingsView`** — macOS System Settings-style `NavigationSplitView` with sidebar (General, Speech Recognition, Text Processing, Snippets, Commands, History, Advanced)
+- **`HistoryView`** — Dashboard with stats cards (today count, listening time, all-time count), 14-day bar chart (Charts framework), searchable/filterable transcription log with expandable details
 - **`SnippetSettingsView`** — Full CRUD for snippets: add, edit (pencil button), delete (trash button) with sheet editor
 - **`VoiceCommandSettingsView`** — Toggle switches to enable/disable individual voice commands, reads definitions from `VoiceCommandParser.allDefinitions`
 - **`OnboardingView`** — First-launch setup wizard
@@ -90,11 +94,15 @@ Dictava/
 ├── Storage/
 │   ├── SettingsStore.swift             # @AppStorage preferences + voice command state
 │   ├── SnippetStore.swift              # YAML-backed snippets
-│   └── VocabularyStore.swift           # YAML-backed vocabulary
+│   ├── VocabularyStore.swift           # JSON-backed vocabulary
+│   ├── TranscriptionLog.swift          # Data structure for single log entry
+│   └── TranscriptionLogStore.swift     # JSON persistence + analytics queries
 ├── UI/
 │   ├── MenuBar/
 │   │   ├── StatusBarController.swift        # Menu bar popover
 │   │   └── DictationIndicatorWindow.swift   # Floating pill indicator
+│   ├── History/
+│   │   └── HistoryView.swift               # Stats, charts, searchable log
 │   ├── Onboarding/
 │   │   └── OnboardingView.swift
 │   └── Settings/
@@ -117,7 +125,9 @@ Dictava/
 |---------|---------|---------|
 | [WhisperKit](https://github.com/argmaxinc/WhisperKit) | >= 0.9.0 | Local speech-to-text via CoreML |
 | [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) | >= 2.0.0 | Global hotkey recording & handling |
-| [Yams](https://github.com/jpsim/Yams) | >= 5.0.0 | YAML parsing for snippets/vocabulary |
+| [Yams](https://github.com/jpsim/Yams) | >= 5.0.0 | YAML parsing for snippets |
+
+Also uses Apple's **Charts** framework (built-in) for the history dashboard bar chart.
 
 ## Build
 
@@ -163,22 +173,74 @@ open /Applications/Dictava.app
 - **Model switching:** `DictationSession.switchModel(to:)` unloads current model and loads new one in background
 - **Race condition prevention:** `state = .listening` is set synchronously before the async Task in `startDictation()` to prevent re-entry from rapid hotkey presses
 - **Live text subscription:** Created per-session in `startDictation()` and cancelled in `stopDictation()` to ensure it works across multiple sessions
+- **Partial transcription:** Triggered every 1.5 seconds by timer in `StreamingTranscriber` for real-time preview
+- **Silence detection:** Uses audio level threshold (0.05 normalized), starts timer when below, resets when above
+- **Audio level calculation:** RMS normalization over sample frames with dB scaling (-50dB to 0dB → 0 to 1 range)
 - **Permissions polling:** `PermissionManager` polls every 2 seconds for accessibility status changes (no system notification exists for this)
-- **Text injection:** Uses `CGEvent` to synthesize keystrokes — requires Accessibility permission
+- **Text injection:** Uses `CGEvent` to synthesize keystrokes — requires Accessibility permission. 50ms delay before Cmd+V, 200ms wait after
+- **Dock icon policy:** Dynamically toggles `NSApplication.setActivationPolicy()` based on `showDockIcon` setting and whether windows are open
+- **Transcription logging:** Every session logged with duration, raw text, processed text, model used, and voice command metadata
 - **LSUIElement focus:** Settings window calls `NSApp.activate(ignoringOtherApps: true)` on appear since menu bar apps don't auto-activate
 - **Floating indicator:** `NSPanel` with `.borderless` + `.nonactivatingPanel` — doesn't steal focus from the active app. Has a subtle white border (`0.25` opacity, `1px`) for visibility on dark backgrounds
 - **Non-speech filtering:** `TranscriptionEngine` strips `[...]`, `(...)`, and music symbols via regex before returning text. Catches all Whisper hallucination artifacts without needing a hardcoded list
 - **Voice command toggles:** Disabled commands stored as comma-separated names in `SettingsStore.disabledVoiceCommands`. `VoiceCommandParser` skips disabled commands during processing
 - **Voice command definitions:** Centralized in `VoiceCommandParser.allDefinitions` (static array), used by both the parser and the settings UI
 
-## Versioning
+## Versioning & Releases
 
 Uses semantic versioning (MAJOR.MINOR.PATCH):
 - **PATCH** — bug fixes only
 - **MINOR** — new features, backwards compatible
 - **MAJOR** — breaking changes or "production-ready" milestone
 
-Releases are created manually via `gh release create vX.Y.Z`. Current version: **0.2.0**.
+### Release Process
+
+To create a new release:
+
+```bash
+./scripts/release.sh 0.3.0
+```
+
+This script:
+1. Validates semver format and checks clean main branch
+2. Updates `MARKETING_VERSION` in `project.yml` (both targets)
+3. Commits the version bump
+4. Creates annotated git tag `v0.3.0`
+5. Pushes commit + tag to origin
+
+The tag push triggers `.github/workflows/release.yml` which:
+1. Builds the app on Apple Silicon CI (`macos-14`)
+2. Creates a DMG (`Dictava-0.3.0.dmg`)
+3. Publishes a GitHub Release with the DMG attached
+4. Triggers the Homebrew tap update at `julian0xff/homebrew-tap`
+
+### Distribution
+
+- **GitHub Releases:** DMG download at `github.com/julian0xff/Dictava/releases`
+- **Homebrew:** `brew install --cask julian0xff/tap/dictava` (tap repo: `julian0xff/homebrew-tap`)
+- **Build from source:** `xcodegen generate && xcodebuild ...`
+
+### CI Secrets
+
+- `GITHUB_TOKEN` — auto-provided, used for creating GitHub Releases
+- `TAP_UPDATE_TOKEN` — PAT with `repo` + `workflow` scopes, used to trigger the Homebrew tap update workflow
+
+## Hotkeys
+
+| Action | Hotkey | Notes |
+|--------|--------|-------|
+| Toggle dictation | Option+Space | Editable via Settings → General |
+| Copy last transcription | Option+Shift+Space | Fixed, copies to clipboard |
+
+## Data Storage
+
+| Data | Location | Format |
+|------|----------|--------|
+| Preferences | `~/Library/Preferences/com.dictava.app.plist` | UserDefaults |
+| Snippets | `~/Library/Application Support/Dictava/snippets.yml` | YAML |
+| Custom vocabulary | `~/Library/Application Support/Dictava/vocabulary.json` | JSON |
+| Transcription history | `~/Library/Application Support/Dictava/transcription_logs.json` | JSON |
+| Whisper models | `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/` | CoreML |
 
 ## Platform Constraints
 

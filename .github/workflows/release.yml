@@ -1,0 +1,118 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: macos-14
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Install tools
+        run: brew install xcodegen create-dmg
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $VERSION"
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Dictava.xcodeproj \
+            -scheme Dictava
+
+      - name: Build archive
+        run: |
+          xcodebuild archive \
+            -project Dictava.xcodeproj \
+            -scheme Dictava \
+            -configuration Release \
+            -archivePath build/Dictava.xcarchive \
+            -destination 'platform=macOS,arch=arm64' \
+            CODE_SIGN_IDENTITY="-" \
+            MARKETING_VERSION="${{ steps.version.outputs.VERSION }}" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+
+      - name: Export app from archive
+        run: |
+          mkdir -p build/Export
+          cp -R build/Dictava.xcarchive/Products/Applications/Dictava.app build/Export/
+
+      - name: Ad-hoc codesign
+        run: codesign --force --deep -s - build/Export/Dictava.app
+
+      - name: Create DMG
+        run: |
+          create-dmg \
+            --volname "Dictava" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "Dictava.app" 150 190 \
+            --hide-extension "Dictava.app" \
+            --app-drop-link 450 190 \
+            --no-internet-enable \
+            --sandbox-safe \
+            "build/Dictava-${{ steps.version.outputs.VERSION }}.dmg" \
+            "build/Export/"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Dictava v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## Dictava v${{ steps.version.outputs.VERSION }}
+
+            ### Install
+
+            **Download DMG:** Grab `Dictava-${{ steps.version.outputs.VERSION }}.dmg` below, open it, and drag Dictava to Applications.
+
+            **Homebrew:**
+            ```bash
+            brew install --cask julian0xff/tap/dictava
+            ```
+
+            > **First launch:** macOS may show a security warning because the app is not notarized. Right-click the app and select **Open**, or go to **System Settings > Privacy & Security** and click **Open Anyway**.
+
+            ### Requirements
+            - macOS 13.0+
+            - Apple Silicon (M1/M2/M3/M4)
+          files: build/Dictava-${{ steps.version.outputs.VERSION }}.dmg
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew tap
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          SHA256=$(shasum -a 256 "build/Dictava-${VERSION}.dmg" | awk '{ print $1 }')
+          echo "SHA256: $SHA256"
+
+          gh workflow run update-cask.yml \
+            --repo julian0xff/homebrew-tap \
+            -f version="$VERSION" \
+            -f sha256="$SHA256"
+        env:
+          GITHUB_TOKEN: ${{ secrets.TAP_UPDATE_TOKEN }}
