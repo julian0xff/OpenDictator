@@ -36,7 +36,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dictava.app
         PRODUCT_NAME: Dictava
-        MARKETING_VERSION: "0.2.2"
+        MARKETING_VERSION: "0.3.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: Dictava/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Dictava/Resources/Dictava.entitlements
@@ -60,7 +60,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dictava.app.dev
         PRODUCT_NAME: "Dictava Dev"
-        MARKETING_VERSION: "0.2.2"
+        MARKETING_VERSION: "0.3.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: Dictava/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Dictava/Resources/Dictava.entitlements
