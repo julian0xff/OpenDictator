@@ -14,7 +14,7 @@ A macOS menu bar dictation app that uses WhisperKit for local, on-device speech-
 
 | Object | Role |
 |--------|------|
-| `DictationSession` | Central orchestrator — manages state machine (idle → listening → transcribing → processing → injecting → idle), audio capture, streaming transcription, text pipeline, text injection, and transcription logging |
+| `DictationSession` | Central orchestrator — manages state machine (idle → loadingModel → listening → transcribing → processing → injecting → idle), audio capture, streaming transcription, text pipeline, text injection, and transcription logging |
 | `SettingsStore` | `@AppStorage`-backed preferences, including voice command enabled/disabled state, audio settings, UI preferences, indicator theme selection |
 | `ModelManager` | Downloads, lists, deletes WhisperKit CoreML models |
 | `SnippetStore` | User-defined text snippets (YAML-backed) with template variable support (`{{date}}`, `{{time}}`, `{{clipboard}}`) |
@@ -26,13 +26,15 @@ A macOS menu bar dictation app that uses WhisperKit for local, on-device speech-
 
 1. User presses **Option+Space** (global hotkey via `KeyboardShortcuts` package)
 2. `DictationSession.toggle()` → `startDictation()`
-3. `AudioCaptureEngine` starts capturing mic input via `AVAudioEngine`
-4. `StreamingTranscriber` feeds audio chunks to `TranscriptionEngine` (WhisperKit)
-5. `TranscriptionEngine` strips non-speech artifacts before returning text
-6. Live partial transcripts update `DictationSession.liveText` every 1.5 seconds
-7. On stop (manual or silence detection): final transcription → `TextPipeline` processing → `TextInjector` types text at cursor via CGEvents
-8. Session logged to `TranscriptionLogStore` with full metadata (duration, raw/processed text, model, voice command status)
-9. Floating indicator (`DictationIndicatorWindow`) shows state throughout with themed audio waveform visualization
+3. If model not loaded: state → `.loadingModel`, floating indicator shows spinner + "Loading model..."
+4. Model loads (or awaits in-progress `modelLoadTask` from `switchModel`), then state → `.listening`
+5. `AudioCaptureEngine` starts capturing mic input via `AVAudioEngine`
+6. `StreamingTranscriber` feeds audio chunks to `TranscriptionEngine` (WhisperKit)
+7. `TranscriptionEngine` strips non-speech artifacts before returning text
+8. Live partial transcripts update `DictationSession.liveText` every 1.5 seconds
+9. On stop (manual or silence detection): final transcription → `TextPipeline` processing → `TextInjector` types text at cursor via CGEvents
+10. Session logged to `TranscriptionLogStore` with full metadata (duration, raw/processed text, model, voice command status)
+11. Floating indicator (`DictationIndicatorWindow`) shows state throughout with themed audio waveform visualization
 
 ### Text Pipeline
 
@@ -91,6 +93,7 @@ Dictava/
 │   └── Transcription/
 │       ├── ModelManager.swift          # WhisperKit model management
 │       ├── StreamingTranscriber.swift  # Chunked streaming transcription
+│       ├── SupportedLanguage.swift     # Language model + 100 Whisper-supported languages
 │       └── TranscriptionEngine.swift   # WhisperKit wrapper + non-speech filtering
 ├── Services/
 │   ├── HotkeyManager.swift            # KeyboardShortcuts names
@@ -178,11 +181,15 @@ open /Applications/Dictava.app
 
 - **Fully offline:** Everything runs on-device after initial model download. No API calls, no network required
 - **WhisperKit model storage:** Models download to `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/` (not `~/Library/Application Support/`)
+- **Multilingual models:** Each tier (tiny, small, medium) has both an English-only `.en` variant and a multilingual variant. Large v3 is multilingual only. English users see `.en` models + large; non-English users see multilingual models only. `SupportedLanguage.swift` lists 100+ Whisper-supported languages
+- **Model tiers:** tiny (~77-153 MB, ~275ms), small (~217-218 MB, ~1.5s), medium (~1.5 GB, ~3s), large v3 turbo (~1 GB, ~3s). Medium recommended for non-English, tiny for English
 - **Model preloading:** The selected Whisper model loads at app launch (`AppDelegate.preloadModel()`) to avoid delay on first dictation
-- **Model switching:** `DictationSession.switchModel(to:)` unloads current model and loads new one in background
+- **Model switching:** `DictationSession.switchModel(to:)` unloads current model and loads new one in background via `modelLoadTask`. Only one model in memory at a time. `TranscriptionEngine.loadedModelName` tracks which model is loaded to detect mismatches
+- **Language switching:** `DictationSession.switchLanguage(to:)` prefers same-tier downloaded model for new language, falls back to smallest downloaded model, never selects undownloaded models
+- **Model loading state:** `startDictation()` checks if model is ready synchronously — if not, sets `.loadingModel` state (shows spinner) and defers audio capture until load completes. `startTask` tracks the async work so it can be cancelled
 - **Settings window:** Custom `NSWindow` with `NSHostingController` — not a SwiftUI `Settings` scene (which strips `.resizable`). Window has vertical resize only (width locked at 720), `setFrameAutosaveName` for persistence, `isReleasedWhenClosed = false` for reuse. Opened via `NSApp.sendAction(#selector(AppDelegate.openSettingsWindow))` from the popover to avoid `@MainActor` isolation issues with direct method calls
 - **Settings sidebar:** Uses `HStack` with fixed-width `List`, not `NavigationSplitView` (which allows the user to collapse the sidebar by dragging the divider)
-- **Race condition prevention:** `state = .listening` is set synchronously before the async Task in `startDictation()` to prevent re-entry from rapid hotkey presses
+- **Race condition prevention:** State is set synchronously (`.loadingModel` or `.listening`) before the async Task in `startDictation()` to prevent re-entry. `startTask` and `stopTask` track async work; `cancelStop()` cancels both. `modelLoadTask` in `switchModel` is awaited by `startDictation` before proceeding
 - **Live text subscription:** Created per-session in `startDictation()` and cancelled in `stopDictation()` to ensure it works across multiple sessions
 - **Partial transcription:** Triggered every 1.5 seconds by timer in `StreamingTranscriber` for real-time preview
 - **Silence detection:** Uses audio level threshold (0.05 normalized), starts timer when below, resets when above
@@ -197,7 +204,9 @@ open /Applications/Dictava.app
 - **Non-speech filtering:** `TranscriptionEngine` strips `[...]`, `(...)`, and music symbols via regex before returning text. Catches all Whisper hallucination artifacts without needing a hardcoded list
 - **Voice command toggles:** Disabled commands stored as comma-separated names in `SettingsStore.disabledVoiceCommands`. `VoiceCommandParser` skips disabled commands during processing
 - **Voice command definitions:** Centralized in `VoiceCommandParser.allDefinitions` (static array), used by both the parser and the settings UI
-- **Popover:** `StatusBarPopoverView` is split into private subviews: `PopoverHeaderView`, `PopoverBodyView`, `PopoverRecentView` (hover-to-copy with clipboard icon), `PopoverFooterView` (Settings + Quit with `FooterButtonStyle` hover/press effects). Uses `.preferredContentSize` sizing
+- **Popover:** `StatusBarPopoverView` is split into private subviews: `PopoverHeaderView`, `PopoverBodyView`, `PopoverRecentView` (hover-to-copy with clipboard icon), `PopoverFooterView` (Settings + Quit with `FooterButtonStyle` hover/press effects). Uses `.preferredContentSize` sizing. Shows permission grant buttons when mic/accessibility not granted
+- **Model name migration:** `SettingsStore.migrateModelNameIfNeeded()` runs at launch to fix orphaned model names from older versions
+- **Accessibility reset:** `PermissionManager.requestAccessibility()` runs `tccutil reset` before prompting to clear stale entries from previous builds
 
 ## Versioning & Releases
 
@@ -211,7 +220,7 @@ Uses semantic versioning (MAJOR.MINOR.PATCH):
 To create a new release:
 
 ```bash
-./scripts/release.sh 0.4.0
+./scripts/release.sh 0.5.0
 ```
 
 This script:
