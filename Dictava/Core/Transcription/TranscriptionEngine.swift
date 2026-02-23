@@ -25,6 +25,7 @@ final class TranscriptionEngine: ObservableObject {
     @Published var isTranscribing = false
     @Published var partialText = ""
     @Published var confirmedText = ""
+    private(set) var loadedModelName: String?
 
     private var whisperKit: WhisperKit?
     private let sampleBuffer = AudioSampleBuffer()
@@ -35,11 +36,13 @@ final class TranscriptionEngine: ObservableObject {
             verbose: false,
             logLevel: .none
         )
+        loadedModelName = modelName
         isModelLoaded = true
     }
 
     func unloadModel() {
         whisperKit = nil
+        loadedModelName = nil
         isModelLoaded = false
     }
 
@@ -49,7 +52,7 @@ final class TranscriptionEngine: ObservableObject {
         }
     }
 
-    func transcribe() async -> String {
+    func transcribe(language: String = "en") async -> String {
         guard let whisperKit else { return "" }
 
         let samples = await sampleBuffer.getAll()
@@ -59,7 +62,8 @@ final class TranscriptionEngine: ObservableObject {
         defer { isTranscribing = false }
 
         do {
-            let results = try await whisperKit.transcribe(audioArray: samples)
+            let options = DecodingOptions(language: language)
+            let results = try await whisperKit.transcribe(audioArray: samples, decodeOptions: options)
             let rawText = results.map { $0.text }.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
             let text = Self.stripNonSpeechAnnotations(rawText)
             guard !text.isEmpty else { return "" }
@@ -71,14 +75,15 @@ final class TranscriptionEngine: ObservableObject {
         }
     }
 
-    func transcribePartial() async {
+    func transcribePartial(language: String = "en") async {
         guard let whisperKit else { return }
 
         let samples = await sampleBuffer.getAll()
         guard !samples.isEmpty else { return }
 
         do {
-            let results = try await whisperKit.transcribe(audioArray: samples)
+            let options = DecodingOptions(language: language)
+            let results = try await whisperKit.transcribe(audioArray: samples, decodeOptions: options)
             let rawText = results.map { $0.text }.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
             let text = Self.stripNonSpeechAnnotations(rawText)
             guard !text.isEmpty else { return }

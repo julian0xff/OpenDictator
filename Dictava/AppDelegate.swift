@@ -46,6 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         indicatorWindow = DictationIndicatorWindow(dictationSession: dictationSession, settingsStore: settingsStore, customThemeStore: customThemeStore)
 
+        settingsStore.migrateModelNameIfNeeded()
         setupHotkey()
         setupWindowObservers()
         checkFirstLaunch()
@@ -125,6 +126,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func openSettingsWindow() {
         if let existing = settingsWindow {
+            NSApp.setActivationPolicy(.regular)
+            currentPolicy = .regular
             existing.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
@@ -149,6 +152,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.setContentSize(NSSize(width: 720, height: 480))
         window.center()
         window.setFrameAutosaveName("DictavaSettings")
+        NSApp.setActivationPolicy(.regular)
+        currentPolicy = .regular
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
@@ -166,6 +171,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.styleMask = [.titled, .closable]
         window.setContentSize(NSSize(width: 500, height: 600))
         window.center()
+        NSApp.setActivationPolicy(.regular)
+        currentPolicy = .regular
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

@@ -3,7 +3,7 @@ import Combine
 
 final class SettingsStore: ObservableObject {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
-    @AppStorage("selectedModelName") var selectedModelName = "tiny.en"
+    @AppStorage("selectedModelName") var selectedModelName = "openai_whisper-tiny.en"
     @AppStorage("silenceTimeoutSeconds") var silenceTimeoutSeconds = 5.0
     @AppStorage("removeFillerWords") var removeFillerWords = true
     @AppStorage("autoCapitalize") var autoCapitalize = true
@@ -14,6 +14,7 @@ final class SettingsStore: ObservableObject {
     @AppStorage("llmEnabled") var llmEnabled = false
     @AppStorage("selectedLLMModel") var selectedLLMModel = ""
     @AppStorage("showDockIcon") var showDockIcon = false
+    @AppStorage("selectedLanguage") var selectedLanguage = "en"
     @AppStorage("disabledVoiceCommands") var disabledVoiceCommands = ""
 
     // Theme
@@ -21,6 +22,13 @@ final class SettingsStore: ObservableObject {
 
     func currentIndicatorTheme(isDarkMode: Bool, customThemes: [IndicatorTheme] = []) -> IndicatorTheme {
         IndicatorTheme.resolve(id: indicatorThemeName, isDarkMode: isDarkMode, customThemes: customThemes)
+    }
+
+    func migrateModelNameIfNeeded() {
+        let knownNames = Set(ModelManager.defaultModels.map(\.name))
+        if !knownNames.contains(selectedModelName) {
+            selectedModelName = "openai_whisper-tiny.en"
+        }
     }
 
     func isVoiceCommandEnabled(_ name: String) -> Bool {

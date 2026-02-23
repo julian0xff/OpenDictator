@@ -28,6 +28,9 @@ final class DictationSession: ObservableObject {
     private var silenceCancellable: AnyCancellable?
     private var silenceTimer: Timer?
     private var longDictationTimer: Timer?
+    private var startTask: Task<Void, Never>?
+    private var stopTask: Task<Void, Never>?
+    private var modelLoadTask: Task<Void, Never>?
 
     init(settingsStore: SettingsStore, modelManager: ModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore) {
         self.settingsStore = settingsStore
@@ -70,24 +73,77 @@ final class DictationSession: ObservableObject {
 
     func preloadModel() async {
         guard !transcriptionEngine.isModelLoaded else { return }
-        try? await transcriptionEngine.loadModel(named: settingsStore.selectedModelName)
+        modelLoadTask = Task {
+            try? await transcriptionEngine.loadModel(named: settingsStore.selectedModelName)
+            modelLoadTask = nil
+        }
+        await modelLoadTask?.value
     }
 
     func switchModel(to modelName: String) {
         guard modelName != settingsStore.selectedModelName || !transcriptionEngine.isModelLoaded else { return }
+
+        let isDownloaded = modelManager.availableModels.first(where: { $0.name == modelName })?.isDownloaded ?? false
         settingsStore.selectedModelName = modelName
+
+        guard isDownloaded else { return }  // Don't unload current model if target isn't ready
+
+        modelLoadTask?.cancel()
         transcriptionEngine.unloadModel()
-        Task {
+        modelLoadTask = Task {
             try? await transcriptionEngine.loadModel(named: modelName)
+            modelLoadTask = nil
         }
+    }
+
+    func switchLanguage(to languageCode: String) {
+        settingsStore.selectedLanguage = languageCode
+
+        let currentTier = modelManager.tier(for: settingsStore.selectedModelName)
+        let candidates = modelManager.models(for: languageCode)
+
+        // 1. Try same tier, downloaded
+        if let sameTier = candidates.first(where: { $0.tier == currentTier && $0.isDownloaded }) {
+            if sameTier.name != settingsStore.selectedModelName {
+                switchModel(to: sameTier.name)
+            }
+            return
+        }
+
+        // 2. Fall back to smallest downloaded model for new language
+        if let fallback = modelManager.bestDownloadedModel(for: languageCode) {
+            if fallback != settingsStore.selectedModelName {
+                switchModel(to: fallback)
+            }
+            return
+        }
+
+        // 3. Nothing downloaded for this language — update setting only
+        let newModelName = modelManager.bestModel(tier: currentTier, for: languageCode)
+        settingsStore.selectedModelName = newModelName
     }
 
     func toggle() {
         if state == .idle {
             startDictation()
-        } else {
+        } else if state == .listening {
             stopDictation()
+        } else {
+            // Pressed hotkey while transcribing/processing/injecting — cancel and reset
+            cancelStop()
         }
+    }
+
+    private func cancelStop() {
+        startTask?.cancel()
+        startTask = nil
+        stopTask?.cancel()
+        stopTask = nil
+        audioEngine.stopCapturing()
+        liveText = ""
+        liveTextCancellable = nil
+        sessionStartTime = nil
+        state = .idle
     }
 
     func startDictation() {
@@ -101,8 +157,6 @@ final class DictationSession: ObservableObject {
             return
         }
 
-        // Set state immediately to prevent re-entry from rapid toggling
-        state = .listening
         sessionStartTime = Date()
 
         // Subscribe to live text for this session
@@ -112,22 +166,43 @@ final class DictationSession: ObservableObject {
                 self?.liveText = text
             }
 
-        Task {
-            // Ensure model is loaded
-            if !transcriptionEngine.isModelLoaded {
+        // Check if model is ready right now
+        let modelReady = modelLoadTask == nil
+            && transcriptionEngine.isModelLoaded
+            && transcriptionEngine.loadedModelName == settingsStore.selectedModelName
+
+        state = modelReady ? .listening : .loadingModel
+
+        startTask = Task {
+            // Wait for any in-progress model load (e.g. from switchModel)
+            if let loadTask = modelLoadTask {
+                await loadTask.value
+            }
+            guard !Task.isCancelled else { cleanup(); return }
+
+            // Ensure correct model is loaded
+            let needsLoad = !transcriptionEngine.isModelLoaded
+                || transcriptionEngine.loadedModelName != settingsStore.selectedModelName
+            if needsLoad {
+                if transcriptionEngine.isModelLoaded {
+                    transcriptionEngine.unloadModel()
+                }
                 do {
                     try await transcriptionEngine.loadModel(named: settingsStore.selectedModelName)
                 } catch {
                     self.error = "Failed to load model: \(error.localizedDescription)"
-                    self.state = .idle
-                    self.liveTextCancellable = nil
+                    cleanup()
                     return
                 }
             }
+            guard !Task.isCancelled else { cleanup(); return }
+
+            // Model ready — transition to listening and start audio
+            state = .listening
 
             do {
                 try audioEngine.startCapturing()
-                streamingTranscriber.startStreaming(from: audioEngine)
+                streamingTranscriber.startStreaming(from: audioEngine, language: settingsStore.selectedLanguage)
 
                 if settingsStore.playStartStopSounds {
                     NSSound(named: "Tink")?.play()
@@ -137,14 +212,20 @@ final class DictationSession: ObservableObject {
                 startLongDictationWarning()
             } catch {
                 self.error = "Failed to start recording: \(error.localizedDescription)"
-                self.state = .idle
-                self.liveTextCancellable = nil
+                cleanup()
             }
+            startTask = nil
         }
     }
 
+    private func cleanup() {
+        state = .idle
+        liveTextCancellable = nil
+        sessionStartTime = nil
+    }
+
     func stopDictation() {
-        guard state.isActive else { return }
+        guard state == .listening else { return }
 
         silenceCancellable = nil
         silenceTimer?.invalidate()
@@ -156,10 +237,12 @@ final class DictationSession: ObservableObject {
 
         state = .transcribing
 
-        Task {
+        stopTask = Task {
             audioEngine.stopCapturing()
             let rawText = await streamingTranscriber.stopStreaming()
             liveText = ""
+
+            guard !Task.isCancelled else { return }
 
             if settingsStore.playStartStopSounds {
                 NSSound(named: "Pop")?.play()
@@ -174,6 +257,8 @@ final class DictationSession: ObservableObject {
             // Process through pipeline
             state = .processing
             let result = await textPipeline.process(rawText)
+
+            guard !Task.isCancelled else { return }
 
             // Handle voice commands
             if let command = result.command {
@@ -191,6 +276,8 @@ final class DictationSession: ObservableObject {
                     lastTranscription = result.text
                 }
 
+                guard !Task.isCancelled else { return }
+
                 state = .executingCommand
                 await commandExecutor.execute(command)
                 logTranscription(rawText: rawText, processedText: result.text, wasVoiceCommand: true, voiceCommandName: command.logName)
@@ -200,6 +287,8 @@ final class DictationSession: ObservableObject {
             }
 
             // Inject text
+            guard !Task.isCancelled else { return }
+
             if !result.text.isEmpty {
                 state = .injecting
                 await textInjector.inject(result.text)

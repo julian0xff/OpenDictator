@@ -67,6 +67,15 @@ final class PermissionManager: ObservableObject {
 
     @discardableResult
     func requestAccessibility() -> Bool {
+        // Reset stale entry from previous builds so the prompt works cleanly
+        if let bundleID = Bundle.main.bundleIdentifier {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+            process.arguments = ["reset", "Accessibility", bundleID]
+            try? process.run()
+            process.waitUntilExit()
+        }
+
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         let result = AXIsProcessTrustedWithOptions(options)
         refreshStatuses()

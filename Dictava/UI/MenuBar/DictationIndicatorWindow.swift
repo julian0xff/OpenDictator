@@ -150,7 +150,7 @@ struct DictationIndicatorView: View {
         switch session.state {
         case .listening:
             EmptyView()
-        case .transcribing, .processing:
+        case .loadingModel, .transcribing, .processing:
             ProgressView()
                 .scaleEffect(0.6)
                 .frame(width: 16, height: 16)
@@ -173,6 +173,10 @@ struct DictationIndicatorView: View {
         switch session.state {
         case .listening:
             EmptyView()
+        case .loadingModel:
+            Text("Loading model...")
+                .font(.system(.callout, design: .rounded))
+                .foregroundStyle(theme.textColor)
         case .transcribing:
             Text("Transcribing...")
                 .font(.system(.callout, design: .rounded))

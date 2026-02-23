@@ -44,6 +44,7 @@
 		54946F6A625C8B2679CF8FD1 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */; };
 		558E731E4914FA072C559191 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8F50BFF44F64FD257A5937A /* PermissionManager.swift */; };
 		55E9FB0F292E301C51751794 /* TranscriptionLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD3B409B2D0086526AB0CCA /* TranscriptionLogStore.swift */; };
+		5CF49F3F30DF47F27CFF8D51 /* SupportedLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF2A84CB5E938E135E7F4F6 /* SupportedLanguage.swift */; };
 		5ED35F13B4CEDB7672BF3BE7 /* AudioCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD004E0223CFDA23C2258ADD /* AudioCaptureEngine.swift */; };
 		74157C94191B78F457BE4BF4 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3F80C839322FA2AA57AC993F /* WhisperKit */; };
 		750AA6E809DBBFE08758072A /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766D8FEFF28A6A543C7C5169 /* ModelManager.swift */; };
@@ -68,6 +69,7 @@
 		A67C5943B36546EFE07E9D42 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */; };
 		A71D7776D33B2BBA16AEE146 /* SpeechRecognitionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB33EDFA4554F79AE698569 /* SpeechRecognitionSettingsView.swift */; };
 		A9D00BF29069B134C97C725B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2004F7447FFD231B4CFB2FD9 /* AppDelegate.swift */; };
+		AE5DB52617764919A56B063D /* SupportedLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF2A84CB5E938E135E7F4F6 /* SupportedLanguage.swift */; };
 		B5DCF1485B7C394D9A55614D /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */; };
 		BB937C144FF2AD6A15B8C508 /* SnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */; };
 		BE3537C0CAE4E3B3EAE5FED3 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 7F9DEB2DA2E94C0C36292209 /* Yams */; };
@@ -128,6 +130,7 @@
 		9D19CE416A61C5AD8AD15CA3 /* IndicatorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndicatorTheme.swift; sourceTree = "<group>"; };
 		9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticEventMarker.swift; sourceTree = "<group>"; };
 		AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationIndicatorWindow.swift; sourceTree = "<group>"; };
+		AAF2A84CB5E938E135E7F4F6 /* SupportedLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportedLanguage.swift; sourceTree = "<group>"; };
 		AD972980806897E9246B00FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
 		B3FA80D52497A79E64378F4F /* CustomThemeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomThemeStore.swift; sourceTree = "<group>"; };
@@ -318,6 +321,7 @@
 			children = (
 				766D8FEFF28A6A543C7C5169 /* ModelManager.swift */,
 				880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */,
+				AAF2A84CB5E938E135E7F4F6 /* SupportedLanguage.swift */,
 				0D50C477267EB8588340623C /* TranscriptionEngine.swift */,
 			);
 			path = Transcription;
@@ -484,6 +488,7 @@
 				A71D7776D33B2BBA16AEE146 /* SpeechRecognitionSettingsView.swift in Sources */,
 				54331680874A9EE7DDE65680 /* StatusBarController.swift in Sources */,
 				0124A6F6008B86487A80ED95 /* StreamingTranscriber.swift in Sources */,
+				AE5DB52617764919A56B063D /* SupportedLanguage.swift in Sources */,
 				C5DB960C96312D94AEA60F1C /* SyntheticEventMarker.swift in Sources */,
 				A618130C51918A433B8EFFED /* TextInjector.swift in Sources */,
 				51E722B58EFF46E5A5C41DBB /* TextPipeline.swift in Sources */,
@@ -530,6 +535,7 @@
 				20DC1ABC956EB2D648552B93 /* SpeechRecognitionSettingsView.swift in Sources */,
 				34D288E36CCBAB681043F4DC /* StatusBarController.swift in Sources */,
 				DFDBA90E1797FB9C9F72B1AA /* StreamingTranscriber.swift in Sources */,
+				5CF49F3F30DF47F27CFF8D51 /* SupportedLanguage.swift in Sources */,
 				0C18E03079899A3585F48E5E /* SyntheticEventMarker.swift in Sources */,
 				D33B8F4C5F725993EC6FECF8 /* TextInjector.swift in Sources */,
 				FC443E565DAD20E152DE03D1 /* TextPipeline.swift in Sources */,
@@ -559,7 +565,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
 				PRODUCT_NAME = Dictava;
 				SDKROOT = macosx;
@@ -637,7 +643,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
 				PRODUCT_NAME = Dictava;
 				SDKROOT = macosx;
@@ -656,7 +662,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
 				PRODUCT_NAME = "Dictava Dev";
 				SDKROOT = macosx;
@@ -675,7 +681,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
 				PRODUCT_NAME = "Dictava Dev";
 				SDKROOT = macosx;

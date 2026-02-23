@@ -3,10 +3,9 @@ import KeyboardShortcuts
 
 struct OnboardingView: View {
     let settingsStore: SettingsStore
-    let modelManager: ModelManager
+    @ObservedObject var modelManager: ModelManager
     @State private var currentStep = 0
-    @State private var isDownloadingModel = false
-    @State private var downloadError: String?
+    @State private var downloadingModelID: String?
     @Environment(\.dismiss) var dismiss
 
     private let steps = ["Welcome", "Microphone", "Accessibility", "Model", "Ready"]
@@ -132,6 +131,11 @@ struct OnboardingView: View {
         }
     }
 
+    private var downloadingModel: WhisperModel? {
+        guard let id = downloadingModelID else { return nil }
+        return modelManager.availableModels.first(where: { $0.id == id })
+    }
+
     private var modelStep: some View {
         VStack(spacing: 16) {
             Image(systemName: "cpu")
@@ -145,17 +149,32 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            if isDownloadingModel {
-                VStack {
-                    ProgressView("Downloading model...")
-                    Text("This may take a moment")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            if let tracked = downloadingModel {
+                if tracked.isDownloading {
+                    VStack {
+                        ProgressView(value: tracked.downloadProgress) {
+                            Text("Downloading model...")
+                        }
+                        Text("\(Int(tracked.downloadProgress * 100))%")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if let error = tracked.downloadError {
+                    VStack(spacing: 8) {
+                        Text("Download failed: \(error)")
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                        Button("Retry") {
+                            modelManager.downloadModel(tracked)
+                        }
+                    }
+                } else if tracked.isDownloaded {
+                    Label("Model downloaded", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .onAppear {
+                            settingsStore.selectedModelName = tracked.name
+                        }
                 }
-            } else if let error = downloadError {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .font(.caption)
             } else {
                 ForEach(modelManager.availableModels.prefix(2)) { model in
                     Button {
@@ -208,18 +227,8 @@ struct OnboardingView: View {
     }
 
     private func downloadModel(_ model: WhisperModel) {
-        isDownloadingModel = true
-        downloadError = nil
-
-        Task {
-            do {
-                try await modelManager.downloadModel(model)
-                settingsStore.selectedModelName = model.name
-            } catch {
-                downloadError = "Download failed: \(error.localizedDescription)"
-            }
-            isDownloadingModel = false
-        }
+        downloadingModelID = model.id
+        modelManager.downloadModel(model)
     }
 }
 

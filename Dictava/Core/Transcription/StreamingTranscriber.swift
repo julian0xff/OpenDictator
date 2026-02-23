@@ -10,12 +10,14 @@ final class StreamingTranscriber: ObservableObject {
     private let transcriptionEngine: TranscriptionEngine
     private var cancellables = Set<AnyCancellable>()
     private var partialTimer: Timer?
+    private var language: String = "en"
 
     init(transcriptionEngine: TranscriptionEngine) {
         self.transcriptionEngine = transcriptionEngine
     }
 
-    func startStreaming(from audioEngine: AudioCaptureEngine) {
+    func startStreaming(from audioEngine: AudioCaptureEngine, language: String) {
+        self.language = language
         transcriptionEngine.reset()
 
         audioEngine.audioBufferPublisher
@@ -27,8 +29,9 @@ final class StreamingTranscriber: ObservableObject {
         // Trigger partial transcription every 1.5 seconds for live preview
         partialTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
-                await self?.transcriptionEngine.transcribePartial()
-                self?.liveText = self?.transcriptionEngine.partialText ?? ""
+                guard let self else { return }
+                await self.transcriptionEngine.transcribePartial(language: self.language)
+                self.liveText = self.transcriptionEngine.partialText
             }
         }
     }
@@ -38,7 +41,7 @@ final class StreamingTranscriber: ObservableObject {
         partialTimer?.invalidate()
         partialTimer = nil
 
-        let finalText = await transcriptionEngine.transcribe()
+        let finalText = await transcriptionEngine.transcribe(language: language)
         liveText = ""
         return finalText
     }

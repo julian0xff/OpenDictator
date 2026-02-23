@@ -75,6 +75,8 @@ final class StatusBarController: NSObject {
 
         let symbolName: String
         switch state {
+        case .loadingModel:
+            symbolName = "arrow.down.circle"
         case .listening:
             symbolName = "mic.badge.plus"
         case .transcribing, .processing:
@@ -175,6 +177,7 @@ private struct PopoverBodyView: View {
     @ObservedObject var dictationSession: DictationSession
     @ObservedObject var modelManager: ModelManager
     @ObservedObject var settingsStore: SettingsStore
+    @ObservedObject private var permissions = PermissionManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -224,29 +227,58 @@ private struct PopoverBodyView: View {
                 }
             }
 
-            // Primary action button + hotkey
-            HStack(spacing: 0) {
-                Button(dictationSession.state.isActive ? "Stop" : "Start Dictation") {
-                    dictationSession.toggle()
+            if permissions.allPermissionsGranted {
+                // Primary action button + hotkey
+                HStack(spacing: 0) {
+                    Button(dictationSession.state.isActive ? "Stop" : "Start Dictation") {
+                        dictationSession.toggle()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .tint(dictationSession.state == .listening ? .red : nil)
+
+                    Spacer()
+
+                    Text("⌥Space")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
                 }
-                .keyboardShortcut(.defaultAction)
-                .tint(dictationSession.state == .listening ? .red : nil)
 
-                Spacer()
+                // Model info (idle only)
+                if dictationSession.state == .idle {
+                    let displayName = modelManager.availableModels
+                        .first(where: { $0.name == settingsStore.selectedModelName })?
+                        .displayName ?? settingsStore.selectedModelName
+                    Text(displayName)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            } else {
+                // Permission buttons
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        if permissions.microphoneStatus != .granted {
+                            Button {
+                                Task { await PermissionManager.shared.requestMicrophone() }
+                            } label: {
+                                Label("Microphone", systemImage: "mic.fill")
+                            }
+                            .controlSize(.small)
+                        }
 
-                Text("⌥Space")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
+                        if permissions.accessibilityStatus != .granted {
+                            Button {
+                                PermissionManager.shared.requestAccessibility()
+                            } label: {
+                                Label("Accessibility", systemImage: "accessibility")
+                            }
+                            .controlSize(.small)
+                        }
+                    }
 
-            // Model info (idle only)
-            if dictationSession.state == .idle {
-                let displayName = modelManager.availableModels
-                    .first(where: { $0.name == settingsStore.selectedModelName })?
-                    .displayName ?? settingsStore.selectedModelName
-                Text(displayName)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    Text("Permissions required for dictation")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
