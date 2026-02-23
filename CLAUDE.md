@@ -208,6 +208,10 @@ open /Applications/Dictava.app
 - **Model name migration:** `SettingsStore.migrateModelNameIfNeeded()` runs at launch to fix orphaned model names from older versions
 - **Accessibility reset:** `PermissionManager.requestAccessibility()` runs `tccutil reset` before prompting to clear stale entries from previous builds
 
+## Stable Baseline
+
+Commit `3e8c852` (v0.5.0) is the last known stable state with all features working: multilingual support, model loading UX, download management, permissions, onboarding. Safe rollback point before multi-provider architectural changes.
+
 ## Versioning & Releases
 
 Uses semantic versioning (MAJOR.MINOR.PATCH):
