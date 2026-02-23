@@ -24,16 +24,27 @@ struct SpeechRecognitionSettingsView: View {
                 }
 
                 Section {
-                    Text("Models run locally on your Mac. Larger models are more accurate but slower.")
+                    Text("Models run locally on your Mac. Larger models are more accurate but slower. The listed size is loaded into RAM, so ensure you have enough free memory.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    if settingsStore.selectedLanguage != "en" {
+                    if settingsStore.selectedLanguage == "en" {
+                        HStack(spacing: 8) {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundStyle(.blue)
+                            Text("Tiny is recommended for English — it's fast and highly accurate. For other languages, switch the language above and use Medium or larger.")
+                                .font(.caption)
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.blue.opacity(0.08))
+                        .cornerRadius(8)
+                    } else {
                         let languageName = SupportedLanguage.all.first(where: { $0.code == settingsStore.selectedLanguage })?.name ?? settingsStore.selectedLanguage
                         HStack(spacing: 8) {
                             Image(systemName: "info.circle.fill")
                                 .foregroundStyle(.blue)
-                            Text("For best results in \(languageName), use Medium or larger.")
+                            Text("For best results in \(languageName), use Medium or larger. Smaller models may produce inaccurate transcriptions for non-English languages.")
                                 .font(.caption)
                         }
                         .padding(10)
