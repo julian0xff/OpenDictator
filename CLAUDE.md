@@ -1,6 +1,6 @@
 # Dictava
 
-A macOS menu bar dictation app that uses WhisperKit for local, on-device speech-to-text transcription. All processing happens locally — no data leaves the Mac. Works completely offline after initial model download.
+A macOS menu bar dictation app with multi-provider local speech-to-text. Supports **NVIDIA Parakeet** (FluidAudio SDK, recommended for 25 European languages) and **WhisperKit** (OpenAI Whisper models, 100+ languages). All processing happens locally — no data leaves the Mac. Works completely offline after initial model download.
 
 ## Architecture
 
@@ -14,9 +14,10 @@ A macOS menu bar dictation app that uses WhisperKit for local, on-device speech-
 
 | Object | Role |
 |--------|------|
-| `DictationSession` | Central orchestrator — manages state machine (idle → loadingModel → listening → transcribing → processing → injecting → idle), audio capture, streaming transcription, text pipeline, text injection, and transcription logging |
-| `SettingsStore` | `@AppStorage`-backed preferences, including voice command enabled/disabled state, audio settings, UI preferences, indicator theme selection |
+| `DictationSession` | Central orchestrator — manages state machine (idle → loadingModel → listening → transcribing → processing → injecting → idle), audio capture, streaming transcription, text pipeline, text injection, and transcription logging. Owns both `WhisperKitProvider` and `FluidAudioProvider` instances |
+| `SettingsStore` | `@AppStorage`-backed preferences, including voice command enabled/disabled state, audio settings, UI preferences, indicator theme selection, per-language provider overrides |
 | `ModelManager` | Downloads, lists, deletes WhisperKit CoreML models |
+| `FluidAudioModelManager` | Downloads, caches, deletes NVIDIA Parakeet v3 model. Publishes `downloadProgress` via file-system polling. Auto-triggers model preload in `DictationSession` when download completes |
 | `SnippetStore` | User-defined text snippets (YAML-backed) with template variable support (`{{date}}`, `{{time}}`, `{{clipboard}}`) |
 | `VocabularyStore` | Custom vocabulary entries for word corrections (JSON-backed) |
 | `TranscriptionLogStore` | Persists all dictation history with metadata — duration, raw/processed text, model used, voice command status (JSON-backed) |
@@ -29,8 +30,8 @@ A macOS menu bar dictation app that uses WhisperKit for local, on-device speech-
 3. If model not loaded: state → `.loadingModel`, floating indicator shows spinner + "Loading model..."
 4. Model loads (or awaits in-progress `modelLoadTask` from `switchModel`), then state → `.listening`
 5. `AudioCaptureEngine` starts capturing mic input via `AVAudioEngine`
-6. `StreamingTranscriber` feeds audio chunks to `TranscriptionEngine` (WhisperKit)
-7. `TranscriptionEngine` strips non-speech artifacts before returning text
+6. `StreamingTranscriber` feeds audio chunks to `TranscriptionEngine` via the active `ASRProvider` (Parakeet or WhisperKit)
+7. `TranscriptionEngine` delegates to the provider for transcription; WhisperKit results are stripped of non-speech artifacts
 8. Live partial transcripts update `DictationSession.liveText` every 1.5 seconds
 9. On stop (manual or silence detection): final transcription → `TextPipeline` processing → `TextInjector` types text at cursor via CGEvents
 10. Session logged to `TranscriptionLogStore` with full metadata (duration, raw/processed text, model, voice command status)
@@ -91,10 +92,16 @@ Dictava/
 │   │   ├── CustomVocabulary.swift
 │   │   └── LLMProcessor.swift
 │   └── Transcription/
+│       ├── ASRProvider.swift           # Provider protocol (loadModel, transcribe, reset, flush)
+│       ├── AudioSampleBuffer.swift     # Actor-isolated thread-safe sample buffer
+│       ├── FluidAudioModelManager.swift # Parakeet model download, progress polling, lifecycle
+│       ├── FluidAudioProvider.swift    # NVIDIA Parakeet ASR provider
 │       ├── ModelManager.swift          # WhisperKit model management
-│       ├── StreamingTranscriber.swift  # Chunked streaming transcription
+│       ├── ProviderCatalog.swift       # Provider selection: Parakeet recommended for 25 langs
+│       ├── StreamingTranscriber.swift  # Chunked streaming transcription + partial timer
 │       ├── SupportedLanguage.swift     # Language model + 100 Whisper-supported languages
-│       └── TranscriptionEngine.swift   # WhisperKit wrapper + non-speech filtering
+│       ├── TranscriptionEngine.swift   # Provider-agnostic transcription engine + flight guards
+│       └── WhisperKitProvider.swift    # WhisperKit ASR provider + non-speech filtering
 ├── Services/
 │   ├── HotkeyManager.swift            # KeyboardShortcuts names
 │   └── PermissionManager.swift        # Mic + Accessibility status polling
@@ -134,7 +141,8 @@ Dictava/
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| [WhisperKit](https://github.com/argmaxinc/WhisperKit) | >= 0.9.0 | Local speech-to-text via CoreML |
+| [WhisperKit](https://github.com/argmaxinc/WhisperKit) | >= 0.9.0 | Local speech-to-text via CoreML (100+ languages) |
+| [FluidAudio](https://github.com/AmpelAI/FluidAudio) | >= 0.12.1 | NVIDIA Parakeet local ASR (25 European languages, ~190ms) |
 | [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) | >= 2.0.0 | Global hotkey recording & handling |
 | [Yams](https://github.com/jpsim/Yams) | >= 5.0.0 | YAML parsing for snippets |
 | [PhosphorSwift](https://github.com/phosphor-icons/swift) | >= 2.1.0 | Duotone icons for settings sidebar |
@@ -181,15 +189,21 @@ open /Applications/Dictava.app
 
 - **Fully offline:** Everything runs on-device after initial model download. No API calls, no network required
 - **WhisperKit model storage:** Models download to `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/` (not `~/Library/Application Support/`)
-- **Multilingual models:** Each tier (tiny, small, medium) has both an English-only `.en` variant and a multilingual variant. Large v3 is multilingual only. English users see `.en` models + large; non-English users see multilingual models only. `SupportedLanguage.swift` lists 100+ Whisper-supported languages
-- **Model tiers:** tiny (~77-153 MB, ~275ms), small (~217-218 MB, ~1.5s), medium (~1.5 GB, ~3s), large v3 turbo (~1 GB, ~3s). Medium recommended for non-English, tiny for English
-- **Model preloading:** The selected Whisper model loads at app launch (`AppDelegate.preloadModel()`) to avoid delay on first dictation
+- **Multi-provider architecture:** `ASRProvider` protocol with `WhisperKitProvider` and `FluidAudioProvider` implementations. `ProviderCatalog` manages provider selection per language. `TranscriptionEngine` delegates to the active provider. `DictationSession` owns both providers and handles switching
+- **Parakeet (FluidAudio):** NVIDIA Parakeet v3, ~470 MB on disk, ~190ms latency. Recommended for all 25 supported European languages (en, es, fr, de, it, pt, nl, pl, ro, ru, uk, sv, da, fi, el, hu, cs, sk, sl, hr, bg, et, lv, lt, mt). Single model covers all languages
+- **WhisperKit models:** Each tier (tiny, small, medium) has both an English-only `.en` variant and a multilingual variant. Large v3 is multilingual only. English users see `.en` models + large; non-English users see multilingual models only. `SupportedLanguage.swift` lists 100+ Whisper-supported languages. Tiers: tiny (~77-153 MB, ~275ms), small (~217-218 MB, ~1.5s), medium (~1.5 GB, ~3s), large v3 turbo (~1 GB, ~3s)
+- **Provider switching:** `DictationSession.switchProvider(to:)` unloads old provider, sets new one, loads model. Guards against loading FluidAudio when model isn't downloaded (prevents silent background downloads). Per-language overrides stored in `SettingsStore.providerOverrides`
+- **Parakeet download progress:** `FluidAudioModelManager` polls cache directory size every 0.5s against known ~470 MB total. Caps at 99% during polling, sets 100% only on SDK confirmation. Note: SDK downloads to temp dir first then copies, so progress may jump
+- **Parakeet model lifecycle:** `DictationSession` observes `FluidAudioModelManager.$isDownloaded` — auto-preloads when download completes, syncs `TranscriptionEngine` state when model is deleted (prevents stale `isModelLoaded`). Clears stale errors when download starts via `$isDownloading` subscriber
+- **Model preloading:** The selected model loads at app launch (`AppDelegate.preloadModel()`) to avoid delay on first dictation. For FluidAudio, skips preload if model not downloaded
 - **Model switching:** `DictationSession.switchModel(to:)` unloads current model and loads new one in background via `modelLoadTask`. Only one model in memory at a time. `TranscriptionEngine.loadedModelName` tracks which model is loaded to detect mismatches
 - **Language switching:** `DictationSession.switchLanguage(to:)` prefers same-tier downloaded model for new language, falls back to smallest downloaded model, never selects undownloaded models
 - **Model loading state:** `startDictation()` checks if model is ready synchronously — if not, sets `.loadingModel` state (shows spinner) and defers audio capture until load completes. `startTask` tracks the async work so it can be cancelled
 - **Settings window:** Custom `NSWindow` with `NSHostingController` — not a SwiftUI `Settings` scene (which strips `.resizable`). Window has vertical resize only (width locked at 720), `setFrameAutosaveName` for persistence, `isReleasedWhenClosed = false` for reuse. Opened via `NSApp.sendAction(#selector(AppDelegate.openSettingsWindow))` from the popover to avoid `@MainActor` isolation issues with direct method calls
 - **Settings sidebar:** Uses `HStack` with fixed-width `List`, not `NavigationSplitView` (which allows the user to collapse the sidebar by dragging the divider)
-- **Race condition prevention:** State is set synchronously (`.loadingModel` or `.listening`) before the async Task in `startDictation()` to prevent re-entry. `startTask` and `stopTask` track async work; `cancelStop()` cancels both. `modelLoadTask` in `switchModel` is awaited by `startDictation` before proceeding
+- **Race condition prevention:** State is set synchronously (`.loadingModel` or `.listening`) before the async Task in `startDictation()` to prevent re-entry. `startTask` and `stopTask` track async work; `cancelStop()` cancels both and resets `StreamingTranscriber` + `TranscriptionEngine` flight guards. `modelLoadTask` in `switchModel` is awaited by `startDictation` before proceeding
+- **Transcription flight guards:** `TranscriptionEngine` uses `isFinalPending` (blocks new partials synchronously before any await) and `isPartialInFlight` (final waits for in-progress partial). Prevents concurrent provider calls while ensuring the final transcription is never dropped. `reset()` clears all guards to prevent stuck state after Task cancellation
+- **Audio buffer draining:** `appendAudioBuffer()` uses fire-and-forget Tasks to bridge from audio callback thread to actor-isolated `AudioSampleBuffer`. `stopStreaming()` calls `flushAudioBuffer()` (actor serialization barrier) before final transcription to ensure all pending appends complete. Audio engine stops AFTER `stopStreaming()` returns, not before, to avoid losing trailing buffers
 - **Live text subscription:** Created per-session in `startDictation()` and cancelled in `stopDictation()` to ensure it works across multiple sessions
 - **Partial transcription:** Triggered every 1.5 seconds by timer in `StreamingTranscriber` for real-time preview
 - **Silence detection:** Uses audio level threshold (0.05 normalized), starts timer when below, resets when above
@@ -204,13 +218,13 @@ open /Applications/Dictava.app
 - **Non-speech filtering:** `TranscriptionEngine` strips `[...]`, `(...)`, and music symbols via regex before returning text. Catches all Whisper hallucination artifacts without needing a hardcoded list
 - **Voice command toggles:** Disabled commands stored as comma-separated names in `SettingsStore.disabledVoiceCommands`. `VoiceCommandParser` skips disabled commands during processing
 - **Voice command definitions:** Centralized in `VoiceCommandParser.allDefinitions` (static array), used by both the parser and the settings UI
-- **Popover:** `StatusBarPopoverView` is split into private subviews: `PopoverHeaderView`, `PopoverBodyView`, `PopoverRecentView` (hover-to-copy with clipboard icon), `PopoverFooterView` (Settings + Quit with `FooterButtonStyle` hover/press effects). Uses `.preferredContentSize` sizing. Shows permission grant buttons when mic/accessibility not granted
+- **Popover:** `StatusBarPopoverView` is split into private subviews: `PopoverHeaderView`, `PopoverBodyView`, `PopoverRecentView` (hover-to-copy with clipboard icon), `PopoverFooterView` (Settings + Quit with `FooterButtonStyle` hover/press effects). Uses `.preferredContentSize` sizing. Shows permission grant buttons when mic/accessibility not granted. Shows Parakeet download progress bar when downloading, "model required" hint when not downloaded, hides Start button when model isn't ready
 - **Model name migration:** `SettingsStore.migrateModelNameIfNeeded()` runs at launch to fix orphaned model names from older versions
 - **Accessibility reset:** `PermissionManager.requestAccessibility()` runs `tccutil reset` before prompting to clear stale entries from previous builds
 
 ## Stable Baseline
 
-Commit `3e8c852` (v0.5.0) is the last known stable state with all features working: multilingual support, model loading UX, download management, permissions, onboarding. Safe rollback point before multi-provider architectural changes.
+Commit `4b2d4ab` (v0.6.0) is the last known stable state with all features working: multi-provider (Parakeet + WhisperKit), download progress, popover model status, transcription race condition fixes. Previous stable: `3e8c852` (v0.5.0).
 
 ## Versioning & Releases
 
@@ -267,6 +281,7 @@ The tag push triggers `.github/workflows/release.yml` which:
 | Custom vocabulary | `~/Library/Application Support/Dictava/vocabulary.json` | JSON |
 | Transcription history | `~/Library/Application Support/Dictava/transcription_logs.json` | JSON |
 | Whisper models | `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/` | CoreML |
+| Parakeet model | `AsrModels.defaultCacheDirectory(for: .v3)` (FluidAudio SDK managed) | CoreML (~470 MB) |
 
 ## Platform Constraints
 
