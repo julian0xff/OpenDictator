@@ -8,9 +8,12 @@ final class StatusBarController: NSObject {
     private var popover: NSPopover
     private var cancellables = Set<AnyCancellable>()
     private var eventMonitor: Any?
+    private let fluidAudioModelManager: FluidAudioModelManager
+    private var currentDictationState: DictationState = .idle
 
     init(dictationSession: DictationSession, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, settingsStore: SettingsStore, transcriptionLogStore: TranscriptionLogStore) {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        self.fluidAudioModelManager = fluidAudioModelManager
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         popover = NSPopover()
 
         super.init()
@@ -33,13 +36,22 @@ final class StatusBarController: NSObject {
             button.target = self
         }
 
-        updateIcon(for: .idle)
+        updateIcon()
 
         // Update icon based on dictation state
         dictationSession.$state
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.updateIcon(for: state)
+                self?.currentDictationState = state
+                self?.updateIcon()
+            }
+            .store(in: &cancellables)
+
+        // Update icon when download state changes (blue waveform while downloading)
+        fluidAudioModelManager.$isDownloading
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateIcon()
             }
             .store(in: &cancellables)
     }
@@ -63,42 +75,50 @@ final class StatusBarController: NSObject {
         eventMonitor = nil
     }
 
-    private func updateIcon(for state: DictationState) {
+    private func updateIcon() {
         guard let button = statusItem.button else { return }
+        let state = currentDictationState
 
+        // Downloading: blue waveform
+        if fluidAudioModelManager.isDownloading && state == .idle {
+            let icon = NSImage(named: "MenuBarIconBlue")
+            icon?.isTemplate = false
+            button.image = icon
+            return
+        }
+
+        // Listening: red waveform
+        if state == .listening {
+            let icon = NSImage(named: "MenuBarIconRed")
+            icon?.isTemplate = false
+            button.image = icon
+            return
+        }
+
+        // Idle: black waveform (template — auto-inverts for dark/light mode)
         if state == .idle {
-            let icon = NSImage(named: "MenuBarIcon")
-                ?? NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Dictava")
+            let icon = NSImage(named: "MenuBarIconBlack")
             icon?.isTemplate = true
             button.image = icon
             return
         }
 
+        // Transient states: SF Symbols
         let symbolName: String
         switch state {
         case .loadingModel:
             symbolName = "arrow.down.circle"
-        case .listening:
-            symbolName = "mic.badge.plus"
         case .transcribing, .processing:
             symbolName = "text.bubble.fill"
         case .injecting:
             symbolName = "keyboard.fill"
         case .executingCommand:
             symbolName = "command"
-        case .idle:
+        case .idle, .listening:
             return // handled above
         }
-
-        if state == .listening {
-            let config = NSImage.SymbolConfiguration(paletteColors: [.systemRed])
-            button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: state.displayText)?
-                .withSymbolConfiguration(config)
-            button.image?.isTemplate = false
-        } else {
-            button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: state.displayText)
-            button.image?.isTemplate = true
-        }
+        button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: state.displayText)
+        button.image?.isTemplate = true
     }
 }
 
