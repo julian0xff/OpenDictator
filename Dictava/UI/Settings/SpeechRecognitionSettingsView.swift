@@ -6,6 +6,7 @@ struct SpeechRecognitionSettingsView: View {
     @EnvironmentObject var dictationSession: DictationSession
 
     var body: some View {
+        ScrollView {
         Form {
             Section {
                 Text("Models run locally on your Mac using CoreML. Larger models are more accurate but slower.")
@@ -50,6 +51,7 @@ struct SpeechRecognitionSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        }
     }
 }
 

@@ -91,7 +91,6 @@ struct HistoryView: View {
             }
             .searchable(text: $searchText, prompt: "Search transcriptions")
         }
-        .frame(minWidth: 500, minHeight: 400)
         .onAppear {
             NSApp.activate(ignoringOtherApps: true)
         }

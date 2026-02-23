@@ -1,7 +1,9 @@
 import SwiftUI
+import PhosphorSwift
 
 enum SettingsSection: String, CaseIterable, Identifiable {
     case general
+    case appearance
     case speechRecognition
     case textProcessing
     case snippets
@@ -14,6 +16,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .general: return "General"
+        case .appearance: return "Appearance"
         case .speechRecognition: return "Speech Recognition"
         case .textProcessing: return "Text Processing"
         case .snippets: return "Snippets"
@@ -23,21 +26,22 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    var icon: String {
+    var icon: Image {
         switch self {
-        case .general: return "gear"
-        case .speechRecognition: return "waveform"
-        case .textProcessing: return "textformat.abc"
-        case .snippets: return "text.badge.plus"
-        case .commands: return "command"
-        case .history: return "chart.bar.fill"
-        case .advanced: return "slider.horizontal.3"
+        case .general: return Ph.gear.duotone
+        case .appearance: return Ph.palette.duotone
+        case .speechRecognition: return Ph.waveform.duotone
+        case .textProcessing: return Ph.textAa.duotone
+        case .snippets: return Ph.notePencil.duotone
+        case .commands: return Ph.command.duotone
+        case .history: return Ph.chartBar.duotone
+        case .advanced: return Ph.faders.duotone
         }
     }
 
     var group: SettingsSectionGroup {
         switch self {
-        case .general: return .top
+        case .general, .appearance: return .top
         case .speechRecognition, .textProcessing: return .speechAndText
         case .snippets, .commands: return .automation
         case .history, .advanced: return .bottom
@@ -69,7 +73,7 @@ struct SettingsView: View {
     @EnvironmentObject var snippetStore: SnippetStore
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             List(selection: $selectedSection) {
                 ForEach(SettingsSectionGroup.allCases, id: \.self) { group in
                     if let title = group.title {
@@ -88,14 +92,12 @@ struct SettingsView: View {
                 }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 220)
-        } detail: {
+            .frame(width: 220)
+
             detailView
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 720, height: 480)
-        .onAppear {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        .frame(minWidth: 720, minHeight: 480)
     }
 
     @ViewBuilder
@@ -103,6 +105,8 @@ struct SettingsView: View {
         switch selectedSection {
         case .general:
             GeneralSettingsView()
+        case .appearance:
+            AppearanceSettingsView()
         case .speechRecognition:
             SpeechRecognitionSettingsView()
         case .textProcessing:
@@ -122,7 +126,7 @@ struct SettingsView: View {
     private func sidebarLabel(for section: SettingsSection) -> some View {
         if section == .snippets && !snippetStore.snippets.isEmpty {
             HStack {
-                Label(section.title, systemImage: section.icon)
+                Label { Text(section.title) } icon: { section.icon.frame(width: 18, height: 18) }
                 Spacer()
                 Text("\(snippetStore.snippets.count)")
                     .font(.caption2)
@@ -133,7 +137,7 @@ struct SettingsView: View {
                     .clipShape(Capsule())
             }
         } else {
-            Label(section.title, systemImage: section.icon)
+            Label { Text(section.title) } icon: { section.icon.frame(width: 18, height: 18) }
         }
     }
 }

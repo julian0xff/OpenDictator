@@ -16,6 +16,13 @@ final class SettingsStore: ObservableObject {
     @AppStorage("showDockIcon") var showDockIcon = false
     @AppStorage("disabledVoiceCommands") var disabledVoiceCommands = ""
 
+    // Theme
+    @AppStorage("indicatorThemeName") var indicatorThemeName = "system"
+
+    func currentIndicatorTheme(isDarkMode: Bool, customThemes: [IndicatorTheme] = []) -> IndicatorTheme {
+        IndicatorTheme.resolve(id: indicatorThemeName, isDarkMode: isDarkMode, customThemes: customThemes)
+    }
+
     func isVoiceCommandEnabled(_ name: String) -> Bool {
         !disabledVoiceCommands.split(separator: ",").contains(Substring(name))
     }

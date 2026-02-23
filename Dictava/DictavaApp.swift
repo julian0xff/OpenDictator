@@ -6,20 +6,15 @@ struct DictavaApp: App {
 
     var body: some Scene {
         Settings {
-            SettingsView()
-                .environmentObject(appDelegate.dictationSession)
-                .environmentObject(appDelegate.modelManager)
-                .environmentObject(appDelegate.settingsStore)
-                .environmentObject(appDelegate.snippetStore)
-                .environmentObject(appDelegate.vocabularyStore)
-                .environmentObject(appDelegate.transcriptionLogStore)
+            EmptyView()
         }
-        .defaultSize(width: 720, height: 480)
-
-        Window("Dictation History", id: "history") {
-            HistoryView()
-                .environmentObject(appDelegate.transcriptionLogStore)
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings...") {
+                    appDelegate.openSettingsWindow()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
-        .defaultSize(width: 700, height: 600)
     }
 }

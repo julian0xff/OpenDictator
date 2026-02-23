@@ -43,6 +43,17 @@ final class DictationSession: ObservableObject {
         textPipeline.addProcessor(CustomVocabulary(vocabularyStore: vocabularyStore))
         textPipeline.addProcessor(LLMProcessor())
 
+        // Clear microphone error when permission is granted
+        PermissionManager.shared.$microphoneStatus
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let self, status == .granted else { return }
+                if self.error == "Microphone permission not granted" {
+                    self.error = nil
+                }
+            }
+            .store(in: &cancellables)
+
         // Forward audio levels for UI visualization
         audioEngine.$audioLevel
             .receive(on: DispatchQueue.main)

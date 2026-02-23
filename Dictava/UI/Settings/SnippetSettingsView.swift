@@ -8,6 +8,7 @@ struct SnippetSettingsView: View {
     @State private var editReplacement = ""
 
     var body: some View {
+        ScrollView {
         Form {
             Section {
                 Text("Say a trigger phrase and it will be expanded to the replacement text. Supports {{date}}, {{time}}, and {{clipboard}} variables.")
@@ -76,6 +77,7 @@ struct SnippetSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        }
         .sheet(isPresented: $isEditing) {
             SnippetEditorSheet(
                 trigger: $editTrigger,

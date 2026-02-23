@@ -22,6 +22,7 @@
 		2581A72E2585FD0B67387397 /* DictationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20CDF900DF97A6261574F336 /* DictationState.swift */; };
 		2A7F9A944F0CC24E1CAED41D /* CustomVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08415F23D6473C9F994302CC /* CustomVocabulary.swift */; };
 		2D76C5A8C95C0BE9C2B02A7E /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */; };
+		2DFF87B86AA59B06AB546ABE /* PhosphorSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 1E3C17ECBF729E542975C863 /* PhosphorSwift */; };
 		2EE64F235C621F7D99EB36E8 /* FillerWordFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */; };
 		301C58ED73878474BFF4F698 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2004F7447FFD231B4CFB2FD9 /* AppDelegate.swift */; };
 		3070E955C588F682A0C2AC6D /* DictationIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */; };
@@ -34,6 +35,7 @@
 		3D8264AD46EBB77122A8944F /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 04A058B8425217ACE2AE3030 /* WhisperKit */; };
 		43C201DEA2B93D69365130E5 /* FillerWordFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */; };
 		442CF2539DEE4A1C9A2EDD89 /* LLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80AA0B3B29E4040B4C5CE316 /* LLMProcessor.swift */; };
+		44784F3B0FE75F194F872FDF /* PhosphorSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 06C32697677E340E99554C8B /* PhosphorSwift */; };
 		46E0FB86B634ED403FE917F4 /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D50C477267EB8588340623C /* TranscriptionEngine.swift */; };
 		4878F6CEADA1C030CF8A0AA2 /* TextProcessingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE9827E8762F1E55592834F7 /* TextProcessingSettingsView.swift */; };
 		51E722B58EFF46E5A5C41DBB /* TextPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3137E44A43DC69AC14FACF30 /* TextPipeline.swift */; };
@@ -47,9 +49,12 @@
 		750AA6E809DBBFE08758072A /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766D8FEFF28A6A543C7C5169 /* ModelManager.swift */; };
 		7C7DF7535A7AF593C613696D /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766D8FEFF28A6A543C7C5169 /* ModelManager.swift */; };
 		7CBB9083BDC90F0BBCD42F33 /* VoiceCommandParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD27F978B46CCD37A1FEBAD /* VoiceCommandParser.swift */; };
+		7F8BC5D5B8F404B71CC0A9CE /* IndicatorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D19CE416A61C5AD8AD15CA3 /* IndicatorTheme.swift */; };
 		80DABB15E1AE572D0C1196C2 /* DictationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF116476811FC7227E9C87A4 /* DictationSession.swift */; };
+		84813F5ED9EE3D8F7686D0F0 /* AppearanceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FDB290A2377D4C362AE1FDF /* AppearanceSettingsView.swift */; };
 		8845B1054F5F907ED8C96465 /* VoiceCommandExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CC63CBAD70A444F1FEDDDE /* VoiceCommandExecutor.swift */; };
 		8ABA4F78B0B3152BAC09951E /* SnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF2234116CD7B5C603509FC /* SnippetStore.swift */; };
+		8D62A9361BFF1B2351B74F0D /* IndicatorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D19CE416A61C5AD8AD15CA3 /* IndicatorTheme.swift */; };
 		8DB224067189C61227D5FC84 /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */; };
 		8E6C60206DF46D59068D09D7 /* VoiceCommandSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C95F7C49106781B6F7A1FE /* VoiceCommandSettingsView.swift */; };
 		8F12D07FCDDDDB2BFDE2A4C4 /* TranscriptionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */; };
@@ -82,11 +87,14 @@
 		E6DFF1A7D91061B326652B81 /* VocabularyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */; };
 		E79BF0DDA63AB3DB30B15D0D /* DictationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF116476811FC7227E9C87A4 /* DictationSession.swift */; };
 		EABE2A46AC3C71F2BD6E94E1 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB9907E0419A361C87AA53C3 /* SettingsStore.swift */; };
+		EE81E6390E1A1013D67ABACC /* CustomThemeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3FA80D52497A79E64378F4F /* CustomThemeStore.swift */; };
 		F042111F24EF22D864D3BEF7 /* DictavaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C0B3D32DDE6577A293F812 /* DictavaApp.swift */; };
 		F112F00A41939A66020DF02F /* SnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */; };
 		F8501E689E7AC84BF2F2B4F2 /* DictationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20CDF900DF97A6261574F336 /* DictationState.swift */; };
+		F89FFB8382E05DCD75DBE940 /* CustomThemeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3FA80D52497A79E64378F4F /* CustomThemeStore.swift */; };
 		F9152371541477F855E0EBF2 /* VocabularyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */; };
 		FC443E565DAD20E152DE03D1 /* TextPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3137E44A43DC69AC14FACF30 /* TextPipeline.swift */; };
+		FF12EA5F60C9221DB5D09FD1 /* AppearanceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FDB290A2377D4C362AE1FDF /* AppearanceSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -108,6 +116,7 @@
 		6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionLog.swift; sourceTree = "<group>"; };
 		6BD3B409B2D0086526AB0CCA /* TranscriptionLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionLogStore.swift; sourceTree = "<group>"; };
 		6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetExpander.swift; sourceTree = "<group>"; };
+		6FDB290A2377D4C362AE1FDF /* AppearanceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceSettingsView.swift; sourceTree = "<group>"; };
 		766D8FEFF28A6A543C7C5169 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
 		7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyStore.swift; sourceTree = "<group>"; };
 		7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -116,10 +125,12 @@
 		880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingTranscriber.swift; sourceTree = "<group>"; };
 		88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FillerWordFilter.swift; sourceTree = "<group>"; };
+		9D19CE416A61C5AD8AD15CA3 /* IndicatorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndicatorTheme.swift; sourceTree = "<group>"; };
 		9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticEventMarker.swift; sourceTree = "<group>"; };
 		AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationIndicatorWindow.swift; sourceTree = "<group>"; };
 		AD972980806897E9246B00FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
+		B3FA80D52497A79E64378F4F /* CustomThemeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomThemeStore.swift; sourceTree = "<group>"; };
 		BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		C56AE2EBCAF070ADC834EDD4 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		D7C95F7C49106781B6F7A1FE /* VoiceCommandSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCommandSettingsView.swift; sourceTree = "<group>"; };
@@ -141,6 +152,7 @@
 				74157C94191B78F457BE4BF4 /* WhisperKit in Frameworks */,
 				D866784B8120D9160CB91ACA /* KeyboardShortcuts in Frameworks */,
 				3A7C0563D5A8DBDB102D1D3D /* Yams in Frameworks */,
+				44784F3B0FE75F194F872FDF /* PhosphorSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +163,7 @@
 				3D8264AD46EBB77122A8944F /* WhisperKit in Frameworks */,
 				DE24F5D2A1950886931C13F4 /* KeyboardShortcuts in Frameworks */,
 				BE3537C0CAE4E3B3EAE5FED3 /* Yams in Frameworks */,
+				2DFF87B86AA59B06AB546ABE /* PhosphorSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,6 +236,7 @@
 			isa = PBXGroup;
 			children = (
 				AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */,
+				6FDB290A2377D4C362AE1FDF /* AppearanceSettingsView.swift */,
 				88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */,
 				464A3455A8BAE5A03D11E51C /* SettingsView.swift */,
 				ED596A1F29C180D97E03FB46 /* SnippetSettingsView.swift */,
@@ -288,6 +302,8 @@
 		D4EEB089781FA1A773724664 /* Storage */ = {
 			isa = PBXGroup;
 			children = (
+				B3FA80D52497A79E64378F4F /* CustomThemeStore.swift */,
+				9D19CE416A61C5AD8AD15CA3 /* IndicatorTheme.swift */,
 				EB9907E0419A361C87AA53C3 /* SettingsStore.swift */,
 				4CF2234116CD7B5C603509FC /* SnippetStore.swift */,
 				6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */,
@@ -352,6 +368,7 @@
 				3F80C839322FA2AA57AC993F /* WhisperKit */,
 				1173387602ED1DF1A719908A /* KeyboardShortcuts */,
 				B2BD654CD310B99ED71CD81E /* Yams */,
+				06C32697677E340E99554C8B /* PhosphorSwift */,
 			);
 			productName = DictavaDev;
 			productReference = 4DBE7E2ECABE160C9BD75565 /* DictavaDev.app */;
@@ -374,6 +391,7 @@
 				04A058B8425217ACE2AE3030 /* WhisperKit */,
 				2369B16221ED520A36788BF7 /* KeyboardShortcuts */,
 				7F9DEB2DA2E94C0C36292209 /* Yams */,
+				1E3C17ECBF729E542975C863 /* PhosphorSwift */,
 			);
 			productName = Dictava;
 			productReference = 20D5EF504D1E5D275E9A468E /* Dictava.app */;
@@ -400,6 +418,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				2D7AA96A2B8E82348A8ECE4B /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				E6A40268A9D5703427EB0B95 /* XCRemoteSwiftPackageReference "swift" */,
 				33095D349F183D7F16987C1C /* XCRemoteSwiftPackageReference "WhisperKit" */,
 				BE21211A721237BE4BE593AA /* XCRemoteSwiftPackageReference "Yams" */,
 			);
@@ -439,7 +458,9 @@
 			files = (
 				8DB224067189C61227D5FC84 /* AdvancedSettingsView.swift in Sources */,
 				A9D00BF29069B134C97C725B /* AppDelegate.swift in Sources */,
+				84813F5ED9EE3D8F7686D0F0 /* AppearanceSettingsView.swift in Sources */,
 				5ED35F13B4CEDB7672BF3BE7 /* AudioCaptureEngine.swift in Sources */,
+				F89FFB8382E05DCD75DBE940 /* CustomThemeStore.swift in Sources */,
 				256730F85BE0F8194FDF8E26 /* CustomVocabulary.swift in Sources */,
 				05E3C47AF70B9706B40443B4 /* DictationIndicatorWindow.swift in Sources */,
 				E79BF0DDA63AB3DB30B15D0D /* DictationSession.swift in Sources */,
@@ -449,6 +470,7 @@
 				940E9DD3E460F2ECA0DC00A2 /* GeneralSettingsView.swift in Sources */,
 				A28D25F791A3C07A38F924C6 /* HistoryView.swift in Sources */,
 				54946F6A625C8B2679CF8FD1 /* HotkeyManager.swift in Sources */,
+				7F8BC5D5B8F404B71CC0A9CE /* IndicatorTheme.swift in Sources */,
 				442CF2539DEE4A1C9A2EDD89 /* LLMProcessor.swift in Sources */,
 				750AA6E809DBBFE08758072A /* ModelManager.swift in Sources */,
 				2D76C5A8C95C0BE9C2B02A7E /* OnboardingView.swift in Sources */,
@@ -482,7 +504,9 @@
 			files = (
 				31C369A5615793801F8A228F /* AdvancedSettingsView.swift in Sources */,
 				301C58ED73878474BFF4F698 /* AppDelegate.swift in Sources */,
+				FF12EA5F60C9221DB5D09FD1 /* AppearanceSettingsView.swift in Sources */,
 				C40D28FA7F14815B9FE7E01A /* AudioCaptureEngine.swift in Sources */,
+				EE81E6390E1A1013D67ABACC /* CustomThemeStore.swift in Sources */,
 				2A7F9A944F0CC24E1CAED41D /* CustomVocabulary.swift in Sources */,
 				3070E955C588F682A0C2AC6D /* DictationIndicatorWindow.swift in Sources */,
 				80DABB15E1AE572D0C1196C2 /* DictationSession.swift in Sources */,
@@ -492,6 +516,7 @@
 				0C792786701FEF7256B531CA /* GeneralSettingsView.swift in Sources */,
 				35ED92CBFA301B264B401F63 /* HistoryView.swift in Sources */,
 				B5DCF1485B7C394D9A55614D /* HotkeyManager.swift in Sources */,
+				8D62A9361BFF1B2351B74F0D /* IndicatorTheme.swift in Sources */,
 				12AFEDF2610DFAFF87F2E871 /* LLMProcessor.swift in Sources */,
 				7C7DF7535A7AF593C613696D /* ModelManager.swift in Sources */,
 				A67C5943B36546EFE07E9D42 /* OnboardingView.swift in Sources */,
@@ -534,7 +559,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.2.2;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
 				PRODUCT_NAME = Dictava;
 				SDKROOT = macosx;
@@ -588,7 +613,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -612,7 +637,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.2.2;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
 				PRODUCT_NAME = Dictava;
 				SDKROOT = macosx;
@@ -631,7 +656,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.2.2;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
 				PRODUCT_NAME = "Dictava Dev";
 				SDKROOT = macosx;
@@ -650,7 +675,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.2.2;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
 				PRODUCT_NAME = "Dictava Dev";
 				SDKROOT = macosx;
@@ -710,7 +735,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -780,6 +805,14 @@
 				minimumVersion = 5.0.0;
 			};
 		};
+		E6A40268A9D5703427EB0B95 /* XCRemoteSwiftPackageReference "swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/phosphor-icons/swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -788,10 +821,20 @@
 			package = 33095D349F183D7F16987C1C /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
 		};
+		06C32697677E340E99554C8B /* PhosphorSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6A40268A9D5703427EB0B95 /* XCRemoteSwiftPackageReference "swift" */;
+			productName = PhosphorSwift;
+		};
 		1173387602ED1DF1A719908A /* KeyboardShortcuts */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2D7AA96A2B8E82348A8ECE4B /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
 			productName = KeyboardShortcuts;
+		};
+		1E3C17ECBF729E542975C863 /* PhosphorSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6A40268A9D5703427EB0B95 /* XCRemoteSwiftPackageReference "swift" */;
+			productName = PhosphorSwift;
 		};
 		2369B16221ED520A36788BF7 /* KeyboardShortcuts */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -23,7 +23,9 @@ final class StatusBarController: NSObject {
         )
         popover.contentSize = NSSize(width: 300, height: 340)
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: contentView)
+        let hostingController = NSHostingController(rootView: contentView.frame(width: 300))
+        hostingController.sizingOptions = .preferredContentSize
+        popover.contentViewController = hostingController
 
         if let button = statusItem.button {
             button.action = #selector(togglePopover)
@@ -97,149 +99,204 @@ final class StatusBarController: NSObject {
     }
 }
 
+// MARK: - Popover View
+
 struct StatusBarPopoverView: View {
     @ObservedObject var dictationSession: DictationSession
     @ObservedObject var modelManager: ModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var transcriptionLogStore: TranscriptionLogStore
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Dictava")
-                    .font(.headline)
-                Spacer()
-                Text(dictationSession.state.displayText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if dictationSession.state == .listening {
-                AudioLevelBar(level: dictationSession.audioLevel)
-                    .frame(height: 4)
-            }
-
-            if !dictationSession.liveText.isEmpty {
-                Text(dictationSession.liveText)
-                    .font(.system(.body, design: .rounded))
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-                    .background(.quaternary)
-                    .cornerRadius(6)
-            }
-
-            if let error = dictationSession.error {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
-            HStack {
-                Button(dictationSession.state.isActive ? "Stop" : "Start Dictation") {
-                    dictationSession.toggle()
-                }
-                .keyboardShortcut(.defaultAction)
-
-                Spacer()
-
-                if #available(macOS 14.0, *) {
-                    SettingsLink {
-                        Image(systemName: "gear")
-                    }
-                    .buttonStyle(.borderless)
-                } else {
-                    Button {
-                        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                    } label: {
-                        Image(systemName: "gear")
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-
-            HStack {
-                Text("Model: \(modelManager.availableModels.first(where: { $0.name == settingsStore.selectedModelName })?.displayName ?? settingsStore.selectedModelName)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("⌥Space")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if transcriptionLogStore.todayCount() > 0 {
-                let todayTime = transcriptionLogStore.todayListeningTime()
-                Text("\(transcriptionLogStore.todayCount()) dictation\(transcriptionLogStore.todayCount() == 1 ? "" : "s") today · \(formatListeningTime(todayTime)) listening")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+        VStack(spacing: 0) {
+            PopoverHeaderView(state: dictationSession.state)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
 
             Divider()
+
+            PopoverBodyView(
+                dictationSession: dictationSession,
+                modelManager: modelManager,
+                settingsStore: settingsStore
+            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
 
             if dictationSession.state == .idle {
                 let recent = transcriptionLogStore.recentTranscriptions(limit: 3)
                 if !recent.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("RECENT")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-
-                        ForEach(recent) { log in
-                            Button {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(log.text, forType: .string)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Text(relativeTime(log.timestamp))
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 40, alignment: .leading)
-                                    Text(log.text)
-                                        .font(.caption)
-                                        .lineLimit(1)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
                     Divider()
+                    PopoverRecentView(transcriptions: recent)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
                 }
             }
 
-            HStack {
-                Button {
-                    openWindow(id: "history")
-                    NSApp.activate(ignoringOtherApps: true)
-                } label: {
-                    Label("History", systemImage: "chart.bar.fill")
+            Divider()
+
+            PopoverFooterView()
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+        }
+        .animation(.easeInOut(duration: 0.2), value: dictationSession.state)
+    }
+}
+
+// MARK: - Header
+
+private struct PopoverHeaderView: View {
+    let state: DictationState
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("Dictava")
+                .font(.headline)
+                .fontWeight(.semibold)
+
+            Spacer()
+
+            if state == .listening {
+                Circle()
+                    .fill(.red)
+                    .frame(width: 7, height: 7)
+            }
+
+            Text(state.displayText)
+                .font(.caption)
+                .foregroundStyle(state == .listening ? .red : .secondary)
+        }
+    }
+}
+
+// MARK: - Body
+
+private struct PopoverBodyView: View {
+    @ObservedObject var dictationSession: DictationSession
+    @ObservedObject var modelManager: ModelManager
+    @ObservedObject var settingsStore: SettingsStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Error banner
+            if let error = dictationSession.error {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
                         .font(.caption)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                .padding(8)
+                .background(.orange.opacity(0.12))
+                .cornerRadius(6)
+            }
+
+            // Listening: audio bar + live text
+            if dictationSession.state == .listening {
+                AudioLevelBar(level: dictationSession.audioLevel)
+                    .frame(height: 4)
+
+                if !dictationSession.liveText.isEmpty {
+                    Text(dictationSession.liveText)
+                        .font(.system(.body, design: .rounded))
+                        .lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(8)
+                        .background(.quaternary)
+                        .cornerRadius(6)
+                }
+            }
+
+            // Processing states: spinner
+            if dictationSession.state != .idle && dictationSession.state != .listening {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                        .frame(width: 16, height: 16)
+                    Text(dictationSession.state.displayText)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+            }
+
+            // Primary action button + hotkey
+            HStack(spacing: 0) {
+                Button(dictationSession.state.isActive ? "Stop" : "Start Dictation") {
+                    dictationSession.toggle()
+                }
+                .keyboardShortcut(.defaultAction)
+                .tint(dictationSession.state == .listening ? .red : nil)
 
                 Spacer()
 
-                Button("Quit Dictava") {
-                    NSApplication.shared.terminate(nil)
-                }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+                Text("⌥Space")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
+            // Model info (idle only)
+            if dictationSession.state == .idle {
+                let displayName = modelManager.availableModels
+                    .first(where: { $0.name == settingsStore.selectedModelName })?
+                    .displayName ?? settingsStore.selectedModelName
+                Text(displayName)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
         }
-        .padding(14)
-        .animation(.easeInOut(duration: 0.2), value: dictationSession.state)
     }
+}
 
-    private func formatListeningTime(_ seconds: TimeInterval) -> String {
-        if seconds < 60 {
-            return "\(Int(seconds))s"
-        } else {
-            return "\(Int(seconds / 60))m"
+// MARK: - Recent Transcriptions
+
+private struct PopoverRecentView: View {
+    let transcriptions: [TranscriptionLog]
+    @State private var hoveredID: UUID?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("RECENT")
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 6)
+
+            ForEach(transcriptions) { log in
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(log.text, forType: .string)
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(relativeTime(log.timestamp))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 42, alignment: .leading)
+                            .monospacedDigit()
+
+                        Text(log.text)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Image(systemName: "doc.on.doc")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .opacity(hoveredID == log.id ? 1 : 0)
+                    }
+                    .contentShape(Rectangle())
+                    .padding(.vertical, 4)
+                }
+                .buttonStyle(.plain)
+                .onHover { hovered in
+                    hoveredID = hovered ? log.id : nil
+                }
+            }
         }
     }
 
@@ -253,6 +310,55 @@ struct StatusBarPopoverView: View {
         return "\(hours / 24)d ago"
     }
 }
+
+// MARK: - Footer
+
+private struct PopoverFooterView: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                NSApp.sendAction(#selector(AppDelegate.openSettingsWindow), to: nil, from: nil)
+            } label: {
+                Label("Settings...", systemImage: "gear")
+                    .font(.callout)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(FooterButtonStyle())
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Label("Quit", systemImage: "power")
+                    .font(.callout)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(FooterButtonStyle())
+        }
+    }
+}
+
+private struct FooterButtonStyle: ButtonStyle {
+    @State private var isHovered = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isHovered ? .primary : .secondary)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovered ? Color.primary.opacity(0.08) : Color.clear)
+            )
+            .onHover { hovering in
+                isHovered = hovering
+            }
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: isHovered)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Audio Level Bar
 
 struct AudioLevelBar: View {
     let level: Float

@@ -14,6 +14,7 @@ struct TextProcessingSettingsView: View {
     ]
 
     var body: some View {
+        ScrollView {
         Form {
             Section("Automatic Corrections") {
                 Toggle("Remove filler words (um, uh, etc.)", isOn: $settingsStore.removeFillerWords)
@@ -119,6 +120,7 @@ struct TextProcessingSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        }
     }
 
     private func exportVocabulary() {

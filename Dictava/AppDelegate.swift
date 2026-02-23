@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let snippetStore = SnippetStore()
     let vocabularyStore = VocabularyStore()
     let transcriptionLogStore = TranscriptionLogStore()
+    let customThemeStore = CustomThemeStore()
     lazy var dictationSession = DictationSession(
         settingsStore: settingsStore,
         modelManager: modelManager,
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusBarController: StatusBarController?
     private var indicatorWindow: DictationIndicatorWindow?
+    private var settingsWindow: NSWindow?
     private var hasShownOnboarding = false
     private var windowObservers: [NSObjectProtocol] = []
     private var currentPolicy: NSApplication.ActivationPolicy = .accessory
@@ -42,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             transcriptionLogStore: transcriptionLogStore
         )
 
-        indicatorWindow = DictationIndicatorWindow(dictationSession: dictationSession)
+        indicatorWindow = DictationIndicatorWindow(dictationSession: dictationSession, settingsStore: settingsStore, customThemeStore: customThemeStore)
 
         setupHotkey()
         setupWindowObservers()
@@ -119,6 +121,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !settingsStore.hasCompletedOnboarding {
             showOnboarding()
         }
+    }
+
+    @objc func openSettingsWindow() {
+        if let existing = settingsWindow {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let view = SettingsView()
+            .environmentObject(dictationSession)
+            .environmentObject(modelManager)
+            .environmentObject(settingsStore)
+            .environmentObject(snippetStore)
+            .environmentObject(vocabularyStore)
+            .environmentObject(transcriptionLogStore)
+            .environmentObject(customThemeStore)
+
+        let controller = NSHostingController(rootView: view)
+        let window = NSWindow(contentViewController: controller)
+        window.title = "Dictava Settings"
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.minSize = NSSize(width: 720, height: 480)
+        window.maxSize = NSSize(width: 720, height: CGFloat.greatestFiniteMagnitude)
+        window.isReleasedWhenClosed = false
+        window.setContentSize(NSSize(width: 720, height: 480))
+        window.center()
+        window.setFrameAutosaveName("DictavaSettings")
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        settingsWindow = window
     }
 
     func showOnboarding() {

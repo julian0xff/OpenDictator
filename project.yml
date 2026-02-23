@@ -2,14 +2,14 @@ name: Dictava
 options:
   bundleIdPrefix: com.dictava
   deploymentTarget:
-    macOS: "13.0"
+    macOS: "14.0"
   xcodeVersion: "15.0"
   createIntermediateGroups: true
   defaultConfig: Release
 
 settings:
   base:
-    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
     SWIFT_VERSION: "5.9"
     ARCHS: arm64
     VALID_ARCHS: arm64
@@ -25,6 +25,9 @@ packages:
   Yams:
     url: https://github.com/jpsim/Yams
     from: "5.0.0"
+  PhosphorSwift:
+    url: https://github.com/phosphor-icons/swift
+    from: "2.1.0"
 
 targets:
   Dictava:
@@ -49,6 +52,7 @@ targets:
       - package: WhisperKit
       - package: KeyboardShortcuts
       - package: Yams
+      - package: PhosphorSwift
     entitlements:
       path: Dictava/Resources/Dictava.entitlements
   DictavaDev:
@@ -73,5 +77,6 @@ targets:
       - package: WhisperKit
       - package: KeyboardShortcuts
       - package: Yams
+      - package: PhosphorSwift
     entitlements:
       path: Dictava/Resources/Dictava.entitlements
