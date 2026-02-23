@@ -16,9 +16,9 @@ final class StreamingTranscriber: ObservableObject {
         self.transcriptionEngine = transcriptionEngine
     }
 
-    func startStreaming(from audioEngine: AudioCaptureEngine, language: String) {
+    func startStreaming(from audioEngine: AudioCaptureEngine, language: String) async {
         self.language = language
-        transcriptionEngine.reset()
+        await transcriptionEngine.reset()
 
         audioEngine.audioBufferPublisher
             .sink { [weak self] buffer in
@@ -41,9 +41,21 @@ final class StreamingTranscriber: ObservableObject {
         partialTimer?.invalidate()
         partialTimer = nil
 
+        // Drain any in-flight appendAudioBuffer Tasks before reading the buffer
+        await transcriptionEngine.flushAudioBuffer()
+
         let finalText = await transcriptionEngine.transcribe(language: language)
         liveText = ""
         return finalText
+    }
+
+    /// Force-cancel streaming without performing final transcription.
+    /// Used when the user restarts dictation mid-processing.
+    func cancelStreaming() {
+        cancellables.removeAll()
+        partialTimer?.invalidate()
+        partialTimer = nil
+        liveText = ""
     }
 
     private func handleBuffer(_ buffer: AVAudioPCMBuffer) {

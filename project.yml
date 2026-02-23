@@ -19,6 +19,9 @@ packages:
   WhisperKit:
     url: https://github.com/argmaxinc/WhisperKit
     from: "0.9.0"
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio.git
+    from: "0.7.9"
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
     from: "2.0.0"
@@ -50,6 +53,8 @@ targets:
         GENERATE_INFOPLIST_FILE: false
     dependencies:
       - package: WhisperKit
+      - package: FluidAudio
+        product: FluidAudio
       - package: KeyboardShortcuts
       - package: Yams
       - package: PhosphorSwift
@@ -75,6 +80,8 @@ targets:
         GENERATE_INFOPLIST_FILE: false
     dependencies:
       - package: WhisperKit
+      - package: FluidAudio
+        product: FluidAudio
       - package: KeyboardShortcuts
       - package: Yams
       - package: PhosphorSwift

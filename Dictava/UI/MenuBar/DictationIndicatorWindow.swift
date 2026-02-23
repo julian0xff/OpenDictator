@@ -29,6 +29,8 @@ final class DictationIndicatorWindow {
 
     private func show(session: DictationSession) {
         isHiding = false
+        // Cancel any in-progress hide animation immediately
+        panel?.animator().alphaValue = 0
 
         if panel == nil {
             let isDarkMode = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua

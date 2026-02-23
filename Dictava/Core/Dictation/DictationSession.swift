@@ -9,6 +9,7 @@ final class DictationSession: ObservableObject {
     @Published var audioLevel: Float = 0
     @Published var audioLevelHistory: [Float] = Array(repeating: 0, count: 20)
     @Published var lastTranscription: String?
+    @Published var activeProviderDisplayName: String = ""
 
     private var sessionStartTime: Date?
 
@@ -19,8 +20,12 @@ final class DictationSession: ObservableObject {
     private let commandExecutor = VoiceCommandExecutor()
     private let textPipeline: TextPipeline
 
+    private let whisperKitProvider = WhisperKitProvider()
+    private let fluidAudioProvider = FluidAudioProvider()
+
     private let settingsStore: SettingsStore
     private let modelManager: ModelManager
+    private let fluidAudioModelManager: FluidAudioModelManager
     private let transcriptionLogStore: TranscriptionLogStore
 
     private var cancellables = Set<AnyCancellable>()
@@ -32,9 +37,10 @@ final class DictationSession: ObservableObject {
     private var stopTask: Task<Void, Never>?
     private var modelLoadTask: Task<Void, Never>?
 
-    init(settingsStore: SettingsStore, modelManager: ModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore) {
+    init(settingsStore: SettingsStore, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore) {
         self.settingsStore = settingsStore
         self.modelManager = modelManager
+        self.fluidAudioModelManager = fluidAudioModelManager
         self.transcriptionLogStore = transcriptionLogStore
 
         // Build the text processing pipeline
@@ -69,12 +75,116 @@ final class DictationSession: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+
+        // Wire up cross-references for FluidAudio model management
+        fluidAudioModelManager.fluidAudioProvider = fluidAudioProvider
+        fluidAudioProvider.fluidAudioModelManager = fluidAudioModelManager
+
+        // Set provider based on language preference
+        let provider = providerInstance(for: settingsStore.preferredProvider(for: settingsStore.selectedLanguage))
+        transcriptionEngine.setProvider(provider)
+        updateProviderDisplayName()
+
+        // Sync transcription engine state when FluidAudio model is downloaded or deleted
+        fluidAudioModelManager.$isDownloaded
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isDownloaded in
+                guard let self else { return }
+                if !isDownloaded {
+                    // Model was deleted — sync transcription engine state so it doesn't think model is still loaded
+                    if self.transcriptionEngine.activeProviderID == .fluidAudio {
+                        self.transcriptionEngine.unloadModel()
+                    }
+                } else if self.state == .idle {
+                    // Model was downloaded — auto-preload if FluidAudio is active
+                    self.error = nil
+                    let preferred = self.settingsStore.preferredProvider(for: self.settingsStore.selectedLanguage)
+                    if preferred == .fluidAudio && self.transcriptionEngine.activeProviderID == .fluidAudio {
+                        self.modelLoadTask = Task {
+                            do {
+                                try await self.transcriptionEngine.loadModel(named: nil)
+                            } catch {
+                                self.error = "Failed to load Parakeet model: \(error.localizedDescription)"
+                            }
+                            self.updateProviderDisplayName()
+                            self.modelLoadTask = nil
+                        }
+                    }
+                }
+            }
+            .store(in: &cancellables)
+
+        // Clear stale "model not downloaded" error when download starts
+        fluidAudioModelManager.$isDownloading
+            .dropFirst()
+            .filter { $0 }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                if self.error?.contains("not downloaded") == true {
+                    self.error = nil
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    private func providerInstance(for id: ASRProviderID) -> ASRProvider {
+        switch id {
+        case .whisperKit: return whisperKitProvider
+        case .fluidAudio: return fluidAudioProvider
+        }
+    }
+
+    func switchProvider(to providerID: ASRProviderID, modelName: String? = nil) {
+        guard state == .idle else { return }
+
+        modelLoadTask?.cancel()
+
+        // Bug 9: Capture old provider to clear its stale buffer
+        let oldProvider = transcriptionEngine.activeProviderID.map { providerInstance(for: $0) }
+
+        transcriptionEngine.unloadModel()
+
+        let provider = providerInstance(for: providerID)
+        transcriptionEngine.setProvider(provider)
+        updateProviderDisplayName()
+
+        // Don't attempt to load FluidAudio if model isn't downloaded — avoid silent background download
+        if providerID == .fluidAudio && !fluidAudioModelManager.isDownloaded {
+            return
+        }
+
+        let name: String? = providerID == .whisperKit ? (modelName ?? settingsStore.selectedModelName) : nil
+
+        modelLoadTask = Task {
+            // Clear old provider's stale audio buffer before loading new model
+            await oldProvider?.reset()
+            try? await transcriptionEngine.loadModel(named: name)
+            updateProviderDisplayName()
+            modelLoadTask = nil
+        }
     }
 
     func preloadModel() async {
         guard !transcriptionEngine.isModelLoaded else { return }
+
+        // Ensure the correct provider is set
+        let preferred = settingsStore.preferredProvider(for: settingsStore.selectedLanguage)
+        if transcriptionEngine.activeProviderID != preferred {
+            let provider = providerInstance(for: preferred)
+            transcriptionEngine.setProvider(provider)
+        }
+
+        // Don't silently download FluidAudio — require explicit download via Settings
+        if preferred == .fluidAudio && !fluidAudioModelManager.isDownloaded {
+            return
+        }
+
+        let modelName: String? = preferred == .whisperKit ? settingsStore.selectedModelName : nil
         modelLoadTask = Task {
-            try? await transcriptionEngine.loadModel(named: settingsStore.selectedModelName)
+            try? await transcriptionEngine.loadModel(named: modelName)
+            updateProviderDisplayName()
             modelLoadTask = nil
         }
         await modelLoadTask?.value
@@ -85,6 +195,7 @@ final class DictationSession: ObservableObject {
 
         let isDownloaded = modelManager.availableModels.first(where: { $0.name == modelName })?.isDownloaded ?? false
         settingsStore.selectedModelName = modelName
+        updateProviderDisplayName()
 
         guard isDownloaded else { return }  // Don't unload current model if target isn't ready
 
@@ -92,35 +203,57 @@ final class DictationSession: ObservableObject {
         transcriptionEngine.unloadModel()
         modelLoadTask = Task {
             try? await transcriptionEngine.loadModel(named: modelName)
+            updateProviderDisplayName()
             modelLoadTask = nil
         }
     }
 
     func switchLanguage(to languageCode: String) {
+        guard state == .idle else { return }
+
         settingsStore.selectedLanguage = languageCode
 
-        let currentTier = modelManager.tier(for: settingsStore.selectedModelName)
-        let candidates = modelManager.models(for: languageCode)
-
-        // 1. Try same tier, downloaded
-        if let sameTier = candidates.first(where: { $0.tier == currentTier && $0.isDownloaded }) {
-            if sameTier.name != settingsStore.selectedModelName {
-                switchModel(to: sameTier.name)
+        // Check if preferred provider for this language differs from active
+        let preferred = settingsStore.preferredProvider(for: languageCode)
+        if preferred != transcriptionEngine.activeProviderID {
+            // Compute the right WhisperKit model name BEFORE switching provider
+            var modelName: String? = nil
+            if preferred == .whisperKit {
+                let currentTier = modelManager.tier(for: settingsStore.selectedModelName)
+                if let downloaded = modelManager.bestDownloadedModel(for: languageCode) {
+                    modelName = downloaded
+                } else {
+                    modelName = modelManager.bestModel(tier: currentTier, for: languageCode)
+                }
+                settingsStore.selectedModelName = modelName!
             }
+            switchProvider(to: preferred, modelName: modelName)
             return
         }
 
-        // 2. Fall back to smallest downloaded model for new language
-        if let fallback = modelManager.bestDownloadedModel(for: languageCode) {
-            if fallback != settingsStore.selectedModelName {
-                switchModel(to: fallback)
-            }
-            return
-        }
+        // Same provider — if WhisperKit, handle model selection
+        if preferred == .whisperKit {
+            let currentTier = modelManager.tier(for: settingsStore.selectedModelName)
+            let candidates = modelManager.models(for: languageCode)
 
-        // 3. Nothing downloaded for this language — update setting only
-        let newModelName = modelManager.bestModel(tier: currentTier, for: languageCode)
-        settingsStore.selectedModelName = newModelName
+            if let sameTier = candidates.first(where: { $0.tier == currentTier && $0.isDownloaded }) {
+                if sameTier.name != settingsStore.selectedModelName {
+                    switchModel(to: sameTier.name)
+                }
+                return
+            }
+
+            if let fallback = modelManager.bestDownloadedModel(for: languageCode) {
+                if fallback != settingsStore.selectedModelName {
+                    switchModel(to: fallback)
+                }
+                return
+            }
+
+            let newModelName = modelManager.bestModel(tier: currentTier, for: languageCode)
+            settingsStore.selectedModelName = newModelName
+        }
+        // FluidAudio staying on FluidAudio — no model switch needed
     }
 
     func toggle() {
@@ -140,7 +273,9 @@ final class DictationSession: ObservableObject {
         stopTask?.cancel()
         stopTask = nil
         audioEngine.stopCapturing()
+        streamingTranscriber.cancelStreaming()
         liveText = ""
+        audioLevelHistory = Array(repeating: 0, count: 20)
         liveTextCancellable = nil
         sessionStartTime = nil
         state = .idle
@@ -151,9 +286,15 @@ final class DictationSession: ObservableObject {
 
         error = nil
         liveText = ""
+        audioLevelHistory = Array(repeating: 0, count: 20)
 
         guard PermissionManager.shared.microphoneStatus == .granted else {
             error = "Microphone permission not granted"
+            return
+        }
+
+        if transcriptionEngine.activeProviderID == .fluidAudio && !fluidAudioModelManager.isDownloaded {
+            error = "Parakeet model not downloaded. Download it in Settings → Speech Recognition."
             return
         }
 
@@ -167,9 +308,15 @@ final class DictationSession: ObservableObject {
             }
 
         // Check if model is ready right now
-        let modelReady = modelLoadTask == nil
-            && transcriptionEngine.isModelLoaded
-            && transcriptionEngine.loadedModelName == settingsStore.selectedModelName
+        let isFluidAudio = transcriptionEngine.activeProviderID == .fluidAudio
+        let modelReady: Bool
+        if isFluidAudio {
+            modelReady = modelLoadTask == nil && transcriptionEngine.isModelLoaded
+        } else {
+            modelReady = modelLoadTask == nil
+                && transcriptionEngine.isModelLoaded
+                && transcriptionEngine.loadedModelName == settingsStore.selectedModelName
+        }
 
         state = modelReady ? .listening : .loadingModel
 
@@ -181,14 +328,21 @@ final class DictationSession: ObservableObject {
             guard !Task.isCancelled else { cleanup(); return }
 
             // Ensure correct model is loaded
-            let needsLoad = !transcriptionEngine.isModelLoaded
-                || transcriptionEngine.loadedModelName != settingsStore.selectedModelName
+            let needsLoad: Bool
+            if transcriptionEngine.activeProviderID == .fluidAudio {
+                needsLoad = !transcriptionEngine.isModelLoaded
+            } else {
+                needsLoad = !transcriptionEngine.isModelLoaded
+                    || transcriptionEngine.loadedModelName != settingsStore.selectedModelName
+            }
             if needsLoad {
                 if transcriptionEngine.isModelLoaded {
                     transcriptionEngine.unloadModel()
                 }
                 do {
-                    try await transcriptionEngine.loadModel(named: settingsStore.selectedModelName)
+                    let modelName: String? = transcriptionEngine.activeProviderID == .fluidAudio
+                        ? nil : settingsStore.selectedModelName
+                    try await transcriptionEngine.loadModel(named: modelName)
                 } catch {
                     self.error = "Failed to load model: \(error.localizedDescription)"
                     cleanup()
@@ -202,7 +356,7 @@ final class DictationSession: ObservableObject {
 
             do {
                 try audioEngine.startCapturing()
-                streamingTranscriber.startStreaming(from: audioEngine, language: settingsStore.selectedLanguage)
+                await streamingTranscriber.startStreaming(from: audioEngine, language: settingsStore.selectedLanguage)
 
                 if settingsStore.playStartStopSounds {
                     NSSound(named: "Tink")?.play()
@@ -238,8 +392,8 @@ final class DictationSession: ObservableObject {
         state = .transcribing
 
         stopTask = Task {
-            audioEngine.stopCapturing()
             let rawText = await streamingTranscriber.stopStreaming()
+            audioEngine.stopCapturing()
             liveText = ""
 
             guard !Task.isCancelled else { return }
@@ -301,13 +455,25 @@ final class DictationSession: ObservableObject {
         }
     }
 
+    private func updateProviderDisplayName() {
+        if transcriptionEngine.activeProviderID == .fluidAudio {
+            activeProviderDisplayName = "Parakeet v3"
+        } else {
+            activeProviderDisplayName = modelManager.availableModels
+                .first(where: { $0.name == settingsStore.selectedModelName })?
+                .displayName ?? settingsStore.selectedModelName
+        }
+    }
+
     private func logTranscription(rawText: String, processedText: String, wasVoiceCommand: Bool, voiceCommandName: String?) {
         let duration = sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
+        let modelName = transcriptionEngine.activeProviderID == .fluidAudio
+            ? "parakeet-v3" : settingsStore.selectedModelName
         let entry = TranscriptionLog(
             duration: duration,
             text: processedText,
             rawText: rawText,
-            modelUsed: settingsStore.selectedModelName,
+            modelUsed: modelName,
             wasVoiceCommand: wasVoiceCommand,
             voiceCommandName: voiceCommandName
         )

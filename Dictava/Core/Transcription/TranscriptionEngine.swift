@@ -1,23 +1,5 @@
 import Foundation
-import WhisperKit
 import Combine
-
-/// Thread-safe buffer for collecting audio samples from the audio callback
-private actor AudioSampleBuffer {
-    private var samples: [Float] = []
-
-    func append(_ newSamples: [Float]) {
-        samples.append(contentsOf: newSamples)
-    }
-
-    func getAll() -> [Float] {
-        samples
-    }
-
-    func clear() {
-        samples.removeAll()
-    }
-}
 
 @MainActor
 final class TranscriptionEngine: ObservableObject {
@@ -27,92 +9,89 @@ final class TranscriptionEngine: ObservableObject {
     @Published var confirmedText = ""
     private(set) var loadedModelName: String?
 
-    private var whisperKit: WhisperKit?
-    private let sampleBuffer = AudioSampleBuffer()
+    private var provider: ASRProvider?
+    private nonisolated(unsafe) var appendToProvider: (([Float]) -> Void)?
 
-    func loadModel(named modelName: String) async throws {
-        whisperKit = try await WhisperKit(
-            model: modelName,
-            verbose: false,
-            logLevel: .none
-        )
-        loadedModelName = modelName
-        isModelLoaded = true
+    var activeProviderID: ASRProviderID? {
+        provider?.id
+    }
+
+    func setProvider(_ provider: ASRProvider) {
+        self.provider = provider
+        self.appendToProvider = { samples in provider.appendAudioBuffer(samples) }
+        syncState()
+    }
+
+    func loadModel(named modelName: String? = nil) async throws {
+        guard let provider else { return }
+        try await provider.loadModel(named: modelName)
+        syncState()
     }
 
     func unloadModel() {
-        whisperKit = nil
-        loadedModelName = nil
-        isModelLoaded = false
+        provider?.unloadModel()
+        syncState()
     }
 
     nonisolated func appendAudioBuffer(_ samples: [Float]) {
-        Task {
-            await sampleBuffer.append(samples)
-        }
+        appendToProvider?(samples)
     }
 
-    func transcribe(language: String = "en") async -> String {
-        guard let whisperKit else { return "" }
+    /// Set synchronously before any await — blocks all new partials from starting.
+    private var isFinalPending = false
+    /// True while a partial transcription is awaiting the provider.
+    private var isPartialInFlight = false
 
-        let samples = await sampleBuffer.getAll()
-        guard !samples.isEmpty else { return "" }
+    func transcribe(language: String = "en") async -> String {
+        guard let provider else { return "" }
+
+        // Block new partials immediately (synchronous, before any await).
+        // Any queued timer Tasks that run after this point will see isFinalPending
+        // and skip, so no new partials can sneak in.
+        isFinalPending = true
+        defer { isFinalPending = false }
+
+        // Wait for any in-progress partial to finish
+        while isPartialInFlight {
+            try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
+        }
 
         isTranscribing = true
         defer { isTranscribing = false }
 
-        do {
-            let options = DecodingOptions(language: language)
-            let results = try await whisperKit.transcribe(audioArray: samples, decodeOptions: options)
-            let rawText = results.map { $0.text }.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-            let text = Self.stripNonSpeechAnnotations(rawText)
-            guard !text.isEmpty else { return "" }
-            confirmedText = text
-            return text
-        } catch {
-            print("Transcription error: \(error)")
-            return ""
-        }
+        let text = await provider.transcribe(language: language)
+        guard !text.isEmpty else { return "" }
+        confirmedText = text
+        return text
     }
 
     func transcribePartial(language: String = "en") async {
-        guard let whisperKit else { return }
+        guard let provider else { return }
+        guard !isPartialInFlight && !isFinalPending else { return }
 
-        let samples = await sampleBuffer.getAll()
-        guard !samples.isEmpty else { return }
+        isPartialInFlight = true
+        defer { isPartialInFlight = false }
 
-        do {
-            let options = DecodingOptions(language: language)
-            let results = try await whisperKit.transcribe(audioArray: samples, decodeOptions: options)
-            let rawText = results.map { $0.text }.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-            let text = Self.stripNonSpeechAnnotations(rawText)
-            guard !text.isEmpty else { return }
-            partialText = text
-        } catch {
-            // Partial transcription errors are expected during streaming
-        }
+        let text = await provider.transcribePartial(language: language)
+        guard !text.isEmpty else { return }
+        partialText = text
     }
 
-    /// Strips non-speech annotations that Whisper hallucinates from its training data (YouTube subtitles).
-    /// Matches anything in brackets or parentheses like [Silence], [clears throat], (laughter), [BLANK_AUDIO],
-    /// [music], [applause], [coughing], [sneezing], etc. Real speech never produces bracketed text.
-    /// Also strips music symbols (♪♫♬) that Whisper outputs for background music.
-    private static func stripNonSpeechAnnotations(_ text: String) -> String {
-        var result = text
-        // Remove bracketed annotations: [Silence], [clears throat], [BLANK_AUDIO], etc.
-        result = result.replacingOccurrences(of: #"\[.*?\]"#, with: "", options: .regularExpression)
-        // Remove parenthesized annotations: (laughter), (silence), (music), etc.
-        result = result.replacingOccurrences(of: #"\(.*?\)"#, with: "", options: .regularExpression)
-        // Remove music symbols: ♪, ♫, ♬, ♩, ♭, ♮, ♯
-        result = result.replacingOccurrences(of: #"[♩♪♫♬♭♮♯]+"#, with: "", options: .regularExpression)
-        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    func flushAudioBuffer() async {
+        await provider?.flushAudioBuffer()
     }
 
-    func reset() {
-        Task {
-            await sampleBuffer.clear()
-        }
+    func reset() async {
+        await provider?.reset()
         partialText = ""
         confirmedText = ""
+        isFinalPending = false
+        isPartialInFlight = false
+        isTranscribing = false
+    }
+
+    private func syncState() {
+        isModelLoaded = provider?.isModelLoaded ?? false
+        loadedModelName = provider?.loadedModelName
     }
 }

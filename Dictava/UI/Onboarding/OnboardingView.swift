@@ -75,7 +75,7 @@ struct OnboardingView: View {
                 FeatureRow(icon: "mic.fill", text: "Press a hotkey and speak")
                 FeatureRow(icon: "text.cursor", text: "Text appears at your cursor in any app")
                 FeatureRow(icon: "lock.shield", text: "100% local, 100% private")
-                FeatureRow(icon: "bolt.fill", text: "Powered by WhisperKit + Apple Silicon")
+                FeatureRow(icon: "bolt.fill", text: "Powered by WhisperKit & Parakeet on Apple Silicon")
             }
             .padding(.top)
         }

@@ -9,7 +9,7 @@ final class StatusBarController: NSObject {
     private var cancellables = Set<AnyCancellable>()
     private var eventMonitor: Any?
 
-    init(dictationSession: DictationSession, modelManager: ModelManager, settingsStore: SettingsStore, transcriptionLogStore: TranscriptionLogStore) {
+    init(dictationSession: DictationSession, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, settingsStore: SettingsStore, transcriptionLogStore: TranscriptionLogStore) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         popover = NSPopover()
 
@@ -18,6 +18,7 @@ final class StatusBarController: NSObject {
         let contentView = StatusBarPopoverView(
             dictationSession: dictationSession,
             modelManager: modelManager,
+            fluidAudioModelManager: fluidAudioModelManager,
             settingsStore: settingsStore,
             transcriptionLogStore: transcriptionLogStore
         )
@@ -106,6 +107,7 @@ final class StatusBarController: NSObject {
 struct StatusBarPopoverView: View {
     @ObservedObject var dictationSession: DictationSession
     @ObservedObject var modelManager: ModelManager
+    @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var transcriptionLogStore: TranscriptionLogStore
 
@@ -120,6 +122,7 @@ struct StatusBarPopoverView: View {
             PopoverBodyView(
                 dictationSession: dictationSession,
                 modelManager: modelManager,
+                fluidAudioModelManager: fluidAudioModelManager,
                 settingsStore: settingsStore
             )
             .padding(.horizontal, 14)
@@ -176,13 +179,27 @@ private struct PopoverHeaderView: View {
 private struct PopoverBodyView: View {
     @ObservedObject var dictationSession: DictationSession
     @ObservedObject var modelManager: ModelManager
+    @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject private var permissions = PermissionManager.shared
 
+    private var isFluidAudioActive: Bool {
+        settingsStore.preferredProvider(for: settingsStore.selectedLanguage) == .fluidAudio
+    }
+
+    /// Whether the active provider's model is ready for dictation.
+    private var isModelReady: Bool {
+        if isFluidAudioActive {
+            return fluidAudioModelManager.isDownloaded && !fluidAudioModelManager.isDownloading
+        }
+        return true
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Error banner
-            if let error = dictationSession.error {
+            // Error banner (hide stale "not downloaded" error during download)
+            if let error = dictationSession.error,
+               !(isFluidAudioActive && fluidAudioModelManager.isDownloading) {
                 HStack(alignment: .top, spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
@@ -195,6 +212,33 @@ private struct PopoverBodyView: View {
                 }
                 .padding(8)
                 .background(.orange.opacity(0.12))
+                .cornerRadius(6)
+            }
+
+            // Model download progress
+            if isFluidAudioActive && fluidAudioModelManager.isDownloading {
+                HStack(spacing: 8) {
+                    ProgressView(value: fluidAudioModelManager.downloadProgress, total: 1.0)
+                    Text("\(Int(fluidAudioModelManager.downloadProgress * 100))%")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, alignment: .trailing)
+                }
+                Text("Downloading Parakeet model...")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if isFluidAudioActive && !fluidAudioModelManager.isDownloaded {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.circle")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                    Text("Parakeet model required — download in Settings.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(8)
+                .background(.quaternary)
                 .cornerRadius(6)
             }
 
@@ -228,29 +272,28 @@ private struct PopoverBodyView: View {
             }
 
             if permissions.allPermissionsGranted {
-                // Primary action button + hotkey
-                HStack(spacing: 0) {
-                    Button(dictationSession.state.isActive ? "Stop" : "Start Dictation") {
-                        dictationSession.toggle()
+                if isModelReady {
+                    // Primary action button + hotkey
+                    HStack(spacing: 0) {
+                        Button(dictationSession.state.isActive ? "Stop" : "Start Dictation") {
+                            dictationSession.toggle()
+                        }
+                        .keyboardShortcut(.defaultAction)
+                        .tint(dictationSession.state == .listening ? .red : nil)
+
+                        Spacer()
+
+                        Text("⌥Space")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                     }
-                    .keyboardShortcut(.defaultAction)
-                    .tint(dictationSession.state == .listening ? .red : nil)
 
-                    Spacer()
-
-                    Text("⌥Space")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-
-                // Model info (idle only)
-                if dictationSession.state == .idle {
-                    let displayName = modelManager.availableModels
-                        .first(where: { $0.name == settingsStore.selectedModelName })?
-                        .displayName ?? settingsStore.selectedModelName
-                    Text(displayName)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    // Model info (idle only)
+                    if dictationSession.state == .idle {
+                        Text(dictationSession.activeProviderDisplayName)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
             } else {
                 // Permission buttons

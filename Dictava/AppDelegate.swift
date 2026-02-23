@@ -6,6 +6,7 @@ import KeyboardShortcuts
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
     let modelManager = ModelManager()
+    let fluidAudioModelManager = FluidAudioModelManager()
     let snippetStore = SnippetStore()
     let vocabularyStore = VocabularyStore()
     let transcriptionLogStore = TranscriptionLogStore()
@@ -13,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var dictationSession = DictationSession(
         settingsStore: settingsStore,
         modelManager: modelManager,
+        fluidAudioModelManager: fluidAudioModelManager,
         snippetStore: snippetStore,
         vocabularyStore: vocabularyStore,
         transcriptionLogStore: transcriptionLogStore
@@ -40,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarController = StatusBarController(
             dictationSession: dictationSession,
             modelManager: modelManager,
+            fluidAudioModelManager: fluidAudioModelManager,
             settingsStore: settingsStore,
             transcriptionLogStore: transcriptionLogStore
         )
@@ -136,6 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let view = SettingsView()
             .environmentObject(dictationSession)
             .environmentObject(modelManager)
+            .environmentObject(fluidAudioModelManager)
             .environmentObject(settingsStore)
             .environmentObject(snippetStore)
             .environmentObject(vocabularyStore)
