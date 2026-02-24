@@ -37,7 +37,7 @@ final class DictationSession: ObservableObject {
     private var stopTask: Task<Void, Never>?
     private var modelLoadTask: Task<Void, Never>?
 
-    init(settingsStore: SettingsStore, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore) {
+    init(settingsStore: SettingsStore, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore, customVoiceCommandStore: CustomVoiceCommandStore? = nil) {
         self.settingsStore = settingsStore
         self.modelManager = modelManager
         self.fluidAudioModelManager = fluidAudioModelManager
@@ -45,7 +45,7 @@ final class DictationSession: ObservableObject {
 
         // Build the text processing pipeline
         textPipeline = TextPipeline()
-        textPipeline.addProcessor(VoiceCommandParser(settingsStore: settingsStore))
+        textPipeline.addProcessor(VoiceCommandParser(settingsStore: settingsStore, customVoiceCommandStore: customVoiceCommandStore))
         textPipeline.addProcessor(PunctuationHandler())
         textPipeline.addProcessor(SnippetExpander(snippetStore: snippetStore))
         textPipeline.addProcessor(FillerWordFilter())

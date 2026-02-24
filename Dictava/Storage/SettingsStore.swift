@@ -23,6 +23,9 @@ final class SettingsStore: ObservableObject {
     // Theme
     @AppStorage("indicatorThemeName") var indicatorThemeName = "system"
 
+    // Voice command trigger overrides
+    @AppStorage("voiceCommandTriggerOverrides") var voiceCommandTriggerOverrides = ""
+
     var selectedProviderID: ASRProviderID {
         preferredProvider(for: selectedLanguage)
     }
@@ -73,6 +76,8 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    // MARK: - Voice Command Enable/Disable
+
     func isVoiceCommandEnabled(_ name: String) -> Bool {
         !disabledVoiceCommands.split(separator: ",").contains(Substring(name))
     }
@@ -85,5 +90,46 @@ final class SettingsStore: ObservableObject {
             set.insert(name)
         }
         disabledVoiceCommands = set.joined(separator: ",")
+    }
+
+    // MARK: - Voice Command Trigger Overrides
+
+    /// Returns custom triggers if set, otherwise returns defaults.
+    func effectiveTriggers(for commandName: String, defaults: [String]) -> [String] {
+        if let overrides = parseTriggerOverrides(), let custom = overrides[commandName] {
+            return custom
+        }
+        return defaults
+    }
+
+    /// Stores trigger overrides for a command. Pass nil to reset to defaults.
+    func setTriggerOverrides(_ triggers: [String]?, for commandName: String) {
+        var overrides = parseTriggerOverrides() ?? [:]
+        if let triggers {
+            overrides[commandName] = triggers
+        } else {
+            overrides.removeValue(forKey: commandName)
+        }
+        if overrides.isEmpty {
+            voiceCommandTriggerOverrides = ""
+        } else {
+            if let data = try? JSONEncoder().encode(overrides), let str = String(data: data, encoding: .utf8) {
+                voiceCommandTriggerOverrides = str
+            }
+        }
+    }
+
+    /// Returns true if the command has custom trigger overrides.
+    func hasTriggerOverrides(for commandName: String) -> Bool {
+        parseTriggerOverrides()?[commandName] != nil
+    }
+
+    private func parseTriggerOverrides() -> [String: [String]]? {
+        guard !voiceCommandTriggerOverrides.isEmpty,
+              let data = voiceCommandTriggerOverrides.data(using: .utf8),
+              let dict = try? JSONDecoder().decode([String: [String]].self, from: data) else {
+            return nil
+        }
+        return dict
     }
 }

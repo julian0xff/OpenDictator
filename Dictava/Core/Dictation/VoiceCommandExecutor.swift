@@ -18,6 +18,8 @@ final class VoiceCommandExecutor {
             break // Handled by DictationSession
         case .llmRewrite:
             break // Handled by LLMProcessor in Phase 6
+        case .customTextReplacement:
+            break // Text replacement handled inline by VoiceCommandParser
         }
     }
 
