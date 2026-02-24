@@ -1,5 +1,13 @@
 import SwiftUI
 
+struct PeriodStats {
+    let count: Int
+    let duration: TimeInterval
+    let wordCount: Int
+    let averageWPM: Double
+    let averageSessionDuration: TimeInterval
+}
+
 final class TranscriptionLogStore: ObservableObject {
     @Published var logs: [TranscriptionLog] = []
 
@@ -44,7 +52,24 @@ final class TranscriptionLogStore: ObservableObject {
         save()
     }
 
-    // MARK: - Queries
+    // MARK: - Deletion
+
+    func deleteLog(_ log: TranscriptionLog) {
+        logs.removeAll { $0.id == log.id }
+        save()
+    }
+
+    func deleteLogs(_ ids: Set<UUID>) {
+        logs.removeAll { ids.contains($0.id) }
+        save()
+    }
+
+    func deleteAllLogs() {
+        logs.removeAll()
+        save()
+    }
+
+    // MARK: - Basic Queries
 
     func todayCount() -> Int {
         logs.filter { Calendar.current.isDateInToday($0.timestamp) }.count
@@ -76,6 +101,14 @@ final class TranscriptionLogStore: ObservableObject {
         logs.count
     }
 
+    func totalListeningTime() -> TimeInterval {
+        logs.reduce(0) { $0 + $1.duration }
+    }
+
+    func totalWordCount() -> Int {
+        logs.reduce(0) { $0 + $1.wordCount }
+    }
+
     func recentTranscriptions(limit: Int = 3) -> [TranscriptionLog] {
         Array(logs.filter { !$0.wasVoiceCommand && !$0.text.isEmpty }
             .sorted { $0.timestamp > $1.timestamp }
@@ -87,14 +120,99 @@ final class TranscriptionLogStore: ObservableObject {
             .sorted { $0.timestamp > $1.timestamp }
     }
 
-    func dailyCounts(days: Int = 14) -> [(date: Date, count: Int)] {
+    // MARK: - Aggregate Stats
+
+    func stats(for filteredLogs: [TranscriptionLog]) -> PeriodStats {
+        let count = filteredLogs.count
+        let duration = filteredLogs.reduce(0.0) { $0 + $1.duration }
+        let wordCount = filteredLogs.reduce(0) { $0 + $1.wordCount }
+
+        let avgWPM: Double
+        if duration > 0 {
+            avgWPM = Double(wordCount) / (duration / 60.0)
+        } else {
+            avgWPM = 0
+        }
+
+        let avgSessionDuration = count > 0 ? duration / Double(count) : 0
+
+        return PeriodStats(
+            count: count,
+            duration: duration,
+            wordCount: wordCount,
+            averageWPM: avgWPM,
+            averageSessionDuration: avgSessionDuration
+        )
+    }
+
+    // MARK: - Chart Data
+
+    func dailyCounts(days: Int = 14) -> [(date: Date, count: Int, duration: TimeInterval)] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
 
         return (0..<days).reversed().map { offset in
             let date = calendar.date(byAdding: .day, value: -offset, to: today)!
-            let count = logs.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }.count
-            return (date: date, count: count)
+            let dayLogs = logs.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }
+            let count = dayLogs.count
+            let duration = dayLogs.reduce(0.0) { $0 + $1.duration }
+            return (date: date, count: count, duration: duration)
         }
+    }
+
+    func weeklyCounts(weeks: Int = 8) -> [(date: Date, count: Int, duration: TimeInterval)] {
+        let calendar = Calendar.current
+        let endOfToday = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date()))!
+
+        return (0..<weeks).reversed().map { offset in
+            let weekEnd = calendar.date(byAdding: .weekOfYear, value: -offset, to: endOfToday)!
+            let weekStart = calendar.date(byAdding: .day, value: -7, to: weekEnd)!
+            let weekLogs = logs.filter { $0.timestamp >= weekStart && $0.timestamp < weekEnd }
+            return (date: weekStart, count: weekLogs.count, duration: weekLogs.reduce(0.0) { $0 + $1.duration })
+        }
+    }
+
+    func monthlyCounts(months: Int = 6) -> [(date: Date, count: Int, duration: TimeInterval)] {
+        let calendar = Calendar.current
+        let endOfToday = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date()))!
+
+        return (0..<months).reversed().map { offset in
+            let monthEnd = calendar.date(byAdding: .month, value: -offset, to: endOfToday)!
+            let monthStart = calendar.date(byAdding: .month, value: -1, to: monthEnd)!
+            let monthLogs = logs.filter { $0.timestamp >= monthStart && $0.timestamp < monthEnd }
+            return (date: monthStart, count: monthLogs.count, duration: monthLogs.reduce(0.0) { $0 + $1.duration })
+        }
+    }
+
+    // MARK: - Export
+
+    func exportAsCSV() -> String {
+        var csv = "Timestamp,Duration (s),Text,Raw Text,Words,Characters,Model,Voice Command\n"
+        let sortedLogs = logs.sorted { $0.timestamp > $1.timestamp }
+        let formatter = ISO8601DateFormatter()
+
+        for log in sortedLogs {
+            let text = csvEscape(log.text)
+            let rawText = csvEscape(log.rawText)
+            let model = csvEscape(log.modelUsed)
+            let command = log.wasVoiceCommand ? csvEscape(log.voiceCommandName ?? "yes") : "no"
+            csv += "\(formatter.string(from: log.timestamp)),\(String(format: "%.1f", log.duration)),\"\(text)\",\"\(rawText)\",\(log.wordCount),\(log.characterCount),\"\(model)\",\"\(command)\"\n"
+        }
+        return csv
+    }
+
+    private func csvEscape(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\"", with: "\"\"")
+            .replacingOccurrences(of: "\r\n", with: " ")
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+    }
+
+    func exportAsJSON() -> Data? {
+        let exportEncoder = JSONEncoder()
+        exportEncoder.dateEncodingStrategy = .iso8601
+        exportEncoder.outputFormatting = .prettyPrinted
+        return try? exportEncoder.encode(logs.sorted { $0.timestamp > $1.timestamp })
     }
 }
