@@ -25,9 +25,9 @@ final class StatusBarController: NSObject {
             settingsStore: settingsStore,
             transcriptionLogStore: transcriptionLogStore
         )
-        popover.contentSize = NSSize(width: 300, height: 340)
+        popover.contentSize = NSSize(width: 320, height: 340)
         popover.behavior = .transient
-        let hostingController = NSHostingController(rootView: contentView.frame(width: 300))
+        let hostingController = NSHostingController(rootView: contentView.frame(width: 320))
         hostingController.sizingOptions = .preferredContentSize
         popover.contentViewController = hostingController
 
@@ -35,6 +35,8 @@ final class StatusBarController: NSObject {
             button.action = #selector(togglePopover)
             button.target = self
         }
+
+        NotificationCenter.default.addObserver(self, selector: #selector(popoverDidClose), name: NSPopover.didCloseNotification, object: popover)
 
         updateIcon()
 
@@ -56,6 +58,13 @@ final class StatusBarController: NSObject {
             .store(in: &cancellables)
     }
 
+    @objc private func popoverDidClose() {
+        if let eventMonitor {
+            NSEvent.removeMonitor(eventMonitor)
+        }
+        eventMonitor = nil
+    }
+
     @objc private func togglePopover() {
         if popover.isShown {
             closePopoverAndStopMonitor()
@@ -69,10 +78,6 @@ final class StatusBarController: NSObject {
 
     private func closePopoverAndStopMonitor() {
         popover.performClose(nil)
-        if let eventMonitor {
-            NSEvent.removeMonitor(eventMonitor)
-        }
-        eventMonitor = nil
     }
 
     private func updateIcon() {
@@ -133,9 +138,13 @@ struct StatusBarPopoverView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PopoverHeaderView(state: dictationSession.state)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+            PopoverHeaderView(
+                state: dictationSession.state,
+                languageCode: settingsStore.selectedLanguage,
+                providerName: dictationSession.activeProviderDisplayName
+            )
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
 
             Divider()
 
@@ -145,15 +154,18 @@ struct StatusBarPopoverView: View {
                 fluidAudioModelManager: fluidAudioModelManager,
                 settingsStore: settingsStore
             )
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 16)
             .padding(.vertical, 12)
 
             if dictationSession.state == .idle {
+                QuickStatsView(transcriptionLogStore: transcriptionLogStore)
+                    .padding(.horizontal, 16)
+
                 let recent = transcriptionLogStore.recentTranscriptions(limit: 3)
                 if !recent.isEmpty {
                     Divider()
                     PopoverRecentView(transcriptions: recent)
-                        .padding(.horizontal, 14)
+                        .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                 }
             }
@@ -161,7 +173,7 @@ struct StatusBarPopoverView: View {
             Divider()
 
             PopoverFooterView()
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 16)
                 .padding(.vertical, 10)
         }
         .animation(.easeInOut(duration: 0.2), value: dictationSession.state)
@@ -172,25 +184,60 @@ struct StatusBarPopoverView: View {
 
 private struct PopoverHeaderView: View {
     let state: DictationState
+    let languageCode: String
+    let providerName: String
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text("Dictava")
-                .font(.headline)
-                .fontWeight(.semibold)
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 8) {
+                Text("Dictava")
+                    .font(.headline)
+                    .fontWeight(.semibold)
 
-            Spacer()
+                Spacer()
 
-            if state == .listening {
-                Circle()
-                    .fill(.red)
-                    .frame(width: 7, height: 7)
+                if state == .idle {
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 7, height: 7)
+                    Text(state.displayText)
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                } else if state == .listening {
+                    PulsingDot()
+                    Text(state.displayText)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                } else {
+                    Text(state.displayText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
-            Text(state.displayText)
-                .font(.caption)
-                .foregroundStyle(state == .listening ? .red : .secondary)
+            if state == .idle || state == .listening {
+                let languageName = SupportedLanguage.all.first(where: { $0.code == languageCode })?.name ?? languageCode
+                Text("\(languageName) \u{00B7} \(providerName)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
         }
+    }
+}
+
+private struct PulsingDot: View {
+    @State private var isPulsing = false
+
+    var body: some View {
+        Circle()
+            .fill(.red)
+            .frame(width: 7, height: 7)
+            .opacity(isPulsing ? 0.4 : 1.0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    isPulsing = true
+                }
+            }
     }
 }
 
@@ -262,58 +309,9 @@ private struct PopoverBodyView: View {
                 .cornerRadius(6)
             }
 
-            // Listening: audio bar + live text
-            if dictationSession.state == .listening {
-                AudioLevelBar(level: dictationSession.audioLevel)
-                    .frame(height: 4)
-
-                if !dictationSession.liveText.isEmpty {
-                    Text(dictationSession.liveText)
-                        .font(.system(.body, design: .rounded))
-                        .lineLimit(3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
-                        .background(.quaternary)
-                        .cornerRadius(6)
-                }
-            }
-
-            // Processing states: spinner
-            if dictationSession.state != .idle && dictationSession.state != .listening {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                        .frame(width: 16, height: 16)
-                    Text(dictationSession.state.displayText)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-            }
-
             if permissions.allPermissionsGranted {
                 if isModelReady {
-                    // Primary action button + hotkey
-                    HStack(spacing: 0) {
-                        Button(dictationSession.state.isActive ? "Stop" : "Start Dictation") {
-                            dictationSession.toggle()
-                        }
-                        .keyboardShortcut(.defaultAction)
-                        .tint(dictationSession.state == .listening ? .red : nil)
-
-                        Spacer()
-
-                        Text("⌥Space")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-
-                    // Model info (idle only)
-                    if dictationSession.state == .idle {
-                        Text(dictationSession.activeProviderDisplayName)
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
+                    WaveformHeroView(dictationSession: dictationSession)
                 }
             } else {
                 // Permission buttons
@@ -347,49 +345,173 @@ private struct PopoverBodyView: View {
     }
 }
 
+// MARK: - Waveform Hero
+
+private struct WaveformHeroView: View {
+    @ObservedObject var dictationSession: DictationSession
+
+    var body: some View {
+        Button {
+            dictationSession.toggle()
+        } label: {
+            VStack(spacing: 8) {
+                switch dictationSession.state {
+                case .idle:
+                    AudioWaveformView(
+                        levels: Array(repeating: Float(0.05), count: 20),
+                        color: .secondary.opacity(0.3)
+                    )
+                    .frame(height: 32)
+
+                    Text("\u{2325}Space to dictate")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                case .listening:
+                    AudioWaveformView(
+                        levels: dictationSession.audioLevelHistory,
+                        color: .red
+                    )
+                    .frame(height: 32)
+
+                    if !dictationSession.liveText.isEmpty {
+                        Text(dictationSession.liveText)
+                            .font(.system(.caption, design: .rounded))
+                            .lineLimit(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                default:
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .frame(width: 16, height: 16)
+                        Text(dictationSession.state.displayText)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.quaternary.opacity(0.5))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Quick Stats
+
+private struct QuickStatsView: View {
+    @ObservedObject var transcriptionLogStore: TranscriptionLogStore
+
+    var body: some View {
+        let count = transcriptionLogStore.todayCount()
+        if count > 0 {
+            let duration = transcriptionLogStore.todayListeningTime()
+            Text("Today: \(count) dictation\(count == 1 ? "" : "s") \u{00B7} \(formatCompactDuration(duration))")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 4)
+        }
+    }
+
+    private func formatCompactDuration(_ seconds: TimeInterval) -> String {
+        if seconds < 60 {
+            return "\(Int(seconds))s"
+        } else if seconds < 3600 {
+            let mins = Int(seconds / 60)
+            let secs = Int(seconds.truncatingRemainder(dividingBy: 60))
+            return "\(mins)m \(secs)s"
+        } else {
+            let hours = Int(seconds / 3600)
+            let mins = Int((seconds.truncatingRemainder(dividingBy: 3600)) / 60)
+            return "\(hours)h \(mins)m"
+        }
+    }
+}
+
 // MARK: - Recent Transcriptions
 
 private struct PopoverRecentView: View {
     let transcriptions: [TranscriptionLog]
     @State private var hoveredID: UUID?
+    @State private var copiedID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("RECENT")
-                .font(.caption2)
-                .fontWeight(.semibold)
-                .foregroundStyle(.tertiary)
-                .padding(.bottom, 6)
+            // Header: "Recent" left, "View All →" right
+            HStack {
+                Text("Recent")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.tertiary)
 
-            ForEach(transcriptions) { log in
+                Spacer()
+
                 Button {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(log.text, forType: .string)
+                    NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
                 } label: {
-                    HStack(spacing: 8) {
-                        Text(relativeTime(log.timestamp))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 42, alignment: .leading)
-                            .monospacedDigit()
-
-                        Text(log.text)
-                            .font(.caption)
-                            .lineLimit(1)
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        Image(systemName: "doc.on.doc")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .opacity(hoveredID == log.id ? 1 : 0)
-                    }
-                    .contentShape(Rectangle())
-                    .padding(.vertical, 4)
+                    Text("View All \u{2192}")
+                        .font(.caption2)
+                        .foregroundStyle(.blue)
                 }
                 .buttonStyle(.plain)
-                .onHover { hovered in
-                    hoveredID = hovered ? log.id : nil
+            }
+            .padding(.bottom, 8)
+
+            VStack(spacing: 6) {
+                ForEach(transcriptions) { log in
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(log.text, forType: .string)
+                        copiedID = log.id
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            if copiedID == log.id {
+                                copiedID = nil
+                            }
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(log.text)
+                                .font(.caption)
+                                .lineLimit(2)
+                                .foregroundStyle(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            HStack(spacing: 0) {
+                                Text(relativeTime(log.timestamp))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .monospacedDigit()
+
+                                Spacer()
+
+                                if copiedID == log.id {
+                                    Image(systemName: "checkmark")
+                                        .font(.caption2)
+                                        .foregroundStyle(.green)
+                                } else {
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .opacity(hoveredID == log.id ? 1 : 0)
+                                }
+                            }
+                        }
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(.quaternary.opacity(0.5)))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovered in
+                        hoveredID = hovered ? log.id : nil
+                    }
                 }
             }
         }
@@ -397,12 +519,12 @@ private struct PopoverRecentView: View {
 
     private func relativeTime(_ date: Date) -> String {
         let seconds = Int(Date().timeIntervalSince(date))
-        if seconds < 60 { return "\(seconds)s ago" }
+        if seconds < 60 { return "\(seconds)s" }
         let minutes = seconds / 60
-        if minutes < 60 { return "\(minutes)m ago" }
+        if minutes < 60 { return "\(minutes)m" }
         let hours = minutes / 60
-        if hours < 24 { return "\(hours)h ago" }
-        return "\(hours / 24)d ago"
+        if hours < 24 { return "\(hours)h" }
+        return "\(hours / 24)d"
     }
 }
 
@@ -410,25 +532,37 @@ private struct PopoverRecentView: View {
 
 private struct PopoverFooterView: View {
     var body: some View {
-        HStack(spacing: 8) {
-            Button {
+        HStack(spacing: 12) {
+            footerButton(icon: "gear", label: "Settings", color: .gray) {
                 NSApp.sendAction(#selector(AppDelegate.openSettingsWindow), to: nil, from: nil)
-            } label: {
-                Label("Settings...", systemImage: "gear")
-                    .font(.callout)
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(FooterButtonStyle())
 
-            Button {
-                NSApplication.shared.terminate(nil)
-            } label: {
-                Label("Quit", systemImage: "power")
-                    .font(.callout)
-                    .frame(maxWidth: .infinity)
+            footerButton(icon: "clock.arrow.circlepath", label: "History", color: .indigo) {
+                NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
             }
-            .buttonStyle(FooterButtonStyle())
+
+            footerButton(icon: "power", label: "Quit", color: .red) {
+                NSApplication.shared.terminate(nil)
+            }
         }
+    }
+
+    private func footerButton(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 22)
+                    .background(RoundedRectangle(cornerRadius: 5).fill(color))
+
+                Text(label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(FooterButtonStyle())
     }
 }
 
@@ -437,7 +571,6 @@ private struct FooterButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(isHovered ? .primary : .secondary)
             .padding(.vertical, 6)
             .padding(.horizontal, 8)
             .background(
@@ -450,21 +583,5 @@ private struct FooterButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(.easeOut(duration: 0.15), value: isHovered)
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Audio Level Bar
-
-struct AudioLevelBar: View {
-    let level: Float
-
-    var body: some View {
-        GeometryReader { geometry in
-            RoundedRectangle(cornerRadius: 2)
-                .fill(.green.gradient)
-                .frame(width: geometry.size.width * CGFloat(level))
-        }
-        .background(.quaternary)
-        .cornerRadius(2)
     }
 }
