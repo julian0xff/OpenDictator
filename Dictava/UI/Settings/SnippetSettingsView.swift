@@ -11,9 +11,7 @@ struct SnippetSettingsView: View {
         ScrollView {
         Form {
             Section {
-                Text("Say a trigger phrase and it will be expanded to the replacement text. Supports {{date}}, {{time}}, and {{clipboard}} variables.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                InfoBanner(.tip, "Say a trigger phrase and it will be expanded to the replacement text. Use {{date}}, {{time}}, and {{clipboard}} as template variables.")
 
                 Button {
                     editTrigger = ""
@@ -25,22 +23,24 @@ struct SnippetSettingsView: View {
                 }
 
                 if snippetStore.snippets.isEmpty {
-                    VStack(spacing: 6) {
-                        Text("No snippets yet")
-                            .foregroundStyle(.secondary)
-                        Text("Add a snippet to quickly expand trigger phrases into longer text.")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    EmptyStateView(
+                        icon: "text.badge.plus",
+                        title: "No snippets yet",
+                        message: "Add a snippet to quickly expand trigger phrases into longer text."
+                    )
                 }
 
                 ForEach(snippetStore.snippets) { snippet in
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(snippet.trigger)
-                                .fontWeight(.medium)
+                                .font(.caption.monospaced())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(.blue.opacity(0.1))
+                                .foregroundStyle(.blue)
+                                .clipShape(Capsule())
+
                             Text(snippet.replacement)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -73,7 +73,7 @@ struct SnippetSettingsView: View {
                     .padding(.vertical, 2)
                 }
             } header: {
-                Text("Snippets")
+                SettingsSectionHeader(icon: "text.badge.plus", title: "Snippets", color: .green)
             }
         }
         .formStyle(.grouped)
@@ -105,6 +105,12 @@ struct SnippetEditorSheet: View {
     let onSave: () -> Void
     @Environment(\.dismiss) var dismiss
 
+    private let templateVariables = [
+        ("{{date}}", "Current date"),
+        ("{{time}}", "Current time"),
+        ("{{clipboard}}", "Clipboard contents"),
+    ]
+
     var body: some View {
         VStack(spacing: 16) {
             Text(isNew ? "New Snippet" : "Edit Snippet")
@@ -113,14 +119,32 @@ struct SnippetEditorSheet: View {
             TextField("Trigger phrase", text: $trigger)
                 .textFieldStyle(.roundedBorder)
 
-            Text("Replacement:")
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.caption)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Replacement:")
+                    .font(.caption)
 
-            TextEditor(text: $replacement)
-                .font(.body)
-                .frame(minHeight: 100)
-                .border(.quaternary)
+                TextEditor(text: $replacement)
+                    .font(.body)
+                    .frame(minHeight: 100)
+                    .border(.quaternary)
+
+                HStack(spacing: 6) {
+                    Text("Insert:")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    ForEach(templateVariables, id: \.0) { variable in
+                        Button {
+                            replacement += variable.0
+                        } label: {
+                            Text(variable.0)
+                                .font(.caption2.monospaced())
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.mini)
+                        .help(variable.1)
+                    }
+                }
+            }
 
             HStack {
                 Button("Cancel") { dismiss() }
@@ -132,6 +156,6 @@ struct SnippetEditorSheet: View {
             }
         }
         .padding()
-        .frame(width: 400, height: 300)
+        .frame(width: 400, height: 320)
     }
 }

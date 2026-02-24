@@ -7,64 +7,35 @@ struct TextProcessingSettingsView: View {
     @State private var newMisrecognized = ""
     @State private var newCorrected = ""
 
-    private let llmModels = [
-        ("Llama 3.2 1B (Q4)", "~700 MB", "8 GB+ RAM"),
-        ("Llama 3.2 3B (Q4)", "~2 GB", "16 GB+ RAM"),
-        ("Qwen 3 8B (Q4)", "~5 GB", "32 GB+ RAM"),
-    ]
-
     var body: some View {
         ScrollView {
         Form {
-            Section("Automatic Corrections") {
+            Section {
                 Toggle("Remove filler words (um, uh, etc.)", isOn: $settingsStore.removeFillerWords)
                 Toggle("Auto-capitalize sentences", isOn: $settingsStore.autoCapitalize)
                 Toggle("Smart punctuation", isOn: $settingsStore.autoPunctuation)
-            }
-
-            Section {
-                Toggle("Enable AI text cleanup", isOn: $settingsStore.llmEnabled)
-
-                Text("Uses a local LLM to fix grammar, adjust tone, or shorten text. Triggered by voice commands like \"fix grammar\" or \"make it formal\".")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if settingsStore.llmEnabled {
-                    Text("Coming in a future update")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .padding(8)
-                        .frame(maxWidth: .infinity)
-                        .background(.quaternary)
-                        .cornerRadius(8)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Planned Models")
-                            .font(.subheadline.bold())
-
-                        ForEach(llmModels, id: \.0) { model in
-                            HStack {
-                                Text(model.0)
-                                Spacer()
-                                Text(model.1)
-                                    .foregroundStyle(.secondary)
-                                Text(model.2)
-                                    .foregroundStyle(.secondary)
-                                    .font(.caption)
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-                }
             } header: {
-                Text("AI Cleanup")
+                SettingsSectionHeader(icon: "textformat.abc", title: "Automatic Corrections", color: .blue)
             }
 
             Section {
-                Text("Fix words that Whisper consistently misrecognizes. The misrecognized form will be automatically replaced with the correct form.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Toggle("Enable AI text cleanup", isOn: $settingsStore.llmEnabled)
+                        .disabled(true)
+                    Text("Coming Soon")
+                        .font(.caption2)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(.secondary))
+                }
 
+                InfoBanner(.tip, "AI cleanup will use a local LLM to fix grammar, adjust tone, or shorten text via voice commands like \"fix grammar\" or \"make it formal.\"")
+            } header: {
+                SettingsSectionHeader(icon: "sparkles", title: "AI Cleanup", color: .purple)
+            }
+
+            Section {
                 HStack {
                     TextField("Misrecognized", text: $newMisrecognized)
                         .textFieldStyle(.roundedBorder)
@@ -85,10 +56,11 @@ struct TextProcessingSettingsView: View {
                 }
 
                 if vocabularyStore.entries.isEmpty {
-                    Text("No custom vocabulary entries yet. Add words that Whisper frequently gets wrong.")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .padding(.vertical, 4)
+                    EmptyStateView(
+                        icon: "character.book.closed",
+                        title: "No custom vocabulary",
+                        message: "Add words that Whisper frequently misrecognizes to automatically correct them."
+                    )
                 }
 
                 ForEach(vocabularyStore.entries) { entry in
@@ -108,7 +80,7 @@ struct TextProcessingSettingsView: View {
                 }
             } header: {
                 HStack {
-                    Text("Custom Vocabulary")
+                    SettingsSectionHeader(icon: "character.book.closed", title: "Custom Vocabulary", color: .orange)
                     Spacer()
                     Button("Import") { importVocabulary() }
                         .buttonStyle(.borderless)

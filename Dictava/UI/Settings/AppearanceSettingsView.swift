@@ -45,19 +45,25 @@ struct AppearanceSettingsView: View {
     var body: some View {
         ScrollView {
             Form {
-                Section("Theme") {
+                Section {
                     themeGrid
                     actionButtons
+                } header: {
+                    SettingsSectionHeader(icon: "paintbrush", title: "Theme", color: .pink)
                 }
 
-                Section("Preview") {
+                Section {
                     indicatorPreview
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
+                } header: {
+                    SettingsSectionHeader(icon: "eye", title: "Preview", color: .blue)
                 }
 
-                Section("Customize") {
+                Section {
                     customControls
+                } header: {
+                    SettingsSectionHeader(icon: "slider.horizontal.3", title: "Customize", color: .orange)
                 }
             }
             .formStyle(.grouped)

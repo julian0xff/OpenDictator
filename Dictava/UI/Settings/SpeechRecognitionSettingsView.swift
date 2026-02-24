@@ -44,7 +44,7 @@ struct SpeechRecognitionSettingsView: View {
             )
             .disabled(dictationSession.state != .idle)
         } header: {
-            Text("Language")
+            SettingsSectionHeader(icon: "globe", title: "Language", color: .blue)
         }
     }
 
@@ -72,7 +72,7 @@ struct SpeechRecognitionSettingsView: View {
                 )
             }
         } header: {
-            Text("Speech Engine")
+            SettingsSectionHeader(icon: "cpu", title: "Speech Engine", color: .purple)
         }
     }
 
@@ -85,28 +85,10 @@ struct SpeechRecognitionSettingsView: View {
                 .foregroundStyle(.secondary)
 
             if settingsStore.selectedLanguage == "en" {
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.blue)
-                    Text("Tiny is recommended for English — it's fast and highly accurate. For other languages, switch the language above and use Medium or larger.")
-                        .font(.caption)
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.blue.opacity(0.08))
-                .cornerRadius(8)
+                InfoBanner(.info, "Tiny is recommended for English — it's fast and highly accurate. For other languages, switch the language above and use Medium or larger.")
             } else {
                 let languageName = SupportedLanguage.all.first(where: { $0.code == settingsStore.selectedLanguage })?.name ?? settingsStore.selectedLanguage
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.blue)
-                    Text("For best results in \(languageName), use Medium or larger. Smaller models may produce inaccurate transcriptions for non-English languages.")
-                        .font(.caption)
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.blue.opacity(0.08))
-                .cornerRadius(8)
+                InfoBanner(.info, "For best results in \(languageName), use Medium or larger. Smaller models may produce inaccurate transcriptions for non-English languages.")
             }
 
             let isNonEnglish = settingsStore.selectedLanguage != "en"
@@ -131,7 +113,7 @@ struct SpeechRecognitionSettingsView: View {
                 )
             }
         } header: {
-            Text("Model")
+            SettingsSectionHeader(icon: "arrow.down.circle", title: "Model", color: .green)
         }
     }
 
@@ -216,7 +198,7 @@ struct SpeechRecognitionSettingsView: View {
             }
             .padding(.vertical, 4)
         } header: {
-            Text("Parakeet Model")
+            SettingsSectionHeader(icon: "arrow.down.circle", title: "Parakeet Model", color: .green)
         }
     }
 
@@ -236,7 +218,7 @@ struct SpeechRecognitionSettingsView: View {
                     .frame(width: 30)
             }
         } header: {
-            Text("Silence Detection")
+            SettingsSectionHeader(icon: "waveform.slash", title: "Silence Detection", color: .orange)
         }
     }
 }
@@ -264,12 +246,12 @@ private struct ProviderRow: View {
         }
     }
 
-    private var supportedLanguageFlags: String? {
+    private var supportedLanguages: [(flag: String, name: String)]? {
         guard providerID == .fluidAudio else { return nil }
-        let flags = ProviderCatalog.parakeetLanguages.compactMap { code in
-            SupportedLanguage.all.first(where: { $0.code == code })?.flag
+        return ProviderCatalog.parakeetLanguages.compactMap { code in
+            guard let lang = SupportedLanguage.all.first(where: { $0.code == code }) else { return nil }
+            return (flag: lang.flag, name: lang.name)
         }
-        return flags.joined(separator: " ")
     }
 
     var body: some View {
@@ -298,9 +280,10 @@ private struct ProviderRow: View {
                     Text(description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    if let flags = supportedLanguageFlags {
-                        Text(flags)
+                    if let languages = supportedLanguages {
+                        Text(languages.map { "\($0.flag) \($0.name)" }.joined(separator: ", "))
                             .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
 

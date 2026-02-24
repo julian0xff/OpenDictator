@@ -6,13 +6,16 @@ struct GeneralSettingsView: View {
     @ObservedObject private var permissionManager = PermissionManager.shared
 
     var body: some View {
+        ScrollView {
         Form {
-            Section("Hotkeys") {
+            Section {
                 KeyboardShortcuts.Recorder("Toggle Dictation:", name: .toggleDictation)
                 KeyboardShortcuts.Recorder("Copy Last Transcription:", name: .copyLastTranscription)
+            } header: {
+                SettingsSectionHeader(icon: "keyboard", title: "Hotkeys", color: .blue)
             }
 
-            Section("Behavior") {
+            Section {
                 Toggle("Play start/stop sounds", isOn: $settingsStore.playStartStopSounds)
                 Toggle("Show floating indicator", isOn: $settingsStore.showFloatingIndicator)
                 Toggle("Show dock icon", isOn: $settingsStore.showDockIcon)
@@ -20,11 +23,14 @@ struct GeneralSettingsView: View {
                         (NSApp.delegate as? AppDelegate)?.updateDockIconPolicy()
                     }
                 Toggle("Launch at login", isOn: $settingsStore.launchAtLogin)
+            } header: {
+                SettingsSectionHeader(icon: "gearshape.2", title: "Behavior", color: .purple)
             }
 
-            Section("Permissions") {
+            Section {
                 PermissionStatusRow(
                     title: "Microphone",
+                    description: "Required for voice capture",
                     status: permissionManager.microphoneStatus,
                     action: {
                         Task { await permissionManager.requestMicrophone() }
@@ -32,25 +38,37 @@ struct GeneralSettingsView: View {
                 )
                 PermissionStatusRow(
                     title: "Accessibility",
+                    description: "Required to type text at cursor",
                     status: permissionManager.accessibilityStatus,
                     action: {
                         permissionManager.requestAccessibility()
                     }
                 )
+            } header: {
+                SettingsSectionHeader(icon: "lock.shield", title: "Permissions", color: .green)
             }
         }
         .formStyle(.grouped)
+        }
     }
 }
 
 struct PermissionStatusRow: View {
     let title: String
+    var description: String? = nil
     let status: PermissionStatus
     let action: () -> Void
 
     var body: some View {
         HStack {
-            Text(title)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                if let description {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Spacer()
             switch status {
             case .granted:
