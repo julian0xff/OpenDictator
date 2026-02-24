@@ -33,8 +33,16 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Building version: $VERSION"
 
+      - name: Save Package.resolved
+        run: cp Dictava.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved /tmp/Package.resolved
+
       - name: Generate Xcode project
         run: xcodegen generate
+
+      - name: Restore Package.resolved
+        run: |
+          mkdir -p Dictava.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+          cp /tmp/Package.resolved Dictava.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
       - name: Resolve packages
         run: |
