@@ -20,9 +20,9 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .speechRecognition: return "Speech Recognition"
         case .textProcessing: return "Text Processing"
         case .snippets: return "Snippets"
-        case .commands: return "Commands"
+        case .commands: return "Voice Commands"
         case .history: return "History"
-        case .advanced: return "Advanced"
+        case .advanced: return "About & Data"
         }
     }
 
@@ -36,6 +36,19 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .commands: return Ph.command.duotone
         case .history: return Ph.chartBar.duotone
         case .advanced: return Ph.faders.duotone
+        }
+    }
+
+    var tintColor: Color {
+        switch self {
+        case .general: return .gray
+        case .appearance: return .pink
+        case .speechRecognition: return .blue
+        case .textProcessing: return .orange
+        case .snippets: return .green
+        case .commands: return .yellow
+        case .history: return .indigo
+        case .advanced: return .gray
         }
     }
 
@@ -69,8 +82,13 @@ enum SettingsSectionGroup: String, CaseIterable {
 }
 
 struct SettingsView: View {
-    @State private var selectedSection: SettingsSection = .general
+    @State private var selectedSection: SettingsSection
     @EnvironmentObject var snippetStore: SnippetStore
+    @EnvironmentObject var transcriptionLogStore: TranscriptionLogStore
+
+    init(initialSection: SettingsSection = .general) {
+        _selectedSection = State(initialValue: initialSection)
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -124,20 +142,37 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func sidebarLabel(for section: SettingsSection) -> some View {
-        if section == .snippets && !snippetStore.snippets.isEmpty {
-            HStack {
-                Label { Text(section.title) } icon: { section.icon.frame(width: 18, height: 18) }
-                Spacer()
-                Text("\(snippetStore.snippets.count)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1)
-                    .background(.quaternary)
-                    .clipShape(Capsule())
+        HStack(spacing: 8) {
+            section.icon
+                .frame(width: 14, height: 14)
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(RoundedRectangle(cornerRadius: 6).fill(section.tintColor))
+
+            Text(section.title)
+
+            Spacer()
+
+            if section == .snippets && !snippetStore.snippets.isEmpty {
+                badgeView("\(snippetStore.snippets.count)")
             }
-        } else {
-            Label { Text(section.title) } icon: { section.icon.frame(width: 18, height: 18) }
+
+            if section == .history {
+                let todayCount = transcriptionLogStore.todayCount()
+                if todayCount > 0 {
+                    badgeView("\(todayCount)")
+                }
+            }
         }
+    }
+
+    private func badgeView(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(.quaternary)
+            .clipShape(Capsule())
     }
 }
