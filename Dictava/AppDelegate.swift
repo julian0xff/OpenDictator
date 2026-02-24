@@ -11,13 +11,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let vocabularyStore = VocabularyStore()
     let transcriptionLogStore = TranscriptionLogStore()
     let customThemeStore = CustomThemeStore()
+    let customVoiceCommandStore = CustomVoiceCommandStore()
     lazy var dictationSession = DictationSession(
         settingsStore: settingsStore,
         modelManager: modelManager,
         fluidAudioModelManager: fluidAudioModelManager,
         snippetStore: snippetStore,
         vocabularyStore: vocabularyStore,
-        transcriptionLogStore: transcriptionLogStore
+        transcriptionLogStore: transcriptionLogStore,
+        customVoiceCommandStore: customVoiceCommandStore
     )
 
     private var statusBarController: StatusBarController?
@@ -145,6 +147,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .environmentObject(vocabularyStore)
             .environmentObject(transcriptionLogStore)
             .environmentObject(customThemeStore)
+            .environmentObject(customVoiceCommandStore)
+
+        let controller = NSHostingController(rootView: view)
+        let window = NSWindow(contentViewController: controller)
+        window.title = "Dictava Settings"
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.minSize = NSSize(width: 720, height: 480)
+        window.maxSize = NSSize(width: 720, height: CGFloat.greatestFiniteMagnitude)
+        window.isReleasedWhenClosed = false
+        window.setContentSize(NSSize(width: 720, height: 480))
+        window.center()
+        window.setFrameAutosaveName("DictavaSettings")
+        NSApp.setActivationPolicy(.regular)
+        currentPolicy = .regular
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        settingsWindow = window
+    }
+
+    @objc func openHistoryWindow() {
+        if let existing = settingsWindow {
+            NSApp.setActivationPolicy(.regular)
+            currentPolicy = .regular
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let view = SettingsView(initialSection: .history)
+            .environmentObject(dictationSession)
+            .environmentObject(modelManager)
+            .environmentObject(fluidAudioModelManager)
+            .environmentObject(settingsStore)
+            .environmentObject(snippetStore)
+            .environmentObject(vocabularyStore)
+            .environmentObject(transcriptionLogStore)
+            .environmentObject(customThemeStore)
+            .environmentObject(customVoiceCommandStore)
 
         let controller = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: controller)
