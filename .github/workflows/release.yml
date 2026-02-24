@@ -60,7 +60,8 @@ jobs:
             -destination 'platform=macOS,arch=arm64' \
             CODE_SIGN_IDENTITY="-" \
             MARKETING_VERSION="${{ steps.version.outputs.VERSION }}" \
-            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            EXCLUDED_ARCHS=x86_64
 
       - name: Export app from archive
         run: |
