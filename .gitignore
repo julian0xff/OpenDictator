@@ -9,6 +9,9 @@ DerivedData/
 # SPM
 .build/
 
+# Vendor (reference repos)
+vendor/
+
 # macOS
 .DS_Store
 

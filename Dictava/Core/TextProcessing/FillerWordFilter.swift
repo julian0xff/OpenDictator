@@ -2,7 +2,12 @@ import Foundation
 
 final class FillerWordFilter: TextProcessor {
     let name = "Filler Word Filter"
-    var isEnabled = true
+    private let settingsStore: SettingsStore
+    var isEnabled: Bool { settingsStore.removeFillerWords }
+
+    init(settingsStore: SettingsStore) {
+        self.settingsStore = settingsStore
+    }
 
     private let fillerPatterns: [String] = [
         "\\bum\\b",

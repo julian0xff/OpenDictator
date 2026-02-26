@@ -18,10 +18,32 @@ final class DictationIndicatorWindow {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 guard let self else { return }
-                if state.isActive && self.settingsStore.showFloatingIndicator {
+                if state.isActive && self.settingsStore.showFloatingIndicator && self.settingsStore.indicatorMode == .floating {
                     self.show(session: dictationSession)
                 } else {
                     self.hide()
+                }
+            }
+            .store(in: &cancellables)
+
+        // Resize panel on dictation state changes (e.g. waveform appears/disappears)
+        dictationSession.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.panel != nil, !self.isHiding else { return }
+                DispatchQueue.main.async {
+                    self.resizePanelToFit()
+                }
+            }
+            .store(in: &cancellables)
+
+        // Resize panel when visualization settings change
+        settingsStore.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                guard let self, self.panel != nil else { return }
+                DispatchQueue.main.async {
+                    self.resizePanelToFit()
                 }
             }
             .store(in: &cancellables)
@@ -29,10 +51,17 @@ final class DictationIndicatorWindow {
 
     private func show(session: DictationSession) {
         isHiding = false
-        // Cancel any in-progress hide animation immediately
-        panel?.animator().alphaValue = 0
 
-        if panel == nil {
+        // If already visible, just ensure it's in front and resize
+        if let panel, panel.alphaValue >= 1, !isHiding {
+            panel.orderFront(nil)
+            DispatchQueue.main.async { [weak self] in self?.resizePanelToFit() }
+            return
+        }
+
+        let isFirstShow = (panel == nil)
+
+        if isFirstShow {
             let isDarkMode = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             let contentView = DictationIndicatorView(session: session, settingsStore: settingsStore, customThemeStore: customThemeStore, isDarkMode: isDarkMode)
             let hostingView = NSHostingView(rootView: contentView)
@@ -60,20 +89,32 @@ final class DictationIndicatorWindow {
                 panel.setFrameOrigin(NSPoint(x: x, y: y))
             }
 
+            // Force layout before first show so size is correct
+            hostingView.layoutSubtreeIfNeeded()
+
             self.panel = panel
         }
 
         panel?.alphaValue = 0
         panel?.orderFront(nil)
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.2
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            self.panel?.animator().alphaValue = 1
-        }
 
-        // Resize panel after SwiftUI completes its layout pass for the new state
-        DispatchQueue.main.async { [weak self] in
-            self?.resizePanelToFit()
+        if isFirstShow {
+            // Let SwiftUI render the initial state, then fade in
+            DispatchQueue.main.async { [weak self] in
+                self?.resizePanelToFit()
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.2
+                    context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    self?.panel?.animator().alphaValue = 1
+                }
+            }
+        } else {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                self.panel?.animator().alphaValue = 1
+            }
+            DispatchQueue.main.async { [weak self] in self?.resizePanelToFit() }
         }
     }
 
@@ -91,7 +132,7 @@ final class DictationIndicatorWindow {
     }
 
     private func hide() {
-        guard let panel else { return }
+        guard let panel, !isHiding else { return }
         isHiding = true
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.15
@@ -124,16 +165,7 @@ struct DictationIndicatorView: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
-            stateIcon
-            centerContent
-            if session.state == .listening {
-                AudioWaveformView(levels: session.audioLevelHistory, color: theme.waveformColor)
-                    .frame(width: 80, height: 24)
-            }
-        }
-        .padding(.horizontal, theme.horizontalPadding)
-        .padding(.vertical, theme.verticalPadding)
+        compactView
         .background(
             RoundedRectangle(cornerRadius: theme.cornerRadius)
                 .fill(theme.backgroundColor.opacity(theme.backgroundOpacity))
@@ -144,8 +176,30 @@ struct DictationIndicatorView: View {
         )
         .shadow(color: .black.opacity(0.2), radius: 12, y: 4)
         .fixedSize()
-        .animation(.easeInOut(duration: 0.2), value: session.state)
+        .animation(.easeInOut(duration: 0.3), value: session.state)
     }
+
+    // MARK: - Compact (original pill)
+
+    private var compactView: some View {
+        HStack(spacing: 10) {
+            stateIcon
+            centerContent
+            if session.state == .listening {
+                WaveformVisualizationView(
+                    style: settingsStore.waveformStyle,
+                    level: session.audioLevel,
+                    history: session.audioLevelHistory,
+                    color: theme.waveformColor,
+                    metrics: IndicatorSizeMetrics.metrics(forScale: settingsStore.indicatorScale)
+                )
+            }
+        }
+        .padding(.horizontal, theme.horizontalPadding)
+        .padding(.vertical, theme.verticalPadding)
+    }
+
+    // MARK: - State Icon (compact mode)
 
     @ViewBuilder
     private var stateIcon: some View {
@@ -161,14 +215,12 @@ struct DictationIndicatorView: View {
             Image(systemName: "keyboard.fill")
                 .font(.system(size: 12))
                 .foregroundStyle(theme.textColor)
-        case .executingCommand:
-            Image(systemName: "command")
-                .font(.system(size: 12))
-                .foregroundStyle(theme.textColor)
         case .idle:
             EmptyView()
         }
     }
+
+    // MARK: - Center Content (compact mode)
 
     @ViewBuilder
     private var centerContent: some View {
@@ -191,35 +243,9 @@ struct DictationIndicatorView: View {
             Text("Typing...")
                 .font(.system(.callout, design: .rounded))
                 .foregroundStyle(theme.textColor)
-        case .executingCommand:
-            Text("Executing...")
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(theme.textColor)
         case .idle:
             EmptyView()
         }
     }
 }
 
-// MARK: - Audio Waveform View
-
-struct AudioWaveformView: View {
-    let levels: [Float]
-    var color: Color = .blue
-
-    private let barCount = 20
-    private let barWidth: CGFloat = 3
-    private let barSpacing: CGFloat = 2
-
-    var body: some View {
-        HStack(spacing: barSpacing) {
-            ForEach(0..<barCount, id: \.self) { index in
-                let level = index < levels.count ? CGFloat(levels[index]) : 0
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(color)
-                    .frame(width: barWidth, height: max(2, level * 28))
-                    .animation(.interpolatingSpring(stiffness: 300, damping: 15), value: level)
-            }
-        }
-    }
-}

@@ -110,7 +110,7 @@ final class TranscriptionLogStore: ObservableObject {
     }
 
     func recentTranscriptions(limit: Int = 3) -> [TranscriptionLog] {
-        Array(logs.filter { !$0.wasVoiceCommand && !$0.text.isEmpty }
+        Array(logs.filter { !$0.text.isEmpty }
             .sorted { $0.timestamp > $1.timestamp }
             .prefix(limit))
     }
@@ -187,7 +187,7 @@ final class TranscriptionLogStore: ObservableObject {
     // MARK: - Export
 
     func exportAsCSV() -> String {
-        var csv = "Timestamp,Duration (s),Text,Raw Text,Words,Characters,Model,Voice Command\n"
+        var csv = "Timestamp,Duration (s),Text,Raw Text,Words,Characters,Model\n"
         let sortedLogs = logs.sorted { $0.timestamp > $1.timestamp }
         let formatter = ISO8601DateFormatter()
 
@@ -195,8 +195,7 @@ final class TranscriptionLogStore: ObservableObject {
             let text = csvEscape(log.text)
             let rawText = csvEscape(log.rawText)
             let model = csvEscape(log.modelUsed)
-            let command = log.wasVoiceCommand ? csvEscape(log.voiceCommandName ?? "yes") : "no"
-            csv += "\(formatter.string(from: log.timestamp)),\(String(format: "%.1f", log.duration)),\"\(text)\",\"\(rawText)\",\(log.wordCount),\(log.characterCount),\"\(model)\",\"\(command)\"\n"
+            csv += "\(formatter.string(from: log.timestamp)),\(String(format: "%.1f", log.duration)),\"\(text)\",\"\(rawText)\",\(log.wordCount),\(log.characterCount),\"\(model)\"\n"
         }
         return csv
     }

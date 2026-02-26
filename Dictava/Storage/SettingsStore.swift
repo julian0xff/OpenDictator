@@ -1,6 +1,61 @@
 import SwiftUI
 import Combine
 
+enum IndicatorMode: String, CaseIterable, Identifiable {
+    case floating, notch
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .floating: return "Floating Pill"
+        case .notch: return "Notch"
+        }
+    }
+
+    var sfSymbol: String {
+        switch self {
+        case .floating: return "capsule"
+        case .notch: return "rectangle.topthird.inset.filled"
+        }
+    }
+}
+
+enum NotchAnimationSpeed: String, CaseIterable, Identifiable {
+    case normal, relaxed
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .normal: return "Normal"
+        case .relaxed: return "Relaxed"
+        }
+    }
+}
+
+enum NotchExpansionStyle: String, CaseIterable, Identifiable {
+    case down, horizontal, both
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .down: return "Down"
+        case .horizontal: return "Horizontal"
+        case .both: return "Both"
+        }
+    }
+
+    var sfSymbol: String {
+        switch self {
+        case .down: return "arrow.down.to.line"
+        case .horizontal: return "arrow.left.and.right"
+        case .both: return "arrow.up.left.and.arrow.down.right"
+        }
+    }
+}
+
 final class SettingsStore: ObservableObject {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
     @AppStorage("selectedModelName") var selectedModelName = "openai_whisper-tiny.en"
@@ -15,16 +70,60 @@ final class SettingsStore: ObservableObject {
     @AppStorage("selectedLLMModel") var selectedLLMModel = ""
     @AppStorage("showDockIcon") var showDockIcon = false
     @AppStorage("selectedLanguage") var selectedLanguage = "en"
-    @AppStorage("disabledVoiceCommands") var disabledVoiceCommands = ""
-
     // Provider
     @AppStorage("providerOverrides") var providerOverrides = ""
+
+    // Indicator mode
+    @AppStorage("indicatorMode") var indicatorModeRaw = IndicatorMode.floating.rawValue
+    var indicatorMode: IndicatorMode {
+        get { IndicatorMode(rawValue: indicatorModeRaw) ?? .floating }
+        set { indicatorModeRaw = newValue.rawValue }
+    }
+
+    // Notch expansion style
+    @AppStorage("notchExpansionStyle") var notchExpansionStyleRaw = NotchExpansionStyle.down.rawValue
+    var notchExpansionStyle: NotchExpansionStyle {
+        get { NotchExpansionStyle(rawValue: notchExpansionStyleRaw) ?? .down }
+        set { notchExpansionStyleRaw = newValue.rawValue }
+    }
+
+    // Notch glow color (decoupled from themes)
+    @AppStorage("notchGlowColorHex") var notchGlowColorHex = "#ffffff"
+    var notchGlowColor: Color {
+        get { Color(hex: notchGlowColorHex) }
+        set { notchGlowColorHex = newValue.toHex() }
+    }
+
+    // Notch animation speed
+    @AppStorage("notchAnimationSpeed") var notchAnimationSpeedRaw = NotchAnimationSpeed.normal.rawValue
+    var notchAnimationSpeed: NotchAnimationSpeed {
+        get { NotchAnimationSpeed(rawValue: notchAnimationSpeedRaw) ?? .normal }
+        set { notchAnimationSpeedRaw = newValue.rawValue }
+    }
 
     // Theme
     @AppStorage("indicatorThemeName") var indicatorThemeName = "system"
 
-    // Voice command trigger overrides
-    @AppStorage("voiceCommandTriggerOverrides") var voiceCommandTriggerOverrides = ""
+    // Visualization
+    @AppStorage("waveformStyle") var waveformStyleRaw = WaveformStyle.classicBars.rawValue
+    @AppStorage("indicatorScale") var indicatorScale = 0.5
+
+    var waveformStyle: WaveformStyle {
+        WaveformStyle(rawValue: waveformStyleRaw) ?? .classicBars
+    }
+
+    // Hold to Record
+    @AppStorage("holdToRecordEnabled") var holdToRecordEnabled = false
+    @AppStorage("holdToRecordKeyCode") var holdToRecordKeyCode = 0x0A // § key (kVK_ISO_Section)
+    @AppStorage("holdToRecordKeyName") var holdToRecordKeyName = "§"
+    @Published var holdToRecordTapActive = false
+
+    // Real-time transcription (beta)
+    @AppStorage("realtimeTranscriptionEnabled") var realtimeTranscriptionEnabled = false
+
+    var isRealtimeActive: Bool {
+        realtimeTranscriptionEnabled && selectedProviderID == .fluidAudio
+    }
 
     var selectedProviderID: ASRProviderID {
         preferredProvider(for: selectedLanguage)
@@ -76,60 +175,4 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    // MARK: - Voice Command Enable/Disable
-
-    func isVoiceCommandEnabled(_ name: String) -> Bool {
-        !disabledVoiceCommands.split(separator: ",").contains(Substring(name))
-    }
-
-    func setVoiceCommandEnabled(_ name: String, enabled: Bool) {
-        var set = Set(disabledVoiceCommands.split(separator: ",").map(String.init))
-        if enabled {
-            set.remove(name)
-        } else {
-            set.insert(name)
-        }
-        disabledVoiceCommands = set.joined(separator: ",")
-    }
-
-    // MARK: - Voice Command Trigger Overrides
-
-    /// Returns custom triggers if set, otherwise returns defaults.
-    func effectiveTriggers(for commandName: String, defaults: [String]) -> [String] {
-        if let overrides = parseTriggerOverrides(), let custom = overrides[commandName] {
-            return custom
-        }
-        return defaults
-    }
-
-    /// Stores trigger overrides for a command. Pass nil to reset to defaults.
-    func setTriggerOverrides(_ triggers: [String]?, for commandName: String) {
-        var overrides = parseTriggerOverrides() ?? [:]
-        if let triggers {
-            overrides[commandName] = triggers
-        } else {
-            overrides.removeValue(forKey: commandName)
-        }
-        if overrides.isEmpty {
-            voiceCommandTriggerOverrides = ""
-        } else {
-            if let data = try? JSONEncoder().encode(overrides), let str = String(data: data, encoding: .utf8) {
-                voiceCommandTriggerOverrides = str
-            }
-        }
-    }
-
-    /// Returns true if the command has custom trigger overrides.
-    func hasTriggerOverrides(for commandName: String) -> Bool {
-        parseTriggerOverrides()?[commandName] != nil
-    }
-
-    private func parseTriggerOverrides() -> [String: [String]]? {
-        guard !voiceCommandTriggerOverrides.isEmpty,
-              let data = voiceCommandTriggerOverrides.data(using: .utf8),
-              let dict = try? JSONDecoder().decode([String: [String]].self, from: data) else {
-            return nil
-        }
-        return dict
-    }
 }

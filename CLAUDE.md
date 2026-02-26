@@ -162,7 +162,7 @@ xcodebuild -project Dictava.xcodeproj -scheme Dictava -destination 'platform=mac
 xcodebuild -project Dictava.xcodeproj -scheme DictavaDev -destination 'platform=macOS,arch=arm64' build
 ```
 
-**Requirements:** macOS 14.0+, Apple Silicon (arm64 only), Xcode 15+
+**Requirements:** macOS 14.0+, Apple Silicon (arm64 only), Xcode 26.2+ (Swift 6.2+)
 
 ### Build Targets
 
@@ -176,7 +176,13 @@ xcodebuild -project Dictava.xcodeproj -scheme DictavaDev -destination 'platform=
 ### Deploying to /Applications
 
 ```bash
-# Quit running app, replace, relaunch
+# Build, quit, replace, relaunch — all in one step
+./scripts/deploy.sh
+```
+
+Or manually:
+
+```bash
 osascript -e 'quit app "Dictava"'; sleep 1
 rm -rf /Applications/Dictava.app
 cp -R ~/Library/Developer/Xcode/DerivedData/Dictava-*/Build/Products/Debug/Dictava.app /Applications/Dictava.app
@@ -224,7 +230,7 @@ open /Applications/Dictava.app
 
 ## Stable Baseline
 
-Commit `4b2d4ab` (v0.6.0) is the last known stable state with all features working: multi-provider (Parakeet + WhisperKit), download progress, popover model status, transcription race condition fixes. Previous stable: `3e8c852` (v0.5.0).
+Commit `0fd70f7` (v0.7.0) is the last known stable state with all features working: custom voice commands, trigger overrides, redesigned popover with waveform hero, overhauled history view with charts/export/deletion, polished settings UI with section headers and colored sidebar icons. Previous stable: `4b2d4ab` (v0.6.0).
 
 ## Versioning & Releases
 
@@ -249,10 +255,12 @@ This script:
 5. Pushes commit + tag to origin
 
 The tag push triggers `.github/workflows/release.yml` which:
-1. Builds the app on Apple Silicon CI (`macos-14`)
-2. Creates a DMG (`Dictava-0.4.0.dmg`)
-3. Publishes a GitHub Release with the DMG attached
-4. Triggers the Homebrew tap update at `julian0xff/homebrew-tap`
+1. Builds the app on Apple Silicon CI (`macos-15`, Xcode 26.2)
+2. Saves/restores `Package.resolved` across `xcodegen generate` (xcodegen wipes the xcodeproj)
+3. Archives with `EXCLUDED_ARCHS=x86_64` (FluidAudio's Qwen3 code has a type inference bug on x86_64)
+4. Creates a DMG (`Dictava-0.4.0.dmg`)
+5. Publishes a GitHub Release with the DMG attached
+6. Triggers the Homebrew tap update at `julian0xff/homebrew-tap`
 
 ### Distribution
 

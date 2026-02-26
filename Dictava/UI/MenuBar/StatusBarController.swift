@@ -25,9 +25,8 @@ final class StatusBarController: NSObject {
             settingsStore: settingsStore,
             transcriptionLogStore: transcriptionLogStore
         )
-        popover.contentSize = NSSize(width: 320, height: 340)
         popover.behavior = .transient
-        let hostingController = NSHostingController(rootView: contentView.frame(width: 320))
+        let hostingController = NSHostingController(rootView: contentView.frame(width: 340).frame(minHeight: 280))
         hostingController.sizingOptions = .preferredContentSize
         popover.contentViewController = hostingController
 
@@ -117,8 +116,6 @@ final class StatusBarController: NSObject {
             symbolName = "text.bubble.fill"
         case .injecting:
             symbolName = "keyboard.fill"
-        case .executingCommand:
-            symbolName = "command"
         case .idle, .listening:
             return // handled above
         }
@@ -144,7 +141,7 @@ struct StatusBarPopoverView: View {
                 providerName: dictationSession.activeProviderDisplayName
             )
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
 
             Divider()
 
@@ -160,6 +157,7 @@ struct StatusBarPopoverView: View {
             if dictationSession.state == .idle {
                 QuickStatsView(transcriptionLogStore: transcriptionLogStore)
                     .padding(.horizontal, 16)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
 
                 let recent = transcriptionLogStore.recentTranscriptions(limit: 3)
                 if !recent.isEmpty {
@@ -167,6 +165,7 @@ struct StatusBarPopoverView: View {
                     PopoverRecentView(transcriptions: recent)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
 
@@ -176,7 +175,52 @@ struct StatusBarPopoverView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
         }
-        .animation(.easeInOut(duration: 0.2), value: dictationSession.state)
+        .animation(.smooth(duration: 0.25), value: dictationSession.state)
+    }
+}
+
+// MARK: - Status Pill
+
+private struct StatusPillView: View {
+    let state: DictationState
+
+    private var dotColor: Color {
+        switch state {
+        case .idle: .green
+        case .listening: .red
+        default: .secondary
+        }
+    }
+
+    private var tintColor: Color {
+        switch state {
+        case .idle: .green
+        case .listening: .red
+        default: .secondary
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 5) {
+            if state == .listening {
+                PulsingDot(color: .red)
+            } else {
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 6, height: 6)
+            }
+
+            Text(state.displayText)
+                .font(.system(size: 11, weight: .medium))
+                .contentTransition(.interpolate)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(tintColor.opacity(0.12))
+        )
+        .foregroundStyle(tintColor)
     }
 }
 
@@ -188,52 +232,40 @@ private struct PopoverHeaderView: View {
     let providerName: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 8) {
+        HStack(spacing: 8) {
+            Image(systemName: "waveform")
+                .font(.system(size: 15))
+                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 1) {
                 Text("Dictava")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 14, weight: .semibold))
 
-                Spacer()
-
-                if state == .idle {
-                    Circle()
-                        .fill(.green)
-                        .frame(width: 7, height: 7)
-                    Text(state.displayText)
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                } else if state == .listening {
-                    PulsingDot()
-                    Text(state.displayText)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                } else {
-                    Text(state.displayText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if state == .idle || state == .listening {
+                let showSubtitle = state == .idle || state == .listening
                 let languageName = SupportedLanguage.all.first(where: { $0.code == languageCode })?.name ?? languageCode
                 Text("\(languageName) \u{00B7} \(providerName)")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+                    .opacity(showSubtitle ? 1 : 0)
             }
+
+            Spacer()
+
+            StatusPillView(state: state)
         }
     }
 }
 
 private struct PulsingDot: View {
+    var color: Color = .red
     @State private var isPulsing = false
 
     var body: some View {
         Circle()
-            .fill(.red)
-            .frame(width: 7, height: 7)
+            .fill(color)
+            .frame(width: 6, height: 6)
             .opacity(isPulsing ? 0.4 : 1.0)
-            .onAppear {
+            .task {
                 withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
                     isPulsing = true
                 }
@@ -342,6 +374,25 @@ private struct PopoverBodyView: View {
                 }
             }
         }
+        .animation(.smooth(duration: 0.25), value: permissions.allPermissionsGranted)
+    }
+}
+
+// MARK: - Hero Button Style
+
+private struct HeroButtonStyle: ButtonStyle {
+    @State private var isHovered = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onHover { hovering in
+                withAnimation(.easeOut(duration: 0.15)) {
+                    isHovered = hovering
+                }
+            }
+            .opacity(isHovered ? 1.0 : 0.92)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
@@ -349,58 +400,150 @@ private struct PopoverBodyView: View {
 
 private struct WaveformHeroView: View {
     @ObservedObject var dictationSession: DictationSession
+    @State private var isHeroHovered = false
 
     var body: some View {
         Button {
             dictationSession.toggle()
         } label: {
-            VStack(spacing: 8) {
-                switch dictationSession.state {
-                case .idle:
-                    AudioWaveformView(
-                        levels: Array(repeating: Float(0.05), count: 20),
-                        color: .secondary.opacity(0.3)
-                    )
-                    .frame(height: 32)
-
-                    Text("\u{2325}Space to dictate")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                case .listening:
-                    AudioWaveformView(
-                        levels: dictationSession.audioLevelHistory,
-                        color: .red
-                    )
-                    .frame(height: 32)
-
-                    if !dictationSession.liveText.isEmpty {
-                        Text(dictationSession.liveText)
-                            .font(.system(.caption, design: .rounded))
-                            .lineLimit(3)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                default:
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                            .frame(width: 16, height: 16)
-                        Text(dictationSession.state.displayText)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Spacer()
+            heroContent
+                .frame(maxWidth: .infinity)
+                .onHover { hovering in
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        isHeroHovered = hovering
                     }
                 }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(.quaternary.opacity(0.5))
-            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HeroButtonStyle())
+    }
+
+    @ViewBuilder
+    private var heroContent: some View {
+        switch dictationSession.state {
+        case .idle:
+            idleHero
+        case .listening:
+            listeningHero
+        default:
+            processingHero
+        }
+    }
+
+    private var idleHero: some View {
+        VStack(spacing: 8) {
+            ClassicBarsView(
+                levels: Array(repeating: Float(0.08), count: 20),
+                color: .secondary.opacity(0.25)
+            )
+            .frame(height: 36)
+
+            HStack {
+                Text("\u{2325}Space to dictate")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+
+                Spacer()
+
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(height: 76)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(
+                            Color.primary.opacity(isHeroHovered ? 0.15 : 0.08),
+                            lineWidth: 1
+                        )
+                )
+        )
+    }
+
+    private var listeningHero: some View {
+        VStack(spacing: 8) {
+            ClassicBarsView(
+                levels: dictationSession.audioLevelHistory,
+                color: .red
+            )
+            .frame(height: 36)
+
+            if !dictationSession.liveText.isEmpty {
+                Text(dictationSession.liveText)
+                    .font(.system(size: 11, design: .rounded))
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity)
+            }
+
+            HStack {
+                Text("Tap to stop")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.red.opacity(0.7))
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.red.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.red.opacity(0.2), lineWidth: 1)
+                )
+        )
+        .frame(minHeight: 76)
+    }
+
+    private var processingHero: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .scaleEffect(0.7)
+                .frame(width: 16, height: 16)
+            Text(dictationSession.state.displayText)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 52)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.quaternary.opacity(0.4))
+        )
+    }
+}
+
+// MARK: - Stat Tile
+
+private struct PopoverStatTileView: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 19, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.primary.opacity(0.04))
+        )
     }
 }
 
@@ -413,11 +556,17 @@ private struct QuickStatsView: View {
         let count = transcriptionLogStore.todayCount()
         if count > 0 {
             let duration = transcriptionLogStore.todayListeningTime()
-            Text("Today: \(count) dictation\(count == 1 ? "" : "s") \u{00B7} \(formatCompactDuration(duration))")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 4)
+            HStack(spacing: 8) {
+                PopoverStatTileView(
+                    value: "\(count)",
+                    label: count == 1 ? "dictation" : "dictations"
+                )
+                PopoverStatTileView(
+                    value: formatCompactDuration(duration),
+                    label: "listening"
+                )
+            }
+            .padding(.bottom, 6)
         }
     }
 
@@ -445,11 +594,11 @@ private struct PopoverRecentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header: "Recent" left, "View All →" right
+            // Header: "RECENT" left, "View All →" right
             HStack {
-                Text("Recent")
-                    .font(.caption2)
-                    .fontWeight(.semibold)
+                Text("RECENT")
+                    .font(.system(size: 10, weight: .semibold))
+                    .kerning(0.5)
                     .foregroundStyle(.tertiary)
 
                 Spacer()
@@ -458,7 +607,7 @@ private struct PopoverRecentView: View {
                     NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
                 } label: {
                     Text("View All \u{2192}")
-                        .font(.caption2)
+                        .font(.system(size: 11))
                         .foregroundStyle(.blue)
                 }
                 .buttonStyle(.plain)
@@ -470,47 +619,56 @@ private struct PopoverRecentView: View {
                     Button {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(log.text, forType: .string)
-                        copiedID = log.id
+                        withAnimation(.smooth(duration: 0.2)) {
+                            copiedID = log.id
+                        }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            if copiedID == log.id {
-                                copiedID = nil
+                            withAnimation(.smooth(duration: 0.2)) {
+                                if copiedID == log.id {
+                                    copiedID = nil
+                                }
                             }
                         }
                     } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(log.text)
-                                .font(.caption)
-                                .lineLimit(2)
-                                .foregroundStyle(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(log.text)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .foregroundStyle(.primary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                            HStack(spacing: 0) {
                                 Text(relativeTime(log.timestamp))
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                                     .monospacedDigit()
+                            }
 
-                                Spacer()
-
-                                if copiedID == log.id {
-                                    Image(systemName: "checkmark")
-                                        .font(.caption2)
-                                        .foregroundStyle(.green)
-                                } else {
-                                    Image(systemName: "doc.on.doc")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .opacity(hoveredID == log.id ? 1 : 0)
-                                }
+                            if copiedID == log.id {
+                                Image(systemName: "checkmark")
+                                    .font(.caption2)
+                                    .foregroundStyle(.green)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.7)))
+                            } else {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.7)))
                             }
                         }
-                        .padding(8)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(.quaternary.opacity(0.5)))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.primary.opacity(hoveredID == log.id ? 0.08 : 0.04))
+                        )
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .onHover { hovered in
-                        hoveredID = hovered ? log.id : nil
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            hoveredID = hovered ? log.id : nil
+                        }
                     }
                 }
             }
@@ -533,31 +691,46 @@ private struct PopoverRecentView: View {
 private struct PopoverFooterView: View {
     var body: some View {
         HStack(spacing: 12) {
-            footerButton(icon: "gear", label: "Settings", color: .gray) {
+            footerButton(
+                icon: "gear",
+                label: "Settings",
+                iconColor: .secondary,
+                bgColor: Color(white: 0.5, opacity: 0.18)
+            ) {
                 NSApp.sendAction(#selector(AppDelegate.openSettingsWindow), to: nil, from: nil)
             }
 
-            footerButton(icon: "clock.arrow.circlepath", label: "History", color: .indigo) {
+            footerButton(
+                icon: "clock.arrow.circlepath",
+                label: "History",
+                iconColor: .indigo,
+                bgColor: Color.indigo.opacity(0.14)
+            ) {
                 NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
             }
 
-            footerButton(icon: "power", label: "Quit", color: .red) {
+            footerButton(
+                icon: "power",
+                label: "Quit",
+                iconColor: .red.opacity(0.8),
+                bgColor: Color.red.opacity(0.12)
+            ) {
                 NSApplication.shared.terminate(nil)
             }
         }
     }
 
-    private func footerButton(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
+    private func footerButton(icon: String, label: String, iconColor: Color, bgColor: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 22, height: 22)
-                    .background(RoundedRectangle(cornerRadius: 5).fill(color))
+                    .foregroundStyle(iconColor)
+                    .frame(width: 24, height: 24)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(bgColor))
 
                 Text(label)
-                    .font(.caption2)
+                    .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
@@ -574,7 +747,7 @@ private struct FooterButtonStyle: ButtonStyle {
             .padding(.vertical, 6)
             .padding(.horizontal, 8)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 7)
                     .fill(isHovered ? Color.primary.opacity(0.08) : Color.clear)
             )
             .onHover { hovering in

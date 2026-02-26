@@ -20,6 +20,8 @@ enum ChartMetric: String, CaseIterable {
     case listeningTime = "Listening Time"
 }
 
+// MARK: - History View
+
 struct HistoryView: View {
     @EnvironmentObject var transcriptionLogStore: TranscriptionLogStore
     @State private var filter: HistoryFilter = .allTime
@@ -72,102 +74,77 @@ struct HistoryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Compact stats row
-            let stats = currentStats
-            HStack(spacing: 6) {
-                compactStat("\(stats.count)", label: "dictations", icon: "number", color: .blue)
-                compactStat(formatDuration(stats.duration), label: "listening", icon: "timer", color: .green)
-                compactStat("\(stats.wordCount)", label: "words", icon: "text.word.spacing", color: .purple)
-                compactStat(stats.averageWPM > 0 ? "\(Int(stats.averageWPM))" : "-", label: "wpm", icon: "gauge.medium", color: .teal)
-                compactStat("\(transcriptionLogStore.totalCount())", label: "total", icon: "infinity", color: .indigo)
+            // Analytics header
+            VStack(spacing: 16) {
+                statsGrid
+                chartSection
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-
-            // Chart controls + chart
-            HStack(spacing: 0) {
-                Picker("Scale", selection: $chartScale) {
-                    ForEach(ChartScale.allCases, id: \.self) { s in
-                        Text(s.rawValue).tag(s)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 200)
-
-                Spacer()
-
-                Picker("Metric", selection: $chartMetric) {
-                    ForEach(ChartMetric.allCases, id: \.self) { m in
-                        Text(m.rawValue).tag(m)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 180)
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 4)
-
-            chartView
-                .frame(height: 90)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 16)
 
             Divider()
 
-            // Filter + search + export (single row)
-            HStack(spacing: 6) {
-                Picker("Filter", selection: $filter) {
-                    ForEach(HistoryFilter.allCases.filter({ $0 != .custom }), id: \.self) { f in
-                        Text(f.rawValue).tag(f)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 280)
-
-                Button {
-                    showDatePicker.toggle()
-                } label: {
-                    Image(systemName: filter == .custom ? "calendar.circle.fill" : "calendar")
-                        .foregroundStyle(filter == .custom ? .blue : .secondary)
-                }
-                .buttonStyle(.borderless)
-                .help("Custom date range")
-                .popover(isPresented: $showDatePicker) {
-                    dateRangePopover
-                }
-
-                HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                    TextField("Search...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .font(.callout)
-                    if !searchText.isEmpty {
-                        Button {
-                            searchText = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
+            // Filter and search toolbar
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    Picker("Filter", selection: $filter) {
+                        ForEach(HistoryFilter.allCases.filter({ $0 != .custom }), id: \.self) { f in
+                            Text(f.rawValue).tag(f)
                         }
-                        .buttonStyle(.borderless)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+
+                    Button {
+                        showDatePicker.toggle()
+                    } label: {
+                        Image(systemName: filter == .custom ? "calendar.circle.fill" : "calendar")
+                            .font(.body)
+                            .foregroundStyle(filter == .custom ? .blue : .secondary)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Custom date range")
+                    .popover(isPresented: $showDatePicker) {
+                        dateRangePopover
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.quaternary.opacity(0.5))
-                .cornerRadius(6)
 
-                exportMenu
+                HStack(spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.tertiary)
+                            .font(.callout)
+                        TextField("Search transcriptions...", text: $searchText)
+                            .textFieldStyle(.plain)
+                            .font(.callout)
+                        if !searchText.isEmpty {
+                            Button {
+                                searchText = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                                    .font(.callout)
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.quaternary.opacity(0.5))
+                    .cornerRadius(8)
+
+                    exportMenu
+                }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
 
-            // Transcription list — takes all remaining space
+            Divider()
+
+            // Transcription list
             List {
                 if filteredLogs.isEmpty {
                     EmptyStateView(
@@ -194,6 +171,7 @@ struct HistoryView: View {
                     }
                 }
             }
+            .listStyle(.plain)
             .layoutPriority(1)
         }
         .onAppear {
@@ -212,6 +190,75 @@ struct HistoryView: View {
         }
     }
 
+    // MARK: - Stats Grid
+
+    private var statsGrid: some View {
+        let stats = currentStats
+        return LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10)
+            ],
+            spacing: 10
+        ) {
+            HistoryStatCard(label: "Sessions", value: stats.count.formatted(), icon: "number")
+            HistoryStatCard(label: "Listening Time", value: formatDuration(stats.duration), icon: "timer")
+            HistoryStatCard(label: "Words", value: stats.wordCount.formatted(), icon: "text.word.spacing")
+            HistoryStatCard(
+                label: "Avg Speed",
+                value: stats.averageWPM > 0 ? "\(Int(stats.averageWPM)) wpm" : "\u{2014}",
+                icon: "gauge.medium"
+            )
+        }
+    }
+
+    // MARK: - Chart Section
+
+    private var chartSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Period", selection: $chartScale) {
+                ForEach(ChartScale.allCases, id: \.self) { s in
+                    Text(s.rawValue).tag(s)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 240)
+
+            ZStack(alignment: .topTrailing) {
+                chartView
+                    .frame(height: 140)
+                    .animation(.easeInOut(duration: 0.3), value: chartScale)
+                    .animation(.easeInOut(duration: 0.3), value: chartMetric)
+                    .padding(.top, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+
+                Menu {
+                    ForEach(ChartMetric.allCases, id: \.self) { m in
+                        Button(m.rawValue) { chartMetric = m }
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text(chartMetric.rawValue)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption2)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.regularMaterial, in: Capsule())
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .padding(8)
+            }
+            .background(Color(.controlBackgroundColor))
+            .cornerRadius(10)
+        }
+    }
+
     // MARK: - Chart
 
     @ViewBuilder
@@ -223,7 +270,7 @@ struct HistoryView: View {
                 y: .value("Value", chartMetric == .dictations ? Double(item.count) : item.duration)
             )
             .foregroundStyle(.blue.gradient)
-            .cornerRadius(3)
+            .cornerRadius(4)
         }
         .chartXAxis {
             AxisMarks(values: .automatic) { value in
@@ -260,28 +307,6 @@ struct HistoryView: View {
         }
     }
 
-    // MARK: - Compact Stat
-
-    private func compactStat(_ value: String, label: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: icon)
-                .font(.caption2)
-                .foregroundStyle(color)
-            Text(value)
-                .font(.callout.bold())
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
-        .background(color.opacity(0.06))
-        .cornerRadius(6)
-    }
-
     // MARK: - Export
 
     private var exportMenu: some View {
@@ -290,7 +315,7 @@ struct HistoryView: View {
             Button("Export as JSON...") { exportJSON() }
         } label: {
             Label("Export", systemImage: "square.and.arrow.up")
-                .font(.caption)
+                .font(.callout)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -299,7 +324,7 @@ struct HistoryView: View {
     // MARK: - Date Range Popover
 
     private var dateRangePopover: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Text("Custom Date Range")
                 .font(.headline)
 
@@ -315,8 +340,8 @@ struct HistoryView: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding()
-        .frame(width: 280)
+        .padding(20)
+        .frame(width: 300)
     }
 
     // MARK: - Export Actions
@@ -357,6 +382,41 @@ struct HistoryView: View {
     }
 }
 
+// MARK: - Stat Card
+
+private struct HistoryStatCard: View {
+    let label: String
+    let value: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(label.uppercased())
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                    .tracking(0.3)
+            }
+
+            Text(value)
+                .font(.title2)
+                .fontWeight(.semibold)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.controlBackgroundColor))
+        .cornerRadius(10)
+    }
+}
+
 // MARK: - Transcription Log Row
 
 struct TranscriptionLogRow: View {
@@ -366,81 +426,62 @@ struct TranscriptionLogRow: View {
     var onDelete: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Collapsed view
+        VStack(alignment: .leading, spacing: 8) {
             Button(action: onToggle) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        if log.wasVoiceCommand {
-                            HStack(spacing: 4) {
-                                Image(systemName: "command")
-                                    .font(.caption2)
-                                Text(log.voiceCommandName ?? "Command")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                            }
-                            .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .center, spacing: 8) {
+                        Text(formatTimestamp(log.timestamp))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        HStack(spacing: 6) {
+                            badge("\(String(format: "%.1f", log.duration))s", color: .blue)
+                            badge("\(log.wordCount) words", color: .purple)
                         }
 
-                        Text(log.text.isEmpty ? "(empty)" : log.text)
-                            .lineLimit(isExpanded ? nil : 2)
-                            .foregroundStyle(log.text.isEmpty ? .tertiary : .primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 3) {
-                        Text(log.timestamp, style: .time)
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        HStack(spacing: 4) {
-                            Text("\(String(format: "%.1f", log.duration))s")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(.green.opacity(0.1))
-                                .cornerRadius(4)
-
-                            Text("\(log.wordCount) words")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(.quaternary)
-                                .cornerRadius(4)
-                        }
+                            .foregroundStyle(.tertiary)
                     }
+
+                    Text(log.text.isEmpty ? "(empty)" : log.text)
+                        .lineLimit(isExpanded ? nil : 2)
+                        .font(.callout)
+                        .foregroundStyle(log.text.isEmpty ? .tertiary : .secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(2)
                 }
             }
             .buttonStyle(.plain)
 
-            // Expanded details
             if isExpanded {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     if log.rawText != log.text && !log.rawText.isEmpty {
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("Raw transcription")
-                                .font(.caption2)
+                                .font(.caption)
+                                .fontWeight(.medium)
                                 .foregroundStyle(.tertiary)
                             Text(log.rawText)
-                                .font(.caption)
+                                .font(.callout)
                                 .foregroundStyle(.secondary)
-                                .padding(6)
+                                .lineSpacing(2)
+                                .padding(10)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(.quaternary.opacity(0.5))
-                                .cornerRadius(4)
+                                .cornerRadius(8)
                         }
                     }
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: 16) {
                         Label("\(String(format: "%.1f", log.duration))s", systemImage: "timer")
                         Label(log.modelUsed, systemImage: "cpu")
                         Label("\(log.characterCount) chars", systemImage: "character.cursor.ibeam")
                     }
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.tertiary)
 
                     HStack {
@@ -451,24 +492,51 @@ struct TranscriptionLogRow: View {
                             NSPasteboard.general.setString(log.text, forType: .string)
                         } label: {
                             Label("Copy", systemImage: "doc.on.doc")
-                                .font(.caption)
+                                .font(.callout)
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
 
                         if let onDelete {
                             Button(role: .destructive) {
                                 onDelete()
                             } label: {
                                 Label("Delete", systemImage: "trash")
-                                    .font(.caption)
+                                    .font(.callout)
                             }
                             .buttonStyle(.borderless)
                         }
                     }
                 }
-                .padding(.leading, 4)
+                .padding(.top, 4)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)),
+                    removal: .opacity
+                ))
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 8)
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+    }
+
+    private func badge(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.caption)
+            .fontWeight(.medium)
+            .foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.12), in: Capsule())
+    }
+
+    private func formatTimestamp(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today, " + date.formatted(date: .omitted, time: .shortened)
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday, " + date.formatted(date: .omitted, time: .shortened)
+        } else {
+            return date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
+        }
     }
 }

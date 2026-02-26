@@ -1,10 +1,15 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SpeechRecognitionSettingsView: View {
     @EnvironmentObject var modelManager: ModelManager
     @EnvironmentObject var fluidAudioModelManager: FluidAudioModelManager
     @EnvironmentObject var settingsStore: SettingsStore
     @EnvironmentObject var dictationSession: DictationSession
+    @EnvironmentObject var vocabularyStore: VocabularyStore
+
+    @State private var newMisrecognized = ""
+    @State private var newCorrected = ""
 
     private var selectedLanguage: String { settingsStore.selectedLanguage }
     private var hasMultipleProviders: Bool { ProviderCatalog.hasMultipleProviders(for: selectedLanguage) }
@@ -22,7 +27,11 @@ struct SpeechRecognitionSettingsView: View {
                 } else {
                     parakeetModelSection
                 }
+                automaticCorrectionsSection
+                aiCleanupSection
+                customVocabularySection
                 silenceSection
+                realtimeSection
             }
             .formStyle(.grouped)
         }
@@ -199,6 +208,160 @@ struct SpeechRecognitionSettingsView: View {
             .padding(.vertical, 4)
         } header: {
             SettingsSectionHeader(icon: "arrow.down.circle", title: "Parakeet Model", color: .green)
+        }
+    }
+
+    // MARK: - Automatic Corrections
+
+    private var automaticCorrectionsSection: some View {
+        Section {
+            Toggle("Remove filler words (um, uh, etc.)", isOn: $settingsStore.removeFillerWords)
+            Toggle("Auto-capitalize sentences", isOn: $settingsStore.autoCapitalize)
+            Toggle("Smart punctuation", isOn: $settingsStore.autoPunctuation)
+        } header: {
+            SettingsSectionHeader(icon: "textformat.abc", title: "Automatic Corrections", color: .blue)
+        }
+    }
+
+    // MARK: - AI Cleanup
+
+    private var aiCleanupSection: some View {
+        Section {
+            HStack {
+                Toggle("Enable AI text cleanup", isOn: $settingsStore.llmEnabled)
+                    .disabled(true)
+                Text("Coming Soon")
+                    .font(.caption2)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(.secondary))
+            }
+
+            InfoBanner(.tip, "AI cleanup will use a local LLM to fix grammar, adjust tone, or shorten text via voice commands like \"fix grammar\" or \"make it formal.\"")
+        } header: {
+            SettingsSectionHeader(icon: "sparkles", title: "AI Cleanup", color: .purple)
+        }
+    }
+
+    // MARK: - Custom Vocabulary
+
+    private var customVocabularySection: some View {
+        Section {
+            HStack {
+                TextField("Misrecognized", text: $newMisrecognized)
+                    .textFieldStyle(.roundedBorder)
+                Image(systemName: "arrow.right")
+                    .foregroundStyle(.secondary)
+                TextField("Correct", text: $newCorrected)
+                    .textFieldStyle(.roundedBorder)
+                Button("Add") {
+                    guard !newMisrecognized.isEmpty, !newCorrected.isEmpty else { return }
+                    vocabularyStore.addEntry(VocabularyEntry(
+                        misrecognized: newMisrecognized,
+                        corrected: newCorrected
+                    ))
+                    newMisrecognized = ""
+                    newCorrected = ""
+                }
+                .disabled(newMisrecognized.isEmpty || newCorrected.isEmpty)
+            }
+
+            if vocabularyStore.entries.isEmpty {
+                EmptyStateView(
+                    icon: "character.book.closed",
+                    title: "No custom vocabulary",
+                    message: "Add words that Whisper frequently misrecognizes to automatically correct them."
+                )
+            }
+
+            ForEach(vocabularyStore.entries) { entry in
+                HStack {
+                    Text(entry.misrecognized)
+                        .strikethrough()
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "arrow.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                    Text(entry.corrected)
+                        .fontWeight(.medium)
+                }
+            }
+            .onDelete { offsets in
+                vocabularyStore.removeEntry(at: offsets)
+            }
+        } header: {
+            HStack {
+                SettingsSectionHeader(icon: "character.book.closed", title: "Custom Vocabulary", color: .orange)
+                Spacer()
+                Button("Import") { importVocabulary() }
+                    .buttonStyle(.borderless)
+                    .font(.caption)
+                Button("Export") { exportVocabulary() }
+                    .buttonStyle(.borderless)
+                    .font(.caption)
+            }
+        }
+    }
+
+    // MARK: - Vocabulary Import/Export
+
+    private func exportVocabulary() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "vocabulary.json"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        guard let data = try? encoder.encode(vocabularyStore.entries) else { return }
+        try? data.write(to: url)
+    }
+
+    private func importVocabulary() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.urls.first else { return }
+
+        guard let data = try? Data(contentsOf: url),
+              let imported = try? JSONDecoder().decode([VocabularyEntry].self, from: data) else { return }
+
+        let existingPairs = Set(vocabularyStore.entries.map { "\($0.misrecognized)|\($0.corrected)" })
+        for entry in imported {
+            let key = "\(entry.misrecognized)|\(entry.corrected)"
+            if !existingPairs.contains(key) {
+                vocabularyStore.addEntry(VocabularyEntry(misrecognized: entry.misrecognized, corrected: entry.corrected))
+            }
+        }
+    }
+
+    // MARK: - Real-Time Transcription
+
+    private var realtimeSection: some View {
+        Section {
+            if activeProvider == .fluidAudio {
+                Text("Words appear live in the active app as you speak. Only available with the Parakeet engine.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Enable real-time transcription", isOn: $settingsStore.realtimeTranscriptionEnabled)
+            } else {
+                Text("Switch to Parakeet to enable real-time transcription.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            HStack(spacing: 6) {
+                SettingsSectionHeader(icon: "bolt.fill", title: "Real-Time Transcription", color: .yellow)
+                Text("BETA")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.yellow)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(.yellow.opacity(0.15))
+                    .cornerRadius(3)
+            }
         }
     }
 

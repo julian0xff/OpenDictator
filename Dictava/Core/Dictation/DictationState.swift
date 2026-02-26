@@ -7,7 +7,6 @@ enum DictationState: Equatable {
     case transcribing
     case processing
     case injecting
-    case executingCommand
 
     var isActive: Bool {
         self != .idle
@@ -21,7 +20,6 @@ enum DictationState: Equatable {
         case .transcribing: return "Transcribing..."
         case .processing: return "Processing..."
         case .injecting: return "Typing..."
-        case .executingCommand: return "Executing..."
         }
     }
 }

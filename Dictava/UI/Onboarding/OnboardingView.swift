@@ -18,6 +18,7 @@ struct OnboardingView: View {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(index <= currentStep ? Color.accentColor : Color.secondary.opacity(0.3))
                         .frame(height: 3)
+                        .animation(.easeInOut(duration: 0.25), value: currentStep)
                 }
             }
             .padding(.horizontal)
@@ -35,16 +36,19 @@ struct OnboardingView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .id(currentStep)
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.25), value: currentStep)
             .padding(32)
 
             // Navigation
             HStack {
                 if currentStep > 0 {
-                    Button("Back") { currentStep -= 1 }
+                    Button("Back") { withAnimation(.easeInOut(duration: 0.25)) { currentStep -= 1 } }
                 }
                 Spacer()
                 if currentStep < steps.count - 1 {
-                    Button("Continue") { currentStep += 1 }
+                    Button("Continue") { withAnimation(.easeInOut(duration: 0.25)) { currentStep += 1 } }
                         .keyboardShortcut(.defaultAction)
                 } else {
                     Button("Get Started") {

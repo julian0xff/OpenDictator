@@ -5,9 +5,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case general
     case appearance
     case speechRecognition
-    case textProcessing
     case snippets
-    case commands
     case history
     case advanced
 
@@ -18,9 +16,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: return "General"
         case .appearance: return "Appearance"
         case .speechRecognition: return "Speech Recognition"
-        case .textProcessing: return "Text Processing"
         case .snippets: return "Snippets"
-        case .commands: return "Voice Commands"
         case .history: return "History"
         case .advanced: return "About & Data"
         }
@@ -31,9 +27,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: return Ph.gear.duotone
         case .appearance: return Ph.palette.duotone
         case .speechRecognition: return Ph.waveform.duotone
-        case .textProcessing: return Ph.textAa.duotone
         case .snippets: return Ph.notePencil.duotone
-        case .commands: return Ph.command.duotone
         case .history: return Ph.chartBar.duotone
         case .advanced: return Ph.faders.duotone
         }
@@ -44,9 +38,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: return .gray
         case .appearance: return .pink
         case .speechRecognition: return .blue
-        case .textProcessing: return .orange
         case .snippets: return .green
-        case .commands: return .yellow
         case .history: return .indigo
         case .advanced: return .gray
         }
@@ -54,9 +46,8 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var group: SettingsSectionGroup {
         switch self {
-        case .general, .appearance: return .top
-        case .speechRecognition, .textProcessing: return .speechAndText
-        case .snippets, .commands: return .automation
+        case .general, .appearance, .speechRecognition: return .top
+        case .snippets: return .automation
         case .history, .advanced: return .bottom
         }
     }
@@ -64,14 +55,12 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
 enum SettingsSectionGroup: String, CaseIterable {
     case top
-    case speechAndText
     case automation
     case bottom
 
     var title: String? {
         switch self {
         case .top, .bottom: return nil
-        case .speechAndText: return "Speech & Text"
         case .automation: return "Automation"
         }
     }
@@ -114,6 +103,9 @@ struct SettingsView: View {
 
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .id(selectedSection)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.15), value: selectedSection)
         }
         .frame(minWidth: 720, minHeight: 480)
     }
@@ -127,12 +119,8 @@ struct SettingsView: View {
             AppearanceSettingsView()
         case .speechRecognition:
             SpeechRecognitionSettingsView()
-        case .textProcessing:
-            TextProcessingSettingsView()
         case .snippets:
             SnippetSettingsView()
-        case .commands:
-            VoiceCommandSettingsView()
         case .history:
             HistoryView()
         case .advanced:

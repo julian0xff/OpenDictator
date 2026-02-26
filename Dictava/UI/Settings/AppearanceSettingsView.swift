@@ -46,10 +46,9 @@ struct AppearanceSettingsView: View {
         ScrollView {
             Form {
                 Section {
-                    themeGrid
-                    actionButtons
+                    indicatorModePicker
                 } header: {
-                    SettingsSectionHeader(icon: "paintbrush", title: "Theme", color: .pink)
+                    SettingsSectionHeader(icon: "display", title: "Indicator Mode", color: .cyan)
                 }
 
                 Section {
@@ -60,13 +59,43 @@ struct AppearanceSettingsView: View {
                     SettingsSectionHeader(icon: "eye", title: "Preview", color: .blue)
                 }
 
-                Section {
-                    customControls
-                } header: {
-                    SettingsSectionHeader(icon: "slider.horizontal.3", title: "Customize", color: .orange)
+                if settingsStore.indicatorMode == .floating {
+                    Section {
+                        themeGrid
+                        actionButtons
+                    } header: {
+                        SettingsSectionHeader(icon: "paintbrush", title: "Theme", color: .pink)
+                    }
+
+                    Section {
+                        visualizationStylePicker
+                    } header: {
+                        SettingsSectionHeader(icon: "waveform", title: "Visualization Style", color: .purple)
+                    }
+
+                    Section {
+                        indicatorSizePicker
+                    } header: {
+                        SettingsSectionHeader(icon: "arrow.up.left.and.arrow.down.right", title: "Widget Size", color: .teal)
+                    }
+
+                    Section {
+                        customControls
+                    } header: {
+                        SettingsSectionHeader(icon: "slider.horizontal.3", title: "Customize", color: .orange)
+                    }
+                }
+
+                if settingsStore.indicatorMode == .notch {
+                    Section {
+                        notchCustomizeControls
+                    } header: {
+                        SettingsSectionHeader(icon: "slider.horizontal.3", title: "Customize", color: .orange)
+                    }
                 }
             }
             .formStyle(.grouped)
+            .animation(.easeInOut(duration: 0.2), value: settingsStore.indicatorModeRaw)
         }
         .sheet(isPresented: $showSaveAsSheet, onDismiss: {
             if isNewThemeDraft {
@@ -235,20 +264,146 @@ struct AppearanceSettingsView: View {
         }
     }
 
+    // MARK: - Indicator Mode Picker
+
+    @ViewBuilder
+    private var indicatorModePicker: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            ForEach(IndicatorMode.allCases) { mode in
+                modeCard(mode)
+            }
+        }
+        .padding(.vertical, 4)
+
+        if settingsStore.indicatorMode == .notch {
+            if !NSScreen.screens.contains(where: { $0.hasNotch }) {
+                InfoBanner(.info, "No notch detected. A virtual notch-like shape will appear at the top center of the screen.")
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Expansion Style")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
+                    ForEach(NotchExpansionStyle.allCases) { style in
+                        expansionStyleCard(style)
+                    }
+                }
+            }
+            .padding(.top, 4)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Animation Speed")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Picker("", selection: Binding(
+                    get: { settingsStore.notchAnimationSpeed },
+                    set: { settingsStore.notchAnimationSpeed = $0 }
+                )) {
+                    ForEach(NotchAnimationSpeed.allCases) { speed in
+                        Text(speed.displayName).tag(speed)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    @ViewBuilder
+    private func modeCard(_ mode: IndicatorMode) -> some View {
+        let isSelected = settingsStore.indicatorMode == mode
+        VStack(spacing: 6) {
+            Image(systemName: mode.sfSymbol)
+                .font(.system(size: 20))
+                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                .frame(height: 28)
+
+            Text(mode.displayName)
+                .font(.caption)
+                .foregroundStyle(isSelected ? .primary : .secondary)
+                .lineLimit(1)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                settingsStore.indicatorMode = mode
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func expansionStyleCard(_ style: NotchExpansionStyle) -> some View {
+        let isSelected = settingsStore.notchExpansionStyle == style
+        VStack(spacing: 6) {
+            Image(systemName: style.sfSymbol)
+                .font(.system(size: 20))
+                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                .frame(height: 28)
+
+            Text(style.displayName)
+                .font(.caption)
+                .foregroundStyle(isSelected ? .primary : .secondary)
+                .lineLimit(1)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            settingsStore.notchExpansionStyle = style
+        }
+    }
+
     // MARK: - Preview
+
+    private static let sampleHistory: [Float] = [
+        0.1, 0.3, 0.5, 0.8, 0.9, 0.7, 0.6, 0.4,
+        0.5, 0.7, 0.9, 0.8, 0.6, 0.4, 0.3, 0.5,
+        0.7, 0.8, 0.6, 0.3
+    ]
+    private static let sampleLevel: Float = 0.65
 
     @ViewBuilder
     private var indicatorPreview: some View {
-        let theme = activeTheme
-        HStack(spacing: 2) {
-            ForEach(0..<20, id: \.self) { i in
-                let seed = Double(i)
-                let height = 2 + abs(sin(seed * 0.7)) * 26
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(theme.waveformColor)
-                    .frame(width: 3, height: height)
-            }
+        if settingsStore.indicatorMode == .notch {
+            notchPreview
+        } else {
+            floatingPreview
         }
+    }
+
+    @ViewBuilder
+    private var floatingPreview: some View {
+        let theme = activeTheme
+        let style = settingsStore.waveformStyle
+        let metrics = IndicatorSizeMetrics.metrics(forScale: settingsStore.indicatorScale)
+
+        WaveformVisualizationView(
+            style: style,
+            level: Self.sampleLevel,
+            history: Self.sampleHistory,
+            color: theme.waveformColor,
+            metrics: metrics
+        )
         .padding(.horizontal, theme.horizontalPadding)
         .padding(.vertical, theme.verticalPadding)
         .background(
@@ -259,6 +414,85 @@ struct AppearanceSettingsView: View {
             RoundedRectangle(cornerRadius: theme.cornerRadius)
                 .stroke(theme.borderColor.opacity(theme.borderOpacity), lineWidth: theme.borderWidth)
         )
+        .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private var notchPreview: some View {
+        let previewNotchWidth: CGFloat = 160
+        let style = settingsStore.notchExpansionStyle
+        let previewMetrics = IndicatorSizeMetrics(visualizationWidth: min(previewNotchWidth - 20, 100), visualizationHeight: 22)
+
+        let expandedWidth: CGFloat = {
+            switch style {
+            case .down: return previewNotchWidth + 20
+            case .horizontal: return previewNotchWidth + 120
+            case .both: return previewNotchWidth + 100
+            }
+        }()
+        let expandedHeight: CGFloat = {
+            switch style {
+            case .down: return 68
+            case .horizontal: return 32
+            case .both: return 68
+            }
+        }()
+
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                NotchShape(topCornerRadius: 14, bottomCornerRadius: 20)
+                    .fill(.black)
+                    .frame(width: expandedWidth, height: expandedHeight)
+
+                // Preview content by style
+                switch style {
+                case .down:
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 34)
+                        WaveformVisualizationView(
+                            style: .glowOrb,
+                            level: Self.sampleLevel,
+                            history: Self.sampleHistory,
+                            color: settingsStore.notchGlowColor,
+                            metrics: previewMetrics
+                        )
+                    }
+                    .frame(width: expandedWidth, height: expandedHeight)
+
+                case .horizontal:
+                    HStack(spacing: 0) {
+                        Circle()
+                            .fill(settingsStore.notchGlowColor.opacity(0.9))
+                            .frame(width: 10, height: 10)
+                            .shadow(color: settingsStore.notchGlowColor.opacity(0.6), radius: 4)
+                            .frame(width: 60)
+                        Spacer().frame(width: previewNotchWidth)
+                        HStack(spacing: 4) {
+                            Circle().fill(.red).frame(width: 5, height: 5)
+                            Text("0:05")
+                                .font(.system(size: 9, design: .monospaced))
+                                .foregroundStyle(.white)
+                        }
+                        .frame(width: 60)
+                    }
+                    .frame(width: expandedWidth, height: expandedHeight)
+
+                case .both:
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 34)
+                        WaveformVisualizationView(
+                            style: .glowOrb,
+                            level: Self.sampleLevel,
+                            history: Self.sampleHistory,
+                            color: settingsStore.notchGlowColor,
+                            metrics: previewMetrics
+                        )
+                    }
+                    .frame(width: expandedWidth, height: expandedHeight)
+                }
+            }
+        }
         .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
     }
 
@@ -349,6 +583,80 @@ struct AppearanceSettingsView: View {
         }
     }
 
+    // MARK: - Notch Customize Controls
+
+    @ViewBuilder
+    private var notchCustomizeControls: some View {
+        ColorPicker("Glow Color", selection: Binding(
+            get: { settingsStore.notchGlowColor },
+            set: { settingsStore.notchGlowColor = $0 }
+        ), supportsOpacity: false)
+    }
+
+    // MARK: - Visualization Style Picker
+
+    @ViewBuilder
+    private var visualizationStylePicker: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 10)], spacing: 10) {
+            ForEach(WaveformStyle.allCases) { style in
+                styleCard(style)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private func styleCard(_ style: WaveformStyle) -> some View {
+        let isSelected = settingsStore.waveformStyle == style
+        VStack(spacing: 6) {
+            Image(systemName: style.sfSymbol)
+                .font(.system(size: 20))
+                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                .frame(height: 28)
+
+            Text(style.displayName)
+                .font(.caption)
+                .foregroundStyle(isSelected ? .primary : .secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            settingsStore.waveformStyleRaw = style.rawValue
+        }
+    }
+
+    // MARK: - Widget Size Slider
+
+    @ViewBuilder
+    private var indicatorSizePicker: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Widget Size")
+                Spacer()
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "minus")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Slider(value: $settingsStore.indicatorScale, in: 0...1, step: 0.05)
+                Image(systemName: "plus")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     /// Returns a binding that routes edits to either `draftTheme` (built-in) or `customThemeStore` (custom).
     /// Returns a binding that routes edits to `draftTheme` (new theme or built-in) or `customThemeStore` (custom).
     /// New-theme draft takes priority so edits never leak into an existing custom theme.
@@ -409,6 +717,7 @@ struct AppearanceSettingsView: View {
             }
         }
         .padding(24)
+        .frame(width: 320)
     }
 
     // MARK: - Import Sheet
@@ -466,6 +775,7 @@ struct AppearanceSettingsView: View {
             }
         }
         .padding(24)
+        .frame(width: 420)
     }
 
     // MARK: - Rename Sheet
@@ -497,6 +807,7 @@ struct AppearanceSettingsView: View {
             }
         }
         .padding(24)
+        .frame(width: 320)
     }
 
     // MARK: - Actions

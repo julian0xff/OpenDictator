@@ -10,14 +10,15 @@ final class DictationSession: ObservableObject {
     @Published var audioLevelHistory: [Float] = Array(repeating: 0, count: 20)
     @Published var lastTranscription: String?
     @Published var activeProviderDisplayName: String = ""
+    @Published var elapsedSeconds: Int = 0
 
     private var sessionStartTime: Date?
+    private var elapsedTimer: Timer?
 
     private let audioEngine = AudioCaptureEngine()
     private let transcriptionEngine = TranscriptionEngine()
     private lazy var streamingTranscriber = StreamingTranscriber(transcriptionEngine: transcriptionEngine)
     private let textInjector = TextInjector()
-    private let commandExecutor = VoiceCommandExecutor()
     private let textPipeline: TextPipeline
 
     private let whisperKitProvider = WhisperKitProvider()
@@ -30,14 +31,16 @@ final class DictationSession: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
     private var liveTextCancellable: AnyCancellable?
+    private var inlineTextCancellable: AnyCancellable?
     private var silenceCancellable: AnyCancellable?
     private var silenceTimer: Timer?
     private var longDictationTimer: Timer?
     private var startTask: Task<Void, Never>?
     private var stopTask: Task<Void, Never>?
     private var modelLoadTask: Task<Void, Never>?
+    private var inlineInjectTask: Task<Void, Never>?
 
-    init(settingsStore: SettingsStore, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore, customVoiceCommandStore: CustomVoiceCommandStore? = nil) {
+    init(settingsStore: SettingsStore, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore) {
         self.settingsStore = settingsStore
         self.modelManager = modelManager
         self.fluidAudioModelManager = fluidAudioModelManager
@@ -45,11 +48,11 @@ final class DictationSession: ObservableObject {
 
         // Build the text processing pipeline
         textPipeline = TextPipeline()
-        textPipeline.addProcessor(VoiceCommandParser(settingsStore: settingsStore, customVoiceCommandStore: customVoiceCommandStore))
-        textPipeline.addProcessor(PunctuationHandler())
+        textPipeline.addProcessor(PunctuationHandler(settingsStore: settingsStore))
         textPipeline.addProcessor(SnippetExpander(snippetStore: snippetStore))
-        textPipeline.addProcessor(FillerWordFilter())
+        textPipeline.addProcessor(FillerWordFilter(settingsStore: settingsStore))
         textPipeline.addProcessor(CustomVocabulary(vocabularyStore: vocabularyStore))
+        textPipeline.addProcessor(SentenceCapitalizer(settingsStore: settingsStore))
         textPipeline.addProcessor(LLMProcessor())
 
         // Clear microphone error when permission is granted
@@ -267,6 +270,19 @@ final class DictationSession: ObservableObject {
         }
     }
 
+    /// Called when the hold-to-record key is released.
+    /// Stops recording if listening, cancels if still loading, otherwise no-op.
+    func holdRelease() {
+        switch state {
+        case .listening:
+            stopDictation()
+        case .loadingModel:
+            cancelStop()
+        default:
+            break
+        }
+    }
+
     private func cancelStop() {
         startTask?.cancel()
         startTask = nil
@@ -277,6 +293,14 @@ final class DictationSession: ObservableObject {
         liveText = ""
         audioLevelHistory = Array(repeating: 0, count: 20)
         liveTextCancellable = nil
+        inlineTextCancellable = nil
+        inlineInjectTask?.cancel()
+        inlineInjectTask = nil
+        // Reset actor's partial tracking (serialized after any cancelled inject completes)
+        Task { await textInjector.resetPartialTracking() }
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+        elapsedSeconds = 0
         sessionStartTime = nil
         state = .idle
     }
@@ -287,6 +311,9 @@ final class DictationSession: ObservableObject {
         error = nil
         liveText = ""
         audioLevelHistory = Array(repeating: 0, count: 20)
+
+        // Reset actor's partial tracking for new session
+        Task { await textInjector.resetPartialTracking() }
 
         guard PermissionManager.shared.microphoneStatus == .granted else {
             error = "Microphone permission not granted"
@@ -299,6 +326,13 @@ final class DictationSession: ObservableObject {
         }
 
         sessionStartTime = Date()
+        elapsedSeconds = 0
+        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.state == .listening else { return }
+                self.elapsedSeconds += 1
+            }
+        }
 
         // Subscribe to live text for this session
         liveTextCancellable = streamingTranscriber.$liveText
@@ -306,6 +340,20 @@ final class DictationSession: ObservableObject {
             .sink { [weak self] text in
                 self?.liveText = text
             }
+
+        // Wire inline mode: inject partial text directly into the active app
+        if settingsStore.isRealtimeActive {
+            inlineTextCancellable = streamingTranscriber.$liveText
+                .dropFirst()
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] text in
+                    guard let self, self.state == .listening, !text.isEmpty else { return }
+                    self.inlineInjectTask?.cancel()
+                    self.inlineInjectTask = Task {
+                        await self.textInjector.injectPartial(text)
+                    }
+                }
+        }
 
         // Check if model is ready right now
         let isFluidAudio = transcriptionEngine.activeProviderID == .fluidAudio
@@ -356,7 +404,8 @@ final class DictationSession: ObservableObject {
 
             do {
                 try audioEngine.startCapturing()
-                await streamingTranscriber.startStreaming(from: audioEngine, language: settingsStore.selectedLanguage)
+                let partialInterval: TimeInterval = settingsStore.isRealtimeActive ? 0.75 : 1.5
+                await streamingTranscriber.startStreaming(from: audioEngine, language: settingsStore.selectedLanguage, partialInterval: partialInterval)
 
                 if settingsStore.playStartStopSounds {
                     NSSound(named: "Tink")?.play()
@@ -375,6 +424,12 @@ final class DictationSession: ObservableObject {
     private func cleanup() {
         state = .idle
         liveTextCancellable = nil
+        inlineTextCancellable = nil
+        inlineInjectTask?.cancel()
+        inlineInjectTask = nil
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+        elapsedSeconds = 0
         sessionStartTime = nil
     }
 
@@ -386,7 +441,12 @@ final class DictationSession: ObservableObject {
         silenceTimer = nil
         longDictationTimer?.invalidate()
         longDictationTimer = nil
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
         liveTextCancellable = nil
+        inlineTextCancellable = nil
+        inlineInjectTask?.cancel()
+        inlineInjectTask = nil
         error = nil
 
         state = .transcribing
@@ -414,44 +474,27 @@ final class DictationSession: ObservableObject {
 
             guard !Task.isCancelled else { return }
 
-            // Handle voice commands
-            if let command = result.command {
-                if command == .stopListening {
-                    logTranscription(rawText: rawText, processedText: "", wasVoiceCommand: true, voiceCommandName: command.logName)
-                    sessionStartTime = nil
-                    state = .idle
-                    return
-                }
-
-                // Inject any remaining text first
-                if !result.text.isEmpty {
-                    state = .injecting
-                    await textInjector.inject(result.text)
-                    lastTranscription = result.text
-                }
-
-                guard !Task.isCancelled else { return }
-
-                state = .executingCommand
-                await commandExecutor.execute(command)
-                logTranscription(rawText: rawText, processedText: result.text, wasVoiceCommand: true, voiceCommandName: command.logName)
-                sessionStartTime = nil
-                state = .idle
-                return
-            }
-
-            // Inject text
             guard !Task.isCancelled else { return }
 
-            if !result.text.isEmpty {
+            // Inline mode: replace last partial with final processed text
+            if settingsStore.isRealtimeActive {
+                if !result.text.isEmpty {
+                    state = .injecting
+                    await textInjector.injectPartial(result.text)
+                    lastTranscription = result.text
+                }
+                await textInjector.resetPartialTracking()
+            } else if !result.text.isEmpty {
+                // Default: inject text at cursor
                 state = .injecting
                 await textInjector.inject(result.text)
                 lastTranscription = result.text
             }
 
-            logTranscription(rawText: rawText, processedText: result.text, wasVoiceCommand: false, voiceCommandName: nil)
+            logTranscription(rawText: rawText, processedText: result.text)
             sessionStartTime = nil
             state = .idle
+            self.stopTask = nil
         }
     }
 
@@ -465,7 +508,7 @@ final class DictationSession: ObservableObject {
         }
     }
 
-    private func logTranscription(rawText: String, processedText: String, wasVoiceCommand: Bool, voiceCommandName: String?) {
+    private func logTranscription(rawText: String, processedText: String) {
         let duration = sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
         let modelName = transcriptionEngine.activeProviderID == .fluidAudio
             ? "parakeet-v3" : settingsStore.selectedModelName
@@ -473,9 +516,7 @@ final class DictationSession: ObservableObject {
             duration: duration,
             text: processedText,
             rawText: rawText,
-            modelUsed: modelName,
-            wasVoiceCommand: wasVoiceCommand,
-            voiceCommandName: voiceCommandName
+            modelUsed: modelName
         )
         transcriptionLogStore.log(entry)
     }

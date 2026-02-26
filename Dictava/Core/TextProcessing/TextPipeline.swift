@@ -8,12 +8,6 @@ protocol TextProcessor {
 
 struct TextProcessingResult {
     let text: String
-    let command: VoiceCommand?
-
-    init(text: String, command: VoiceCommand? = nil) {
-        self.text = text
-        self.command = command
-    }
 }
 
 final class TextPipeline {
@@ -25,16 +19,12 @@ final class TextPipeline {
 
     func process(_ rawText: String) async -> TextProcessingResult {
         var currentText = rawText
-        var detectedCommand: VoiceCommand?
 
         for processor in processors where processor.isEnabled {
             let result = await processor.process(currentText)
             currentText = result.text
-            if let command = result.command {
-                detectedCommand = command
-            }
         }
 
-        return TextProcessingResult(text: currentText, command: detectedCommand)
+        return TextProcessingResult(text: currentText)
     }
 }

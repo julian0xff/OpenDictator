@@ -9,17 +9,13 @@ struct TranscriptionLog: Identifiable, Codable, Equatable {
     var wordCount: Int
     var characterCount: Int
     var modelUsed: String
-    var wasVoiceCommand: Bool
-    var voiceCommandName: String?
 
     init(
         timestamp: Date = Date(),
         duration: TimeInterval,
         text: String,
         rawText: String,
-        modelUsed: String,
-        wasVoiceCommand: Bool = false,
-        voiceCommandName: String? = nil
+        modelUsed: String
     ) {
         self.id = UUID()
         self.timestamp = timestamp
@@ -29,7 +25,5 @@ struct TranscriptionLog: Identifiable, Codable, Equatable {
         self.wordCount = text.split(separator: " ").count
         self.characterCount = text.count
         self.modelUsed = modelUsed
-        self.wasVoiceCommand = wasVoiceCommand
-        self.voiceCommandName = voiceCommandName
     }
 }

@@ -16,7 +16,7 @@ final class StreamingTranscriber: ObservableObject {
         self.transcriptionEngine = transcriptionEngine
     }
 
-    func startStreaming(from audioEngine: AudioCaptureEngine, language: String) async {
+    func startStreaming(from audioEngine: AudioCaptureEngine, language: String, partialInterval: TimeInterval = 1.5) async {
         self.language = language
         await transcriptionEngine.reset()
 
@@ -26,14 +26,16 @@ final class StreamingTranscriber: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Trigger partial transcription every 1.5 seconds for live preview
-        partialTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
+        // Trigger partial transcription at the specified interval for live preview
+        let timer = Timer(timeInterval: partialInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 await self.transcriptionEngine.transcribePartial(language: self.language)
                 self.liveText = self.transcriptionEngine.partialText
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        partialTimer = timer
     }
 
     func stopStreaming() async -> String {

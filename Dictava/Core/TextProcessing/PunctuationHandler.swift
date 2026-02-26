@@ -2,7 +2,12 @@ import Foundation
 
 final class PunctuationHandler: TextProcessor {
     let name = "Punctuation Handler"
-    var isEnabled = true
+    private let settingsStore: SettingsStore
+    var isEnabled: Bool { settingsStore.autoPunctuation }
+
+    init(settingsStore: SettingsStore) {
+        self.settingsStore = settingsStore
+    }
 
     private let replacements: [(pattern: String, replacement: String)] = [
         ("\\bperiod\\b", "."),
