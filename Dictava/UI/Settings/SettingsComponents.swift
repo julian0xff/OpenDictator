@@ -7,22 +7,18 @@ struct SettingsSectionHeader: View {
     let title: String
     var subtitle: String? = nil
     var color: Color = .blue
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 22, height: 22)
-                .background(RoundedRectangle(cornerRadius: 5).fill(color))
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(theme.textPrimary)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(theme.textSecondary)
             }
         }
     }
@@ -40,36 +36,49 @@ enum InfoBannerStyle {
         case .warning: return "exclamationmark.triangle.fill"
         }
     }
-
-    var color: Color {
-        switch self {
-        case .info: return .blue
-        case .tip: return .orange
-        case .warning: return .yellow
-        }
-    }
 }
 
 struct InfoBanner: View {
     let style: InfoBannerStyle
     let text: String
+    @Environment(\.settingsTheme) private var theme
 
     init(_ style: InfoBannerStyle, _ text: String) {
         self.style = style
         self.text = text
     }
 
+    private var accentColor: Color {
+        switch style {
+        case .info: return theme.textSecondary
+        case .tip: return theme.controlAccent
+        case .warning: return theme.warning
+        }
+    }
+
     var body: some View {
         HStack(spacing: 8) {
+            Rectangle()
+                .fill(accentColor)
+                .frame(width: 2)
+
             Image(systemName: style.icon)
-                .foregroundStyle(style.color)
+                .foregroundStyle(accentColor)
+                .font(.caption)
+
             Text(text)
                 .font(.caption)
+                .foregroundStyle(theme.textSecondary)
         }
-        .padding(10)
+        .padding(.vertical, 10)
+        .padding(.trailing, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(style.color.opacity(0.08))
-        .cornerRadius(8)
+        .background(theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusMd))
+        .overlay(
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                .stroke(theme.border, lineWidth: 1)
+        )
     }
 }
 
@@ -81,28 +90,34 @@ struct StyledStatCard: View {
     let value: String
     let subtitle: String
     var color: Color = .blue
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         VStack(spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.caption2)
-                    .foregroundStyle(color)
+                    .foregroundStyle(theme.textTertiary)
                 Text(title)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
             }
             Text(value)
                 .font(.title2.bold())
+                .foregroundStyle(theme.textPrimary)
                 .monospacedDigit()
             Text(subtitle)
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(theme.textTertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .background(color.opacity(0.06))
-        .cornerRadius(8)
+        .background(theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusLg))
+        .overlay(
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .stroke(theme.border, lineWidth: 1)
+        )
     }
 }
 
@@ -112,17 +127,18 @@ struct EmptyStateView: View {
     let icon: String
     let title: String
     let message: String
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.largeTitle)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(theme.textTertiary)
             Text(title)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.textSecondary)
             Text(message)
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(theme.textTertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

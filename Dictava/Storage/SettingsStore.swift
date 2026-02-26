@@ -69,6 +69,8 @@ final class SettingsStore: ObservableObject {
     @AppStorage("llmEnabled") var llmEnabled = false
     @AppStorage("selectedLLMModel") var selectedLLMModel = ""
     @AppStorage("showDockIcon") var showDockIcon = false
+    @AppStorage("showMenuBarIcon") var showMenuBarIcon = true
+    @AppStorage("logTranscriptionHistory") var logTranscriptionHistory = true
     @AppStorage("selectedLanguage") var selectedLanguage = "en"
     // Provider
     @AppStorage("providerOverrides") var providerOverrides = ""
@@ -117,6 +119,13 @@ final class SettingsStore: ObservableObject {
     @AppStorage("holdToRecordKeyCode") var holdToRecordKeyCode = 0x0A // § key (kVK_ISO_Section)
     @AppStorage("holdToRecordKeyName") var holdToRecordKeyName = "§"
     @Published var holdToRecordTapActive = false
+
+    // Settings appearance
+    @AppStorage("settingsAppearance") var settingsAppearanceRaw = SettingsAppearance.system.rawValue
+    var settingsAppearance: SettingsAppearance {
+        get { SettingsAppearance(rawValue: settingsAppearanceRaw) ?? .system }
+        set { settingsAppearanceRaw = newValue.rawValue }
+    }
 
     // Real-time transcription (beta)
     @AppStorage("realtimeTranscriptionEnabled") var realtimeTranscriptionEnabled = false

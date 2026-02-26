@@ -4,86 +4,102 @@ import KeyboardShortcuts
 struct GeneralSettingsView: View {
     @EnvironmentObject var settingsStore: SettingsStore
     @ObservedObject private var permissionManager = PermissionManager.shared
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         ScrollView {
-        Form {
-            Section {
-                KeyboardShortcuts.Recorder("Toggle Dictation:", name: .toggleDictation)
-                KeyboardShortcuts.Recorder("Copy Last Transcription:", name: .copyLastTranscription)
-            } header: {
-                SettingsSectionHeader(icon: "keyboard", title: "Hotkeys", color: .blue)
-            }
-
-            Section {
-                Toggle("Enable hold-to-record", isOn: $settingsStore.holdToRecordEnabled)
-                    .onChange(of: settingsStore.holdToRecordEnabled) { _ in
-                        (NSApp.delegate as? AppDelegate)?.updateHoldToRecord()
-                    }
-
-                if settingsStore.holdToRecordEnabled {
-                    HStack {
-                        Text("Hold key:")
-                        Spacer()
-                        HoldKeyRecorderButton(
-                            keyCode: $settingsStore.holdToRecordKeyCode,
-                            keyName: $settingsStore.holdToRecordKeyName
-                        )
-                    }
-
-                    Text("Hold the key to start recording, release to transcribe. The key is consumed by Dictava and won't reach other apps.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if permissionManager.accessibilityStatus != .granted {
-                        Label("Accessibility permission required for key interception", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    } else if !settingsStore.holdToRecordTapActive {
-                        Label("Key interception failed to start. Try toggling the feature off and on, or re-grant Accessibility permission.", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+            VStack(spacing: SettingsTheme.spacing16) {
+                SettingsCard(title: "Hotkeys") {
+                    VStack(spacing: SettingsTheme.spacing12) {
+                        KeyboardShortcuts.Recorder("Toggle Dictation:", name: .toggleDictation)
+                        KeyboardShortcuts.Recorder("Copy Last Transcription:", name: .copyLastTranscription)
                     }
                 }
-            } header: {
-                SettingsSectionHeader(icon: "hand.raised", title: "Hold to Record", color: .orange)
-            }
 
-            Section {
-                Toggle("Play start/stop sounds", isOn: $settingsStore.playStartStopSounds)
-                Toggle("Show floating indicator", isOn: $settingsStore.showFloatingIndicator)
-                Toggle("Show dock icon", isOn: $settingsStore.showDockIcon)
-                    .onChange(of: settingsStore.showDockIcon) { _ in
-                        (NSApp.delegate as? AppDelegate)?.updateDockIconPolicy()
-                    }
-                Toggle("Launch at login", isOn: $settingsStore.launchAtLogin)
-            } header: {
-                SettingsSectionHeader(icon: "gearshape.2", title: "Behavior", color: .purple)
-            }
+                SettingsCard(title: "Hold to Record") {
+                    VStack(alignment: .leading, spacing: SettingsTheme.spacing12) {
+                        Toggle("Enable hold-to-record", isOn: $settingsStore.holdToRecordEnabled)
+                            .onChange(of: settingsStore.holdToRecordEnabled) { _, _ in
+                                (NSApp.delegate as? AppDelegate)?.updateHoldToRecord()
+                            }
 
-            Section {
-                PermissionStatusRow(
-                    title: "Microphone",
-                    description: "Required for voice capture",
-                    status: permissionManager.microphoneStatus,
-                    action: {
-                        Task { await permissionManager.requestMicrophone() }
+                        if settingsStore.holdToRecordEnabled {
+                            HStack {
+                                Text("Hold key:")
+                                    .foregroundStyle(theme.textPrimary)
+                                Spacer()
+                                HoldKeyRecorderButton(
+                                    keyCode: $settingsStore.holdToRecordKeyCode,
+                                    keyName: $settingsStore.holdToRecordKeyName
+                                )
+                            }
+
+                            Text("Hold the key to start recording, release to transcribe. The key is consumed by Dictava and won't reach other apps.")
+                                .font(.caption)
+                                .foregroundStyle(theme.textSecondary)
+
+                            if permissionManager.accessibilityStatus != .granted {
+                                Label("Accessibility permission required for key interception", systemImage: "exclamationmark.triangle.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(theme.warning)
+                            } else if !settingsStore.holdToRecordTapActive {
+                                Label("Key interception failed to start. Try toggling the feature off and on, or re-grant Accessibility permission.", systemImage: "exclamationmark.triangle.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(theme.warning)
+                            }
+                        }
                     }
-                )
-                PermissionStatusRow(
-                    title: "Accessibility",
-                    description: "Required to type text at cursor",
-                    status: permissionManager.accessibilityStatus,
-                    action: {
-                        permissionManager.requestAccessibility()
+                    .animation(.easeInOut(duration: 0.2), value: settingsStore.holdToRecordEnabled)
+                }
+
+                SettingsCard(title: "Behavior") {
+                    VStack(spacing: SettingsTheme.spacing12) {
+                        Toggle("Play start/stop sounds", isOn: $settingsStore.playStartStopSounds)
+                        Toggle("Show floating indicator", isOn: $settingsStore.showFloatingIndicator)
+                        Toggle("Show dock icon", isOn: $settingsStore.showDockIcon)
+                            .onChange(of: settingsStore.showDockIcon) { _, newValue in
+                                if !newValue && !settingsStore.showMenuBarIcon {
+                                    settingsStore.showMenuBarIcon = true
+                                }
+                                (NSApp.delegate as? AppDelegate)?.updateDockIconPolicy()
+                            }
+                        Toggle("Show menu bar icon", isOn: $settingsStore.showMenuBarIcon)
+                            .onChange(of: settingsStore.showMenuBarIcon) { _, newValue in
+                                if !newValue && !settingsStore.showDockIcon {
+                                    settingsStore.showDockIcon = true
+                                }
+                                (NSApp.delegate as? AppDelegate)?.updateDockIconPolicy()
+                            }
+                        Toggle("Launch at login", isOn: $settingsStore.launchAtLogin)
+                            .onChange(of: settingsStore.launchAtLogin) { _, _ in
+                                (NSApp.delegate as? AppDelegate)?.updateLaunchAtLogin()
+                            }
+                        Toggle("Log transcription history", isOn: $settingsStore.logTranscriptionHistory)
                     }
-                )
-            } header: {
-                SettingsSectionHeader(icon: "lock.shield", title: "Permissions", color: .green)
+                }
+
+                SettingsCard(title: "Permissions") {
+                    VStack(spacing: SettingsTheme.spacing12) {
+                        PermissionStatusRow(
+                            title: "Microphone",
+                            description: "Required for voice capture",
+                            status: permissionManager.microphoneStatus,
+                            action: {
+                                Task { await permissionManager.requestMicrophone() }
+                            }
+                        )
+                        PermissionStatusRow(
+                            title: "Accessibility",
+                            description: "Required to type text at cursor",
+                            status: permissionManager.accessibilityStatus,
+                            action: {
+                                permissionManager.requestAccessibility()
+                            }
+                        )
+                    }
+                }
             }
-        }
-        .formStyle(.grouped)
-        .animation(.easeInOut(duration: 0.2), value: settingsStore.holdToRecordEnabled)
+            .padding(SettingsTheme.spacing20)
         }
     }
 }
@@ -93,6 +109,7 @@ struct HoldKeyRecorderButton: View {
     @Binding var keyName: String
     @State private var isRecording = false
     @State private var keyMonitor: Any?
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         Button(action: {
@@ -105,22 +122,22 @@ struct HoldKeyRecorderButton: View {
             HStack(spacing: 6) {
                 Text(isRecording ? "Press a key\u{2026}" : keyName)
                     .fontWeight(isRecording ? .regular : .medium)
-                    .foregroundStyle(isRecording ? .secondary : .primary)
+                    .foregroundStyle(isRecording ? theme.textSecondary : theme.textPrimary)
                 if !isRecording {
                     Image(systemName: "pencil")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                 }
             }
             .padding(.vertical, 4)
             .padding(.horizontal, 10)
             .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(isRecording ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                    .fill(isRecording ? theme.controlAccent.opacity(0.1) : theme.controlBackground)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(isRecording ? Color.accentColor : Color.clear, lineWidth: 1)
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                    .stroke(isRecording ? theme.controlAccent : theme.border, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -164,26 +181,30 @@ struct PermissionStatusRow: View {
     var description: String? = nil
     let status: PermissionStatus
     let action: () -> Void
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
+                    .foregroundStyle(theme.textPrimary)
                 if let description {
                     Text(description)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                 }
             }
             Spacer()
             switch status {
             case .granted:
                 Label("Granted", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(theme.success)
             case .denied:
                 Button("Grant Access") { action() }
+                    .buttonStyle(GhostButtonStyle())
             case .notDetermined:
                 Button("Request") { action() }
+                    .buttonStyle(GhostButtonStyle())
             }
         }
     }

@@ -11,17 +11,22 @@
 		02A1D17A8EABC937A93335B5 /* SnippetSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED596A1F29C180D97E03FB46 /* SnippetSettingsView.swift */; };
 		0503164849DC6425000937E8 /* IndicatorSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39687C394CF1D76112E5AC7F /* IndicatorSize.swift */; };
 		05E3C47AF70B9706B40443B4 /* DictationIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6F229CC363E43D817233CE /* DictationIndicatorWindow.swift */; };
+		0A62D481ABC9FFFA0C70C327 /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0050AF67797713B757939200 /* SettingsCard.swift */; };
+		0ADB1F3FD607FC8DF40993FA /* SettingsTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B49E142B709C8964CDBBEE /* SettingsTheme.swift */; };
 		0C18E03079899A3585F48E5E /* SyntheticEventMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */; };
 		0C792786701FEF7256B531CA /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */; };
 		0D737573E34A630C6817B28B /* ProviderCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038D8DEC0334ABFC0EE92143 /* ProviderCatalog.swift */; };
 		0E41EF235EB4F0B6C9A66BC5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E348CC874FC30990AE842AE8 /* Assets.xcassets */; };
 		12AFEDF2610DFAFF87F2E871 /* LLMProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80AA0B3B29E4040B4C5CE316 /* LLMProcessor.swift */; };
+		1D2007B315A90B35B2F187A9 /* ShadcnButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A039D683644CC12B40C878F /* ShadcnButtonStyles.swift */; };
 		1E1B2F44ECCB6E9AD12C3594 /* NotchShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8893F5D5D96B4FE6EE9ECFC0 /* NotchShape.swift */; };
 		20DC1ABC956EB2D648552B93 /* SpeechRecognitionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB33EDFA4554F79AE698569 /* SpeechRecognitionSettingsView.swift */; };
 		231FCCB3CBEAE6F2479C05E6 /* TranscriptionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBDC8983B57FE39992AAB44 /* TranscriptionLog.swift */; };
 		256730F85BE0F8194FDF8E26 /* CustomVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08415F23D6473C9F994302CC /* CustomVocabulary.swift */; };
 		2581A72E2585FD0B67387397 /* DictationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20CDF900DF97A6261574F336 /* DictationState.swift */; };
+		265EF897EE2F2FC7C7E122A9 /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0050AF67797713B757939200 /* SettingsCard.swift */; };
 		2A7F9A944F0CC24E1CAED41D /* CustomVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08415F23D6473C9F994302CC /* CustomVocabulary.swift */; };
+		2AEC517554E175801FFA5A49 /* ShadcnButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A039D683644CC12B40C878F /* ShadcnButtonStyles.swift */; };
 		2D76C5A8C95C0BE9C2B02A7E /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */; };
 		2DFF87B86AA59B06AB546ABE /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 7F9DEB2DA2E94C0C36292209 /* Yams */; };
 		2EE64F235C621F7D99EB36E8 /* FillerWordFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */; };
@@ -74,6 +79,7 @@
 		9D21C645F228FF17693BDEF1 /* NSScreen+Notch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08157B89528369AAA182AB6C /* NSScreen+Notch.swift */; };
 		9DA92FE39B854BD69137EB99 /* ASRProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D534C199EA1CD8521902DC3 /* ASRProvider.swift */; };
 		A28D25F791A3C07A38F924C6 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48CA7A99543E8B9321D18DCB /* HistoryView.swift */; };
+		A30C8D3477D70CADAEEC3C34 /* ShadcnToggleStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F82B5C94B8C3E8BA683D28 /* ShadcnToggleStyle.swift */; };
 		A5106D7260857B68506CE4AC /* PunctuationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273512E63E5C6F75BB362D6C /* PunctuationHandler.swift */; };
 		A618130C51918A433B8EFFED /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F2217B76C79636DF1410E3 /* TextInjector.swift */; };
 		A67C5943B36546EFE07E9D42 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCE5E72561AA59156B1F3A2 /* OnboardingView.swift */; };
@@ -83,6 +89,7 @@
 		B09C465013F836B65EAA3A4E /* ProviderCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038D8DEC0334ABFC0EE92143 /* ProviderCatalog.swift */; };
 		B40D3670CE7641B67E28D5D2 /* HoldToRecordManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4376705584C425DA0DD85EA5 /* HoldToRecordManager.swift */; };
 		B4E6F61D8319D65307BF32B0 /* FluidAudioProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC9EEA3E8D16BB64D49A79 /* FluidAudioProvider.swift */; };
+		B51B1D93EF96C20D240F4C05 /* SettingsTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B49E142B709C8964CDBBEE /* SettingsTheme.swift */; };
 		B5DCF1485B7C394D9A55614D /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */; };
 		B8B8E0513DB81C2060D1A98C /* AudioSampleBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4BB2E8EFC1FA9C122C08EB3 /* AudioSampleBuffer.swift */; };
 		B9DC4261B2B6248BFD10ACEF /* NotchIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBDF4BCF8D060F5286ADB72B /* NotchIndicatorWindow.swift */; };
@@ -105,14 +112,17 @@
 		DF635C82727E444C28BC9FF8 /* NSScreen+Notch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08157B89528369AAA182AB6C /* NSScreen+Notch.swift */; };
 		DFDACE3888700B42FE3FD750 /* SnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF2234116CD7B5C603509FC /* SnippetStore.swift */; };
 		DFDBA90E1797FB9C9F72B1AA /* StreamingTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */; };
+		E10F8E289076E47955FCC3C8 /* ShadcnTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3EB23D636CE6401C1D2232A /* ShadcnTextField.swift */; };
 		E185275B3C3B5DC24CF2C8D4 /* FluidAudioProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC9EEA3E8D16BB64D49A79 /* FluidAudioProvider.swift */; };
 		E18C01504D0F846017E74926 /* ASRProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D534C199EA1CD8521902DC3 /* ASRProvider.swift */; };
+		E373ED6020DA5D6905B2CE20 /* ShadcnTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3EB23D636CE6401C1D2232A /* ShadcnTextField.swift */; };
 		E3888C3A3CE55BE3586EFA80 /* PunctuationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273512E63E5C6F75BB362D6C /* PunctuationHandler.swift */; };
 		E6DFF1A7D91061B326652B81 /* VocabularyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC79EE5749DA7E0A754C7E0 /* VocabularyStore.swift */; };
 		E79BF0DDA63AB3DB30B15D0D /* DictationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF116476811FC7227E9C87A4 /* DictationSession.swift */; };
 		E82FF1E4D174CCF7FBC445C3 /* PhosphorSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 06C32697677E340E99554C8B /* PhosphorSwift */; };
 		EABE2A46AC3C71F2BD6E94E1 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB9907E0419A361C87AA53C3 /* SettingsStore.swift */; };
 		EE81E6390E1A1013D67ABACC /* CustomThemeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3FA80D52497A79E64378F4F /* CustomThemeStore.swift */; };
+		EF331C2271AD51A9334194F7 /* ShadcnToggleStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F82B5C94B8C3E8BA683D28 /* ShadcnToggleStyle.swift */; };
 		F042111F24EF22D864D3BEF7 /* DictavaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C0B3D32DDE6577A293F812 /* DictavaApp.swift */; };
 		F112F00A41939A66020DF02F /* SnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C48679CE3CBEB847BC83872 /* SnippetExpander.swift */; };
 		F8501E689E7AC84BF2F2B4F2 /* DictationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20CDF900DF97A6261574F336 /* DictationState.swift */; };
@@ -126,6 +136,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0050AF67797713B757939200 /* SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCard.swift; sourceTree = "<group>"; };
 		038D8DEC0334ABFC0EE92143 /* ProviderCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderCatalog.swift; sourceTree = "<group>"; };
 		08157B89528369AAA182AB6C /* NSScreen+Notch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Notch.swift"; sourceTree = "<group>"; };
 		08415F23D6473C9F994302CC /* CustomVocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomVocabulary.swift; sourceTree = "<group>"; };
@@ -159,6 +170,7 @@
 		880D2CFB6085FFCBA50B7530 /* StreamingTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingTranscriber.swift; sourceTree = "<group>"; };
 		8893F5D5D96B4FE6EE9ECFC0 /* NotchShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchShape.swift; sourceTree = "<group>"; };
 		88C5F2A5FA4CDE61A2955DD4 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		8A039D683644CC12B40C878F /* ShadcnButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShadcnButtonStyles.swift; sourceTree = "<group>"; };
 		8BCF3A6885AD134B19FA3893 /* FillerWordFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FillerWordFilter.swift; sourceTree = "<group>"; };
 		9D19CE416A61C5AD8AD15CA3 /* IndicatorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndicatorTheme.swift; sourceTree = "<group>"; };
 		9D61E4800B075AF40A51FADE /* SyntheticEventMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticEventMarker.swift; sourceTree = "<group>"; };
@@ -170,6 +182,8 @@
 		ACC5E6D34022840245FFC3DB /* NotchIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchIndicatorView.swift; sourceTree = "<group>"; };
 		AD972980806897E9246B00FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AE085CB00DF27B35CF2B542E /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
+		B3B49E142B709C8964CDBBEE /* SettingsTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTheme.swift; sourceTree = "<group>"; };
+		B3F82B5C94B8C3E8BA683D28 /* ShadcnToggleStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShadcnToggleStyle.swift; sourceTree = "<group>"; };
 		B3FA80D52497A79E64378F4F /* CustomThemeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomThemeStore.swift; sourceTree = "<group>"; };
 		BEE15C7DFB6ABF86C94177A9 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		C56AE2EBCAF070ADC834EDD4 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
@@ -177,6 +191,7 @@
 		D4BB2E8EFC1FA9C122C08EB3 /* AudioSampleBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSampleBuffer.swift; sourceTree = "<group>"; };
 		E348CC874FC30990AE842AE8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E3C0B3D32DDE6577A293F812 /* DictavaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictavaApp.swift; sourceTree = "<group>"; };
+		E3EB23D636CE6401C1D2232A /* ShadcnTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShadcnTextField.swift; sourceTree = "<group>"; };
 		E8F50BFF44F64FD257A5937A /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
 		EB9907E0419A361C87AA53C3 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		EBDF4BCF8D060F5286ADB72B /* NotchIndicatorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchIndicatorWindow.swift; sourceTree = "<group>"; };
@@ -296,6 +311,7 @@
 				464A3455A8BAE5A03D11E51C /* SettingsView.swift */,
 				ED596A1F29C180D97E03FB46 /* SnippetSettingsView.swift */,
 				2EB33EDFA4554F79AE698569 /* SpeechRecognitionSettingsView.swift */,
+				F16C518A59E8132AC84D3084 /* Theme */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -403,6 +419,18 @@
 				A441A9B73FFAFFA87D6169CA /* WaveformVisualizationView.swift */,
 			);
 			path = Visualization;
+			sourceTree = "<group>";
+		};
+		F16C518A59E8132AC84D3084 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				0050AF67797713B757939200 /* SettingsCard.swift */,
+				B3B49E142B709C8964CDBBEE /* SettingsTheme.swift */,
+				8A039D683644CC12B40C878F /* ShadcnButtonStyles.swift */,
+				E3EB23D636CE6401C1D2232A /* ShadcnTextField.swift */,
+				B3F82B5C94B8C3E8BA683D28 /* ShadcnToggleStyle.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 		F421524AF6EA6B373B1FF59B /* Dictava */ = {
@@ -563,9 +591,14 @@
 				0D737573E34A630C6817B28B /* ProviderCatalog.swift in Sources */,
 				E3888C3A3CE55BE3586EFA80 /* PunctuationHandler.swift in Sources */,
 				4CAFC4276B81062203A5D375 /* SentenceCapitalizer.swift in Sources */,
+				265EF897EE2F2FC7C7E122A9 /* SettingsCard.swift in Sources */,
 				57185B2786DE5BF60CFA106E /* SettingsComponents.swift in Sources */,
 				EABE2A46AC3C71F2BD6E94E1 /* SettingsStore.swift in Sources */,
+				B51B1D93EF96C20D240F4C05 /* SettingsTheme.swift in Sources */,
 				9952C2B031BD57AA0476B89F /* SettingsView.swift in Sources */,
+				2AEC517554E175801FFA5A49 /* ShadcnButtonStyles.swift in Sources */,
+				E10F8E289076E47955FCC3C8 /* ShadcnTextField.swift in Sources */,
+				A30C8D3477D70CADAEEC3C34 /* ShadcnToggleStyle.swift in Sources */,
 				BB937C144FF2AD6A15B8C508 /* SnippetExpander.swift in Sources */,
 				BFC24A4FDCDEF2946592CA86 /* SnippetSettingsView.swift in Sources */,
 				DFDACE3888700B42FE3FD750 /* SnippetStore.swift in Sources */,
@@ -622,9 +655,14 @@
 				B09C465013F836B65EAA3A4E /* ProviderCatalog.swift in Sources */,
 				A5106D7260857B68506CE4AC /* PunctuationHandler.swift in Sources */,
 				77A0A0D63871D79C27C7F392 /* SentenceCapitalizer.swift in Sources */,
+				0A62D481ABC9FFFA0C70C327 /* SettingsCard.swift in Sources */,
 				5385497E69CBE8E54EA6F30E /* SettingsComponents.swift in Sources */,
 				9BEACBF601B845A20CC3C7B9 /* SettingsStore.swift in Sources */,
+				0ADB1F3FD607FC8DF40993FA /* SettingsTheme.swift in Sources */,
 				DF5183CEB41E42A3411CBF1A /* SettingsView.swift in Sources */,
+				1D2007B315A90B35B2F187A9 /* ShadcnButtonStyles.swift in Sources */,
+				E373ED6020DA5D6905B2CE20 /* ShadcnTextField.swift in Sources */,
+				EF331C2271AD51A9334194F7 /* ShadcnToggleStyle.swift in Sources */,
 				F112F00A41939A66020DF02F /* SnippetExpander.swift in Sources */,
 				02A1D17A8EABC937A93335B5 /* SnippetSettingsView.swift in Sources */,
 				8ABA4F78B0B3152BAC09951E /* SnippetStore.swift in Sources */,
@@ -660,7 +698,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
 				PRODUCT_NAME = Dictava;
 				SDKROOT = macosx;
@@ -738,7 +776,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app;
 				PRODUCT_NAME = Dictava;
 				SDKROOT = macosx;
@@ -757,7 +795,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
 				PRODUCT_NAME = "Dictava Dev";
 				SDKROOT = macosx;
@@ -776,7 +814,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Dictava/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dictava.app.dev;
 				PRODUCT_NAME = "Dictava Dev";
 				SDKROOT = macosx;

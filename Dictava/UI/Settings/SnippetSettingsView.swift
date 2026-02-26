@@ -6,77 +6,84 @@ struct SnippetSettingsView: View {
     @State private var isEditing = false
     @State private var editTrigger = ""
     @State private var editReplacement = ""
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         ScrollView {
-        Form {
-            Section {
-                InfoBanner(.tip, "Say a trigger phrase and it will be expanded to the replacement text. Use {{date}}, {{time}}, and {{clipboard}} as template variables.")
+            VStack(spacing: SettingsTheme.spacing16) {
+                SettingsCard(title: "Snippets") {
+                    VStack(alignment: .leading, spacing: SettingsTheme.spacing12) {
+                        InfoBanner(.tip, "Say a trigger phrase and it will be expanded to the replacement text. Use {{date}}, {{time}}, and {{clipboard}} as template variables.")
 
-                Button {
-                    editTrigger = ""
-                    editReplacement = ""
-                    selectedSnippet = nil
-                    isEditing = true
-                } label: {
-                    Label("Add Snippet", systemImage: "plus")
-                }
-
-                if snippetStore.snippets.isEmpty {
-                    EmptyStateView(
-                        icon: "text.badge.plus",
-                        title: "No snippets yet",
-                        message: "Add a snippet to quickly expand trigger phrases into longer text."
-                    )
-                }
-
-                ForEach(snippetStore.snippets) { snippet in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(snippet.trigger)
-                                .font(.caption.monospaced())
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(.blue.opacity(0.1))
-                                .foregroundStyle(.blue)
-                                .clipShape(Capsule())
-
-                            Text(snippet.replacement)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-                        Spacer()
                         Button {
-                            editTrigger = snippet.trigger
-                            editReplacement = snippet.replacement
-                            selectedSnippet = snippet
+                            editTrigger = ""
+                            editReplacement = ""
+                            selectedSnippet = nil
                             isEditing = true
                         } label: {
-                            Image(systemName: "pencil")
-                                .foregroundStyle(.secondary)
+                            Label("Add Snippet", systemImage: "plus")
                         }
-                        .buttonStyle(.borderless)
-                        .help("Edit snippet")
+                        .buttonStyle(GhostButtonStyle())
 
-                        Button(role: .destructive) {
-                            if let index = snippetStore.snippets.firstIndex(where: { $0.id == snippet.id }) {
-                                snippetStore.removeSnippet(at: IndexSet(integer: index))
-                            }
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundStyle(.red.opacity(0.7))
+                        if snippetStore.snippets.isEmpty {
+                            EmptyStateView(
+                                icon: "text.badge.plus",
+                                title: "No snippets yet",
+                                message: "Add a snippet to quickly expand trigger phrases into longer text."
+                            )
                         }
-                        .buttonStyle(.borderless)
-                        .help("Delete snippet")
+
+                        ForEach(snippetStore.snippets) { snippet in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(snippet.trigger)
+                                        .font(.caption.monospaced())
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(theme.controlBackground)
+                                        .foregroundStyle(theme.textPrimary)
+                                        .clipShape(Capsule())
+
+                                    Text(snippet.replacement)
+                                        .font(.caption)
+                                        .foregroundStyle(theme.textSecondary)
+                                        .lineLimit(2)
+                                }
+                                Spacer()
+                                Button {
+                                    editTrigger = snippet.trigger
+                                    editReplacement = snippet.replacement
+                                    selectedSnippet = snippet
+                                    isEditing = true
+                                } label: {
+                                    Image(systemName: "pencil")
+                                        .foregroundStyle(theme.textSecondary)
+                                }
+                                .buttonStyle(.borderless)
+                                .help("Edit snippet")
+
+                                Button(role: .destructive) {
+                                    if let index = snippetStore.snippets.firstIndex(where: { $0.id == snippet.id }) {
+                                        snippetStore.removeSnippet(at: IndexSet(integer: index))
+                                    }
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundStyle(theme.destructive.opacity(0.7))
+                                }
+                                .buttonStyle(.borderless)
+                                .help("Delete snippet")
+                            }
+                            .padding(.vertical, 2)
+
+                            if snippet.id != snippetStore.snippets.last?.id {
+                                Divider()
+                                    .background(theme.border)
+                            }
+                        }
                     }
-                    .padding(.vertical, 2)
                 }
-            } header: {
-                SettingsSectionHeader(icon: "text.badge.plus", title: "Snippets", color: .green)
             }
-        }
-        .formStyle(.grouped)
+            .padding(SettingsTheme.spacing20)
         }
         .sheet(isPresented: $isEditing) {
             SnippetEditorSheet(
@@ -104,6 +111,7 @@ struct SnippetEditorSheet: View {
     let isNew: Bool
     let onSave: () -> Void
     @Environment(\.dismiss) var dismiss
+    @Environment(\.settingsTheme) private var theme
 
     private let templateVariables = [
         ("{{date}}", "Current date"),
@@ -115,23 +123,29 @@ struct SnippetEditorSheet: View {
         VStack(spacing: 16) {
             Text(isNew ? "New Snippet" : "Edit Snippet")
                 .font(.headline)
+                .foregroundStyle(theme.textPrimary)
 
             TextField("Trigger phrase", text: $trigger)
-                .textFieldStyle(.roundedBorder)
+                .shadcnTextField()
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Replacement:")
                     .font(.caption)
+                    .foregroundStyle(theme.textSecondary)
 
                 TextEditor(text: $replacement)
                     .font(.body)
                     .frame(minHeight: 100)
-                    .border(.quaternary)
+                    .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusMd))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                            .stroke(theme.border, lineWidth: 1)
+                    )
 
                 HStack(spacing: 6) {
                     Text("Insert:")
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(theme.textTertiary)
                     ForEach(templateVariables, id: \.0) { variable in
                         Button {
                             replacement += variable.0
@@ -139,8 +153,7 @@ struct SnippetEditorSheet: View {
                             Text(variable.0)
                                 .font(.caption2.monospaced())
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.mini)
+                        .buttonStyle(GhostButtonStyle())
                         .help(variable.1)
                     }
                 }
@@ -148,14 +161,17 @@ struct SnippetEditorSheet: View {
 
             HStack {
                 Button("Cancel") { dismiss() }
+                    .buttonStyle(GhostButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Save") { onSave() }
+                    .buttonStyle(PrimaryButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(trigger.isEmpty || replacement.isEmpty)
             }
         }
         .padding()
         .frame(width: 400, height: 320)
+        .background(theme.windowBackground)
     }
 }

@@ -509,6 +509,7 @@ final class DictationSession: ObservableObject {
     }
 
     private func logTranscription(rawText: String, processedText: String) {
+        guard settingsStore.logTranscriptionHistory else { return }
         let duration = sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
         let modelName = transcriptionEngine.activeProviderID == .fluidAudio
             ? "parakeet-v3" : settingsStore.selectedModelName

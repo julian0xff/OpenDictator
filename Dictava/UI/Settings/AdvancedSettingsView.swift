@@ -6,6 +6,7 @@ struct AdvancedSettingsView: View {
     @EnvironmentObject var transcriptionLogStore: TranscriptionLogStore
     @EnvironmentObject var modelManager: ModelManager
     @EnvironmentObject var fluidAudioModelManager: FluidAudioModelManager
+    @Environment(\.settingsTheme) private var theme
 
     @State private var showResetAlert = false
     @State private var showClearHistoryAlert = false
@@ -32,9 +33,9 @@ struct AdvancedSettingsView: View {
 
     var body: some View {
         ScrollView {
-            Form {
+            VStack(spacing: SettingsTheme.spacing16) {
                 // About
-                Section {
+                SettingsCard {
                     HStack(spacing: 14) {
                         Image(nsImage: NSApp.applicationIconImage)
                             .resizable()
@@ -44,12 +45,13 @@ struct AdvancedSettingsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Dictava")
                                 .font(.title2.bold())
+                                .foregroundStyle(theme.textPrimary)
                             Text("v\(appVersion)")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.textSecondary)
                             Text("Local, private dictation for macOS")
                                 .font(.caption)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(theme.textTertiary)
                         }
 
                         Spacer()
@@ -60,127 +62,133 @@ struct AdvancedSettingsView: View {
                             } label: {
                                 Label("GitHub", systemImage: "link")
                             }
-                            .buttonStyle(.borderless)
+                            .buttonStyle(GhostButtonStyle())
 
                             Button {
                                 NSWorkspace.shared.open(URL(string: "https://github.com/julian0xff/Dictava/releases")!)
                             } label: {
                                 Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
                             }
-                            .buttonStyle(.borderless)
+                            .buttonStyle(GhostButtonStyle())
                         }
                         .font(.caption)
                     }
                     .padding(.vertical, 4)
 
+                    Divider()
+                        .background(theme.border)
+
                     HStack {
                         Text("License")
+                            .foregroundStyle(theme.textPrimary)
                         Spacer()
                         Text("MIT")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.textSecondary)
                     }
-                } header: {
-                    SettingsSectionHeader(icon: "info.circle", title: "About Dictava", color: .blue)
                 }
 
                 // Data & Storage
-                Section {
-                    // App Data group
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("App Data")
-                            .font(.caption.bold())
-                            .foregroundStyle(.secondary)
-                    }
+                SettingsCard(title: "Data & Storage") {
+                    VStack(alignment: .leading, spacing: SettingsTheme.spacing8) {
+                        Text("APP DATA")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(theme.textTertiary)
+                            .tracking(0.5)
 
-                    storageRow("Transcription history", file: "transcription_logs.json")
-                    storageRow("Snippets", file: "snippets.yml")
-                    storageRow("Custom vocabulary", file: "vocabulary.json")
-                    storageRow("Custom themes", file: "custom_themes.json")
-                    storageRow("Custom voice commands", file: "custom_voice_commands.json")
+                        storageRow("Transcription history", file: "transcription_logs.json")
+                        storageRow("Snippets", file: "snippets.yml")
+                        storageRow("Custom vocabulary", file: "vocabulary.json")
+                        storageRow("Custom themes", file: "custom_themes.json")
+                        storageRow("Custom voice commands", file: "custom_voice_commands.json")
 
-                    Button("Open App Data Folder") {
-                        NSWorkspace.shared.open(appDataDir)
-                    }
-                    .buttonStyle(.borderless)
-                    .font(.caption)
-
-                    Divider()
-
-                    // Models group
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Models")
-                            .font(.caption.bold())
-                            .foregroundStyle(.secondary)
-                    }
-
-                    HStack {
-                        Text("WhisperKit models")
-                            .font(.caption)
-                        Spacer()
-                        Text(storageSizes.whisperKit)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    HStack {
-                        Text("Parakeet model")
-                            .font(.caption)
-                        Spacer()
-                        Text(storageSizes.parakeet)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    HStack(spacing: 12) {
-                        Button("Open WhisperKit Models") {
-                            NSWorkspace.shared.open(whisperKitModelsDir)
+                        Button("Open App Data Folder") {
+                            NSWorkspace.shared.open(appDataDir)
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(GhostButtonStyle())
                         .font(.caption)
 
-                        if FileManager.default.fileExists(atPath: parakeetModelDir.path) {
-                            Button("Open Parakeet Model") {
-                                NSWorkspace.shared.open(parakeetModelDir)
+                        Divider()
+                            .background(theme.border)
+
+                        Text("MODELS")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(theme.textTertiary)
+                            .tracking(0.5)
+
+                        HStack {
+                            Text("WhisperKit models")
+                                .font(.caption)
+                                .foregroundStyle(theme.textPrimary)
+                            Spacer()
+                            Text(storageSizes.whisperKit)
+                                .font(.caption)
+                                .foregroundStyle(theme.textSecondary)
+                        }
+
+                        HStack {
+                            Text("Parakeet model")
+                                .font(.caption)
+                                .foregroundStyle(theme.textPrimary)
+                            Spacer()
+                            Text(storageSizes.parakeet)
+                                .font(.caption)
+                                .foregroundStyle(theme.textSecondary)
+                        }
+
+                        HStack(spacing: 12) {
+                            Button("Open WhisperKit Models") {
+                                NSWorkspace.shared.open(whisperKitModelsDir)
                             }
-                            .buttonStyle(.borderless)
+                            .buttonStyle(GhostButtonStyle())
                             .font(.caption)
+
+                            if FileManager.default.fileExists(atPath: parakeetModelDir.path) {
+                                Button("Open Parakeet Model") {
+                                    NSWorkspace.shared.open(parakeetModelDir)
+                                }
+                                .buttonStyle(GhostButtonStyle())
+                                .font(.caption)
+                            }
+                        }
+
+                        Divider()
+                            .background(theme.border)
+
+                        HStack {
+                            Text("Total storage used")
+                                .fontWeight(.medium)
+                                .foregroundStyle(theme.textPrimary)
+                            Spacer()
+                            Text(storageSizes.total)
+                                .foregroundStyle(theme.textSecondary)
                         }
                     }
-
-                    Divider()
-
-                    HStack {
-                        Text("Total storage used")
-                            .fontWeight(.medium)
-                        Spacer()
-                        Text(storageSizes.total)
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    SettingsSectionHeader(icon: "externaldrive", title: "Data & Storage", color: .orange)
                 }
 
                 // Danger Zone
-                Section {
-                    Button("Reset All Settings") {
-                        showResetAlert = true
-                    }
-                    .foregroundStyle(.red)
+                SettingsCard(title: "Danger Zone") {
+                    VStack(spacing: SettingsTheme.spacing8) {
+                        Button("Reset All Settings") {
+                            showResetAlert = true
+                        }
+                        .buttonStyle(DestructiveButtonStyle())
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Button("Clear History") {
-                        showClearHistoryAlert = true
-                    }
-                    .foregroundStyle(.red)
+                        Button("Clear History") {
+                            showClearHistoryAlert = true
+                        }
+                        .buttonStyle(DestructiveButtonStyle())
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Button("Delete All Models") {
-                        showDeleteModelsAlert = true
+                        Button("Delete All Models") {
+                            showDeleteModelsAlert = true
+                        }
+                        .buttonStyle(DestructiveButtonStyle())
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .foregroundStyle(.red)
-                } header: {
-                    SettingsSectionHeader(icon: "exclamationmark.triangle", title: "Danger Zone", color: .red)
                 }
             }
-            .formStyle(.grouped)
+            .padding(SettingsTheme.spacing20)
         }
         .onAppear { refreshStorageSizes() }
         .alert("Reset All Settings", isPresented: $showResetAlert) {
@@ -217,10 +225,11 @@ struct AdvancedSettingsView: View {
         HStack {
             Text(label)
                 .font(.caption)
+                .foregroundStyle(theme.textPrimary)
             Spacer()
             Text(fileSize(at: appDataDir.appendingPathComponent(file)))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.textSecondary)
         }
     }
 
@@ -237,7 +246,7 @@ struct AdvancedSettingsView: View {
         guard FileManager.default.fileExists(atPath: url.path),
               let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
               let size = attrs[.size] as? UInt64 else {
-            return "—"
+            return "\u{2014}"
         }
         return formatBytes(size)
     }

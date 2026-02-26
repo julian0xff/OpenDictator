@@ -24,6 +24,7 @@ enum ChartMetric: String, CaseIterable {
 
 struct HistoryView: View {
     @EnvironmentObject var transcriptionLogStore: TranscriptionLogStore
+    @Environment(\.settingsTheme) private var theme
     @State private var filter: HistoryFilter = .allTime
     @State private var searchText = ""
     @State private var expandedLogID: UUID?
@@ -83,7 +84,9 @@ struct HistoryView: View {
             .padding(.top, 16)
             .padding(.bottom, 16)
 
-            Divider()
+            Rectangle()
+                .fill(theme.border)
+                .frame(height: 1)
 
             // Filter and search toolbar
             VStack(spacing: 8) {
@@ -101,7 +104,7 @@ struct HistoryView: View {
                     } label: {
                         Image(systemName: filter == .custom ? "calendar.circle.fill" : "calendar")
                             .font(.body)
-                            .foregroundStyle(filter == .custom ? .blue : .secondary)
+                            .foregroundStyle(filter == .custom ? theme.controlAccent : theme.textTertiary)
                             .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.bordered)
@@ -115,7 +118,7 @@ struct HistoryView: View {
                 HStack(spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(theme.textTertiary)
                             .font(.callout)
                         TextField("Search transcriptions...", text: $searchText)
                             .textFieldStyle(.plain)
@@ -125,7 +128,7 @@ struct HistoryView: View {
                                 searchText = ""
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(theme.textSecondary)
                                     .font(.callout)
                             }
                             .buttonStyle(.borderless)
@@ -133,8 +136,8 @@ struct HistoryView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.quaternary.opacity(0.5))
-                    .cornerRadius(8)
+                    .background(theme.controlBackground)
+                    .cornerRadius(SettingsTheme.radiusLg)
 
                     exportMenu
                 }
@@ -142,7 +145,9 @@ struct HistoryView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
 
-            Divider()
+            Rectangle()
+                .fill(theme.border)
+                .frame(height: 1)
 
             // Transcription list
             List {
@@ -243,19 +248,25 @@ struct HistoryView: View {
                         Text(chartMetric.rawValue)
                             .font(.caption)
                             .fontWeight(.medium)
+                            .foregroundStyle(theme.textSecondary)
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.caption2)
+                            .foregroundStyle(theme.textTertiary)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(.regularMaterial, in: Capsule())
+                    .background(theme.controlBackground, in: Capsule())
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
                 .padding(8)
             }
-            .background(Color(.controlBackgroundColor))
-            .cornerRadius(10)
+            .background(theme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusXl))
+            .overlay(
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusXl)
+                    .stroke(theme.border, lineWidth: 1)
+            )
         }
     }
 
@@ -269,7 +280,7 @@ struct HistoryView: View {
                 x: .value("Date", item.date, unit: chartUnit),
                 y: .value("Value", chartMetric == .dictations ? Double(item.count) : item.duration)
             )
-            .foregroundStyle(.blue.gradient)
+            .foregroundStyle(theme.controlAccent.gradient)
             .cornerRadius(4)
         }
         .chartXAxis {
@@ -316,6 +327,7 @@ struct HistoryView: View {
         } label: {
             Label("Export", systemImage: "square.and.arrow.up")
                 .font(.callout)
+                .foregroundStyle(theme.textSecondary)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -327,6 +339,7 @@ struct HistoryView: View {
         VStack(spacing: 16) {
             Text("Custom Date Range")
                 .font(.headline)
+                .foregroundStyle(theme.textPrimary)
 
             DatePicker("From:", selection: $customFrom, displayedComponents: .date)
             DatePicker("To:", selection: $customTo, displayedComponents: .date)
@@ -337,6 +350,7 @@ struct HistoryView: View {
                     filter = .custom
                     showDatePicker = false
                 }
+                .buttonStyle(PrimaryButtonStyle())
                 .keyboardShortcut(.defaultAction)
             }
         }
@@ -388,23 +402,25 @@ private struct HistoryStatCard: View {
     let label: String
     let value: String
     let icon: String
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 5) {
                 Image(systemName: icon)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textTertiary)
                 Text(label.uppercased())
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
                     .tracking(0.3)
             }
 
             Text(value)
                 .font(.title2)
                 .fontWeight(.semibold)
+                .foregroundStyle(theme.textPrimary)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -412,8 +428,12 @@ private struct HistoryStatCard: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.controlBackgroundColor))
-        .cornerRadius(10)
+        .background(theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusXl))
+        .overlay(
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusXl)
+                .stroke(theme.border, lineWidth: 1)
+        )
     }
 }
 
@@ -424,6 +444,7 @@ struct TranscriptionLogRow: View {
     let isExpanded: Bool
     let onToggle: () -> Void
     var onDelete: (() -> Void)? = nil
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -433,24 +454,24 @@ struct TranscriptionLogRow: View {
                         Text(formatTimestamp(log.timestamp))
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(theme.textPrimary)
 
                         Spacer()
 
                         HStack(spacing: 6) {
-                            badge("\(String(format: "%.1f", log.duration))s", color: .blue)
-                            badge("\(log.wordCount) words", color: .purple)
+                            badge("\(String(format: "%.1f", log.duration))s")
+                            badge("\(log.wordCount) words")
                         }
 
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.caption)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(theme.textTertiary)
                     }
 
                     Text(log.text.isEmpty ? "(empty)" : log.text)
                         .lineLimit(isExpanded ? nil : 2)
                         .font(.callout)
-                        .foregroundStyle(log.text.isEmpty ? .tertiary : .secondary)
+                        .foregroundStyle(log.text.isEmpty ? theme.textTertiary : theme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .lineSpacing(2)
                 }
@@ -464,15 +485,15 @@ struct TranscriptionLogRow: View {
                             Text("Raw transcription")
                                 .font(.caption)
                                 .fontWeight(.medium)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(theme.textTertiary)
                             Text(log.rawText)
                                 .font(.callout)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.textSecondary)
                                 .lineSpacing(2)
                                 .padding(10)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(.quaternary.opacity(0.5))
-                                .cornerRadius(8)
+                                .background(theme.controlBackground)
+                                .cornerRadius(SettingsTheme.radiusLg)
                         }
                     }
 
@@ -482,7 +503,7 @@ struct TranscriptionLogRow: View {
                         Label("\(log.characterCount) chars", systemImage: "character.cursor.ibeam")
                     }
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
 
                     HStack {
                         Spacer()
@@ -494,8 +515,7 @@ struct TranscriptionLogRow: View {
                             Label("Copy", systemImage: "doc.on.doc")
                                 .font(.callout)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .buttonStyle(GhostButtonStyle())
 
                         if let onDelete {
                             Button(role: .destructive) {
@@ -504,7 +524,7 @@ struct TranscriptionLogRow: View {
                                 Label("Delete", systemImage: "trash")
                                     .font(.callout)
                             }
-                            .buttonStyle(.borderless)
+                            .buttonStyle(DestructiveButtonStyle())
                         }
                     }
                 }
@@ -519,14 +539,14 @@ struct TranscriptionLogRow: View {
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 
-    private func badge(_ text: String, color: Color) -> some View {
+    private func badge(_ text: String) -> some View {
         Text(text)
             .font(.caption)
             .fontWeight(.medium)
-            .foregroundStyle(color)
+            .foregroundStyle(theme.textSecondary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(color.opacity(0.12), in: Capsule())
+            .background(theme.controlBackground, in: Capsule())
     }
 
     private func formatTimestamp(_ date: Date) -> String {

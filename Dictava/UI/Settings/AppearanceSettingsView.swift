@@ -4,6 +4,7 @@ struct AppearanceSettingsView: View {
     @EnvironmentObject var settingsStore: SettingsStore
     @EnvironmentObject var customThemeStore: CustomThemeStore
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.settingsTheme) private var theme
 
     // Draft state for editing built-in themes
     @State private var draftTheme: IndicatorTheme?
@@ -44,57 +45,45 @@ struct AppearanceSettingsView: View {
 
     var body: some View {
         ScrollView {
-            Form {
-                Section {
+            VStack(spacing: SettingsTheme.spacing16) {
+                SettingsCard(title: "Indicator Mode") {
                     indicatorModePicker
-                } header: {
-                    SettingsSectionHeader(icon: "display", title: "Indicator Mode", color: .cyan)
                 }
 
-                Section {
+                SettingsCard(title: "Preview") {
                     indicatorPreview
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                } header: {
-                    SettingsSectionHeader(icon: "eye", title: "Preview", color: .blue)
                 }
 
                 if settingsStore.indicatorMode == .floating {
-                    Section {
-                        themeGrid
-                        actionButtons
-                    } header: {
-                        SettingsSectionHeader(icon: "paintbrush", title: "Theme", color: .pink)
+                    SettingsCard(title: "Theme") {
+                        VStack(alignment: .leading, spacing: SettingsTheme.spacing12) {
+                            themeGrid
+                            actionButtons
+                        }
                     }
 
-                    Section {
+                    SettingsCard(title: "Visualization Style") {
                         visualizationStylePicker
-                    } header: {
-                        SettingsSectionHeader(icon: "waveform", title: "Visualization Style", color: .purple)
                     }
 
-                    Section {
+                    SettingsCard(title: "Widget Size") {
                         indicatorSizePicker
-                    } header: {
-                        SettingsSectionHeader(icon: "arrow.up.left.and.arrow.down.right", title: "Widget Size", color: .teal)
                     }
 
-                    Section {
+                    SettingsCard(title: "Customize") {
                         customControls
-                    } header: {
-                        SettingsSectionHeader(icon: "slider.horizontal.3", title: "Customize", color: .orange)
                     }
                 }
 
                 if settingsStore.indicatorMode == .notch {
-                    Section {
+                    SettingsCard(title: "Customize") {
                         notchCustomizeControls
-                    } header: {
-                        SettingsSectionHeader(icon: "slider.horizontal.3", title: "Customize", color: .orange)
                     }
                 }
             }
-            .formStyle(.grouped)
+            .padding(SettingsTheme.spacing20)
             .animation(.easeInOut(duration: 0.2), value: settingsStore.indicatorModeRaw)
         }
         .sheet(isPresented: $showSaveAsSheet, onDismiss: {
@@ -118,7 +107,7 @@ struct AppearanceSettingsView: View {
     @ViewBuilder
     private var themeGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 12)], spacing: 12) {
-            // System card — always shows midnight/frost, never the current selection
+            // System card
             let systemPreview = colorScheme == .dark ? IndicatorTheme.midnight : IndicatorTheme.frost
             themeCard(id: "system", label: "System", theme: systemPreview)
 
@@ -149,7 +138,7 @@ struct AppearanceSettingsView: View {
                     }
             }
 
-            // "Create New Theme" card
+            // Create New Theme card
             createNewThemeCard
         }
         .padding(.vertical, 4)
@@ -160,23 +149,23 @@ struct AppearanceSettingsView: View {
         VStack(spacing: 6) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.secondary.opacity(0.08))
+                    .fill(theme.controlBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                            .foregroundStyle(.secondary.opacity(0.3))
+                            .foregroundStyle(theme.textTertiary.opacity(0.5))
                     )
 
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textTertiary)
             }
             .frame(height: 32)
             .padding(.horizontal, 4)
 
             Text("New Theme")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.textSecondary)
         }
         .padding(8)
         .contentShape(Rectangle())
@@ -186,7 +175,7 @@ struct AppearanceSettingsView: View {
     }
 
     @ViewBuilder
-    private func themeCard(id: String, label: String, theme: IndicatorTheme, isCustom: Bool = false) -> some View {
+    private func themeCard(id: String, label: String, theme cardTheme: IndicatorTheme, isCustom: Bool = false) -> some View {
         let isSelected = settingsStore.indicatorThemeName == id
         VStack(spacing: 6) {
             ZStack(alignment: .topTrailing) {
@@ -195,7 +184,7 @@ struct AppearanceSettingsView: View {
                     ForEach(0..<8, id: \.self) { i in
                         let heights: [CGFloat] = [4, 7, 10, 14, 12, 8, 6, 3]
                         RoundedRectangle(cornerRadius: 1)
-                            .fill(theme.waveformColor)
+                            .fill(cardTheme.waveformColor)
                             .frame(width: 2.5, height: heights[i])
                     }
                 }
@@ -203,11 +192,11 @@ struct AppearanceSettingsView: View {
                 .padding(.vertical, 8)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(theme.backgroundColor.opacity(theme.backgroundOpacity))
+                        .fill(cardTheme.backgroundColor.opacity(cardTheme.backgroundOpacity))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(theme.borderColor.opacity(theme.borderOpacity), lineWidth: theme.borderWidth)
+                        .stroke(cardTheme.borderColor.opacity(cardTheme.borderOpacity), lineWidth: cardTheme.borderWidth)
                 )
 
                 if isCustom {
@@ -216,7 +205,7 @@ struct AppearanceSettingsView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.textTertiary)
                     }
                     .buttonStyle(.plain)
                     .offset(x: 4, y: -4)
@@ -225,17 +214,17 @@ struct AppearanceSettingsView: View {
 
             Text(label)
                 .font(.caption)
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
                 .lineLimit(1)
         }
         .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .fill(isSelected ? theme.controlBackground : Color.clear)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .stroke(isSelected ? theme.controlAccent : theme.border, lineWidth: isSelected ? 2 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -255,12 +244,14 @@ struct AppearanceSettingsView: View {
             } label: {
                 Label("Import Theme...", systemImage: "square.and.arrow.down")
             }
+            .buttonStyle(GhostButtonStyle())
 
             Spacer()
 
             Button("Export Code") {
                 exportTheme(activeTheme)
             }
+            .buttonStyle(GhostButtonStyle())
         }
     }
 
@@ -268,46 +259,47 @@ struct AppearanceSettingsView: View {
 
     @ViewBuilder
     private var indicatorModePicker: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            ForEach(IndicatorMode.allCases) { mode in
-                modeCard(mode)
-            }
-        }
-        .padding(.vertical, 4)
-
-        if settingsStore.indicatorMode == .notch {
-            if !NSScreen.screens.contains(where: { $0.hasNotch }) {
-                InfoBanner(.info, "No notch detected. A virtual notch-like shape will appear at the top center of the screen.")
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Expansion Style")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
-                    ForEach(NotchExpansionStyle.allCases) { style in
-                        expansionStyleCard(style)
-                    }
+        VStack(alignment: .leading, spacing: SettingsTheme.spacing12) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(IndicatorMode.allCases) { mode in
+                    modeCard(mode)
                 }
             }
-            .padding(.top, 4)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Animation Speed")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Picker("", selection: Binding(
-                    get: { settingsStore.notchAnimationSpeed },
-                    set: { settingsStore.notchAnimationSpeed = $0 }
-                )) {
-                    ForEach(NotchAnimationSpeed.allCases) { speed in
-                        Text(speed.displayName).tag(speed)
+            if settingsStore.indicatorMode == .notch {
+                if !NSScreen.screens.contains(where: { $0.hasNotch }) {
+                    InfoBanner(.info, "No notch detected. A virtual notch-like shape will appear at the top center of the screen.")
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Expansion Style")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
+                        ForEach(NotchExpansionStyle.allCases) { style in
+                            expansionStyleCard(style)
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                .padding(.top, 4)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Animation Speed")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                    Picker("", selection: Binding(
+                        get: { settingsStore.notchAnimationSpeed },
+                        set: { settingsStore.notchAnimationSpeed = $0 }
+                    )) {
+                        ForEach(NotchAnimationSpeed.allCases) { speed in
+                            Text(speed.displayName).tag(speed)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
         }
     }
 
@@ -317,23 +309,23 @@ struct AppearanceSettingsView: View {
         VStack(spacing: 6) {
             Image(systemName: mode.sfSymbol)
                 .font(.system(size: 20))
-                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                .foregroundStyle(isSelected ? theme.controlAccent : theme.textTertiary)
                 .frame(height: 28)
 
             Text(mode.displayName)
                 .font(.caption)
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
                 .lineLimit(1)
         }
         .padding(8)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .fill(isSelected ? theme.controlBackground : Color.clear)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .stroke(isSelected ? theme.controlAccent : theme.border, lineWidth: isSelected ? 2 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -349,23 +341,23 @@ struct AppearanceSettingsView: View {
         VStack(spacing: 6) {
             Image(systemName: style.sfSymbol)
                 .font(.system(size: 20))
-                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                .foregroundStyle(isSelected ? theme.controlAccent : theme.textTertiary)
                 .frame(height: 28)
 
             Text(style.displayName)
                 .font(.caption)
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
                 .lineLimit(1)
         }
         .padding(8)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .fill(isSelected ? theme.controlBackground : Color.clear)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .stroke(isSelected ? theme.controlAccent : theme.border, lineWidth: isSelected ? 2 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -393,7 +385,7 @@ struct AppearanceSettingsView: View {
 
     @ViewBuilder
     private var floatingPreview: some View {
-        let theme = activeTheme
+        let indicatorTheme = activeTheme
         let style = settingsStore.waveformStyle
         let metrics = IndicatorSizeMetrics.metrics(forScale: settingsStore.indicatorScale)
 
@@ -401,20 +393,20 @@ struct AppearanceSettingsView: View {
             style: style,
             level: Self.sampleLevel,
             history: Self.sampleHistory,
-            color: theme.waveformColor,
+            color: indicatorTheme.waveformColor,
             metrics: metrics
         )
-        .padding(.horizontal, theme.horizontalPadding)
-        .padding(.vertical, theme.verticalPadding)
+        .padding(.horizontal, indicatorTheme.horizontalPadding)
+        .padding(.vertical, indicatorTheme.verticalPadding)
         .background(
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .fill(theme.backgroundColor.opacity(theme.backgroundOpacity))
+            RoundedRectangle(cornerRadius: indicatorTheme.cornerRadius)
+                .fill(indicatorTheme.backgroundColor.opacity(indicatorTheme.backgroundOpacity))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .stroke(theme.borderColor.opacity(theme.borderOpacity), lineWidth: theme.borderWidth)
+            RoundedRectangle(cornerRadius: indicatorTheme.cornerRadius)
+                .stroke(indicatorTheme.borderColor.opacity(indicatorTheme.borderOpacity), lineWidth: indicatorTheme.borderWidth)
         )
-        .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
+        .shadow(color: theme.shadow, radius: 8, y: 2)
         .fixedSize()
     }
 
@@ -445,7 +437,6 @@ struct AppearanceSettingsView: View {
                     .fill(.black)
                     .frame(width: expandedWidth, height: expandedHeight)
 
-                // Preview content by style
                 switch style {
                 case .down:
                     VStack(spacing: 0) {
@@ -493,7 +484,7 @@ struct AppearanceSettingsView: View {
                 }
             }
         }
-        .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
+        .shadow(color: theme.shadow, radius: 8, y: 2)
     }
 
     // MARK: - Customize Controls
@@ -502,84 +493,94 @@ struct AppearanceSettingsView: View {
     private var customControls: some View {
         let themeBinding = editableThemeBinding
 
-        // Randomize button
-        HStack {
-            Button {
-                randomizeCurrentTheme()
-            } label: {
-                Label("Randomize", systemImage: "dice.fill")
+        VStack(alignment: .leading, spacing: SettingsTheme.spacing12) {
+            // Randomize button
+            HStack {
+                Button {
+                    randomizeCurrentTheme()
+                } label: {
+                    Label("Randomize", systemImage: "dice.fill")
+                }
+                .buttonStyle(GhostButtonStyle())
+                Spacer()
             }
-            Spacer()
-        }
 
-        ColorPicker("Waveform Color", selection: Binding(
-            get: { Color(hex: themeBinding.wrappedValue.waveformColorHex) },
-            set: {
-                var updated = themeBinding.wrappedValue
-                updated.waveformColorHex = $0.toHex()
-                themeBinding.wrappedValue = updated
+            ColorPicker("Waveform Color", selection: Binding(
+                get: { Color(hex: themeBinding.wrappedValue.waveformColorHex) },
+                set: {
+                    var updated = themeBinding.wrappedValue
+                    updated.waveformColorHex = $0.toHex()
+                    themeBinding.wrappedValue = updated
+                }
+            ), supportsOpacity: false)
+            .foregroundStyle(theme.textPrimary)
+
+            ColorPicker("Background Color", selection: Binding(
+                get: { Color(hex: themeBinding.wrappedValue.backgroundColorHex) },
+                set: {
+                    var updated = themeBinding.wrappedValue
+                    updated.backgroundColorHex = $0.toHex()
+                    themeBinding.wrappedValue = updated
+                }
+            ), supportsOpacity: false)
+            .foregroundStyle(theme.textPrimary)
+
+            ColorPicker("Border Color", selection: Binding(
+                get: { Color(hex: themeBinding.wrappedValue.borderColorHex) },
+                set: {
+                    var updated = themeBinding.wrappedValue
+                    updated.borderColorHex = $0.toHex()
+                    themeBinding.wrappedValue = updated
+                }
+            ), supportsOpacity: false)
+            .foregroundStyle(theme.textPrimary)
+
+            HStack {
+                Text("Corner Radius")
+                    .foregroundStyle(theme.textPrimary)
+                Slider(value: themeBinding.cornerRadius, in: 8...30, step: 1)
+                Text("\(Int(themeBinding.wrappedValue.cornerRadius))")
+                    .foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .frame(width: 24, alignment: .trailing)
             }
-        ), supportsOpacity: false)
 
-        ColorPicker("Background Color", selection: Binding(
-            get: { Color(hex: themeBinding.wrappedValue.backgroundColorHex) },
-            set: {
-                var updated = themeBinding.wrappedValue
-                updated.backgroundColorHex = $0.toHex()
-                themeBinding.wrappedValue = updated
+            HStack {
+                Text("Border Width")
+                    .foregroundStyle(theme.textPrimary)
+                Slider(value: themeBinding.borderWidth, in: 0...3, step: 0.5)
+                Text(String(format: "%.1f", themeBinding.wrappedValue.borderWidth))
+                    .foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .frame(width: 24, alignment: .trailing)
             }
-        ), supportsOpacity: false)
 
-        ColorPicker("Border Color", selection: Binding(
-            get: { Color(hex: themeBinding.wrappedValue.borderColorHex) },
-            set: {
-                var updated = themeBinding.wrappedValue
-                updated.borderColorHex = $0.toHex()
-                themeBinding.wrappedValue = updated
+            HStack {
+                Text("Background Opacity")
+                    .foregroundStyle(theme.textPrimary)
+                Slider(value: themeBinding.backgroundOpacity, in: 0.5...1.0, step: 0.05)
+                Text(String(format: "%.0f%%", themeBinding.wrappedValue.backgroundOpacity * 100))
+                    .foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .frame(width: 36, alignment: .trailing)
             }
-        ), supportsOpacity: false)
 
-        HStack {
-            Text("Corner Radius")
-            Slider(value: themeBinding.cornerRadius, in: 8...30, step: 1)
-            Text("\(Int(themeBinding.wrappedValue.cornerRadius))")
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .frame(width: 24, alignment: .trailing)
-        }
+            HStack {
+                Text("Padding")
+                    .foregroundStyle(theme.textPrimary)
+                Slider(value: themeBinding.horizontalPadding, in: 8...24, step: 1)
+                Text("\(Int(themeBinding.wrappedValue.horizontalPadding))")
+                    .foregroundStyle(theme.textSecondary)
+                    .monospacedDigit()
+                    .frame(width: 24, alignment: .trailing)
+            }
 
-        HStack {
-            Text("Border Width")
-            Slider(value: themeBinding.borderWidth, in: 0...3, step: 0.5)
-            Text(String(format: "%.1f", themeBinding.wrappedValue.borderWidth))
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .frame(width: 24, alignment: .trailing)
-        }
-
-        HStack {
-            Text("Background Opacity")
-            Slider(value: themeBinding.backgroundOpacity, in: 0.5...1.0, step: 0.05)
-            Text(String(format: "%.0f%%", themeBinding.wrappedValue.backgroundOpacity * 100))
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .frame(width: 36, alignment: .trailing)
-        }
-
-        HStack {
-            Text("Padding")
-            Slider(value: themeBinding.horizontalPadding, in: 8...24, step: 1)
-            Text("\(Int(themeBinding.wrappedValue.horizontalPadding))")
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .frame(width: 24, alignment: .trailing)
-        }
-
-        // Save as new theme — always visible
-        Button("Save as New Theme...") {
-            let source = activeTheme
-            newThemeName = isCustomSelected ? "\(source.label) Copy" : source.label
-            showSaveAsSheet = true
+            Button("Save as New Theme...") {
+                let source = activeTheme
+                newThemeName = isCustomSelected ? "\(source.label) Copy" : source.label
+                showSaveAsSheet = true
+            }
+            .buttonStyle(GhostButtonStyle())
         }
     }
 
@@ -591,6 +592,7 @@ struct AppearanceSettingsView: View {
             get: { settingsStore.notchGlowColor },
             set: { settingsStore.notchGlowColor = $0 }
         ), supportsOpacity: false)
+        .foregroundStyle(theme.textPrimary)
     }
 
     // MARK: - Visualization Style Picker
@@ -611,24 +613,24 @@ struct AppearanceSettingsView: View {
         VStack(spacing: 6) {
             Image(systemName: style.sfSymbol)
                 .font(.system(size: 20))
-                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                .foregroundStyle(isSelected ? theme.controlAccent : theme.textTertiary)
                 .frame(height: 28)
 
             Text(style.displayName)
                 .font(.caption)
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .padding(8)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .fill(isSelected ? theme.controlBackground : Color.clear)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .stroke(isSelected ? theme.controlAccent : theme.border, lineWidth: isSelected ? 2 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -641,25 +643,19 @@ struct AppearanceSettingsView: View {
     @ViewBuilder
     private var indicatorSizePicker: some View {
         VStack(spacing: 8) {
-            HStack {
-                Text("Widget Size")
-                Spacer()
-            }
             HStack(spacing: 8) {
                 Image(systemName: "minus")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textTertiary)
                 Slider(value: $settingsStore.indicatorScale, in: 0...1, step: 0.05)
                 Image(systemName: "plus")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textTertiary)
             }
         }
     }
 
-    /// Returns a binding that routes edits to either `draftTheme` (built-in) or `customThemeStore` (custom).
     /// Returns a binding that routes edits to `draftTheme` (new theme or built-in) or `customThemeStore` (custom).
-    /// New-theme draft takes priority so edits never leak into an existing custom theme.
     private var editableThemeBinding: Binding<IndicatorTheme> {
         if isNewThemeDraft {
             return Binding(
@@ -677,7 +673,6 @@ struct AppearanceSettingsView: View {
                 }
             )
         } else {
-            // Built-in: route through draftTheme
             return Binding(
                 get: {
                     if let draft = draftTheme {
@@ -698,26 +693,30 @@ struct AppearanceSettingsView: View {
         VStack(spacing: 16) {
             Text("Save as New Theme")
                 .font(.headline)
+                .foregroundStyle(theme.textPrimary)
 
             TextField("Theme Name", text: $newThemeName)
-                .textFieldStyle(.roundedBorder)
+                .shadcnTextField()
                 .frame(width: 260)
 
             HStack(spacing: 12) {
                 Button("Cancel") {
                     showSaveAsSheet = false
                 }
+                .buttonStyle(GhostButtonStyle())
                 .keyboardShortcut(.cancelAction)
 
                 Button("Save") {
                     saveAsNewTheme()
                 }
+                .buttonStyle(PrimaryButtonStyle())
                 .keyboardShortcut(.defaultAction)
                 .disabled(newThemeName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(24)
         .frame(width: 320)
+        .background(theme.windowBackground)
     }
 
     // MARK: - Import Sheet
@@ -726,13 +725,13 @@ struct AppearanceSettingsView: View {
         VStack(spacing: 16) {
             Text("Import Theme")
                 .font(.headline)
+                .foregroundStyle(theme.textPrimary)
 
             TextField("Paste theme code (DT1:...)", text: $importCode)
-                .textFieldStyle(.roundedBorder)
+                .shadcnTextField()
                 .frame(width: 360)
 
             if let preview = IndicatorTheme.fromCode(importCode) {
-                // Live preview
                 HStack(spacing: 2) {
                     ForEach(0..<8, id: \.self) { i in
                         let heights: [CGFloat] = [4, 7, 10, 14, 12, 8, 6, 3]
@@ -754,28 +753,31 @@ struct AppearanceSettingsView: View {
 
                 Text(preview.label)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
             } else if !importCode.isEmpty {
                 Text("Invalid theme code")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(theme.destructive)
             }
 
             HStack(spacing: 12) {
                 Button("Cancel") {
                     showImportSheet = false
                 }
+                .buttonStyle(GhostButtonStyle())
                 .keyboardShortcut(.cancelAction)
 
                 Button("Import") {
                     importTheme()
                 }
+                .buttonStyle(PrimaryButtonStyle())
                 .keyboardShortcut(.defaultAction)
                 .disabled(IndicatorTheme.fromCode(importCode) == nil)
             }
         }
         .padding(24)
         .frame(width: 420)
+        .background(theme.windowBackground)
     }
 
     // MARK: - Rename Sheet
@@ -784,15 +786,17 @@ struct AppearanceSettingsView: View {
         VStack(spacing: 16) {
             Text("Rename Theme")
                 .font(.headline)
+                .foregroundStyle(theme.textPrimary)
 
             TextField("Theme Name", text: $renameText)
-                .textFieldStyle(.roundedBorder)
+                .shadcnTextField()
                 .frame(width: 260)
 
             HStack(spacing: 12) {
                 Button("Cancel") {
                     showRenameSheet = false
                 }
+                .buttonStyle(GhostButtonStyle())
                 .keyboardShortcut(.cancelAction)
 
                 Button("Save") {
@@ -802,12 +806,14 @@ struct AppearanceSettingsView: View {
                     }
                     showRenameSheet = false
                 }
+                .buttonStyle(PrimaryButtonStyle())
                 .keyboardShortcut(.defaultAction)
                 .disabled(renameText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(24)
         .frame(width: 320)
+        .background(theme.windowBackground)
     }
 
     // MARK: - Actions

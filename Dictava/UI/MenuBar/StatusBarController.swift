@@ -9,10 +9,12 @@ final class StatusBarController: NSObject {
     private var cancellables = Set<AnyCancellable>()
     private var eventMonitor: Any?
     private let fluidAudioModelManager: FluidAudioModelManager
+    private let settingsStore: SettingsStore
     private var currentDictationState: DictationState = .idle
 
     init(dictationSession: DictationSession, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, settingsStore: SettingsStore, transcriptionLogStore: TranscriptionLogStore) {
         self.fluidAudioModelManager = fluidAudioModelManager
+        self.settingsStore = settingsStore
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         popover = NSPopover()
 
@@ -35,6 +37,8 @@ final class StatusBarController: NSObject {
             button.target = self
         }
 
+        statusItem.isVisible = settingsStore.showMenuBarIcon
+
         NotificationCenter.default.addObserver(self, selector: #selector(popoverDidClose), name: NSPopover.didCloseNotification, object: popover)
 
         updateIcon()
@@ -55,6 +59,27 @@ final class StatusBarController: NSObject {
                 self?.updateIcon()
             }
             .store(in: &cancellables)
+
+        // Sync popover appearance with settings
+        popover.appearance = settingsStore.settingsAppearance.nsAppearance
+
+        settingsStore.objectWillChange
+            .debounce(for: .milliseconds(150), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.popover.appearance = settingsStore.settingsAppearance.nsAppearance
+                if let popoverWindow = self.popover.contentViewController?.view.window {
+                    popoverWindow.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
+                }
+                // Sync menu bar icon visibility (debounced to clear activation policy transitions)
+                let shouldBeVisible = self.settingsStore.showMenuBarIcon
+                guard self.statusItem.isVisible != shouldBeVisible else { return }
+                if !shouldBeVisible && self.popover.isShown {
+                    self.popover.close()
+                }
+                self.statusItem.isVisible = shouldBeVisible
+            }
+            .store(in: &cancellables)
     }
 
     @objc private func popoverDidClose() {
@@ -69,6 +94,10 @@ final class StatusBarController: NSObject {
             closePopoverAndStopMonitor()
         } else if let button = statusItem.button {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            if let popoverWindow = popover.contentViewController?.view.window {
+                popoverWindow.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
+                popoverWindow.isOpaque = false
+            }
             eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
                 self?.closePopoverAndStopMonitor()
             }
@@ -132,6 +161,11 @@ struct StatusBarPopoverView: View {
     @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var transcriptionLogStore: TranscriptionLogStore
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var theme: SettingsTheme {
+        .resolve(colorScheme: colorScheme, appearance: settingsStore.settingsAppearance)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -175,6 +209,8 @@ struct StatusBarPopoverView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
         }
+        .background(theme.windowBackground)
+        .environment(\.settingsTheme, theme)
         .animation(.smooth(duration: 0.25), value: dictationSession.state)
     }
 }
@@ -183,20 +219,21 @@ struct StatusBarPopoverView: View {
 
 private struct StatusPillView: View {
     let state: DictationState
+    @Environment(\.settingsTheme) private var theme
 
     private var dotColor: Color {
         switch state {
-        case .idle: .green
+        case .idle: theme.success
         case .listening: .red
-        default: .secondary
+        default: theme.textSecondary
         }
     }
 
     private var tintColor: Color {
         switch state {
-        case .idle: .green
+        case .idle: theme.success
         case .listening: .red
-        default: .secondary
+        default: theme.textSecondary
         }
     }
 
@@ -230,22 +267,24 @@ private struct PopoverHeaderView: View {
     let state: DictationState
     let languageCode: String
     let providerName: String
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "waveform")
                 .font(.system(size: 15))
-                .foregroundStyle(.primary)
+                .foregroundStyle(theme.textPrimary)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Dictava")
                     .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(theme.textPrimary)
 
                 let showSubtitle = state == .idle || state == .listening
                 let languageName = SupportedLanguage.all.first(where: { $0.code == languageCode })?.name ?? languageCode
                 Text("\(languageName) \u{00B7} \(providerName)")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
                     .opacity(showSubtitle ? 1 : 0)
             }
 
@@ -281,6 +320,7 @@ private struct PopoverBodyView: View {
     @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject private var permissions = PermissionManager.shared
+    @Environment(\.settingsTheme) private var theme
 
     private var isFluidAudioActive: Bool {
         settingsStore.preferredProvider(for: settingsStore.selectedLanguage) == .fluidAudio
@@ -301,16 +341,16 @@ private struct PopoverBodyView: View {
                !(isFluidAudioActive && fluidAudioModelManager.isDownloading) {
                 HStack(alignment: .top, spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(theme.warning)
                         .font(.caption)
                     Text(error)
                         .font(.caption)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(theme.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
                 }
                 .padding(8)
-                .background(.orange.opacity(0.12))
+                .background(theme.warningBackground)
                 .cornerRadius(6)
             }
 
@@ -321,23 +361,23 @@ private struct PopoverBodyView: View {
                     Text("\(Int(fluidAudioModelManager.downloadProgress * 100))%")
                         .font(.caption)
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                         .frame(width: 32, alignment: .trailing)
                 }
                 Text("Downloading Parakeet model...")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
             } else if isFluidAudioActive && !fluidAudioModelManager.isDownloaded {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.down.circle")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                         .font(.caption)
                     Text("Parakeet model required — download in Settings.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                 }
                 .padding(8)
-                .background(.quaternary)
+                .background(theme.controlBackground)
                 .cornerRadius(6)
             }
 
@@ -347,31 +387,73 @@ private struct PopoverBodyView: View {
                 }
             } else {
                 // Permission buttons
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        if permissions.microphoneStatus != .granted {
-                            Button {
-                                Task { await PermissionManager.shared.requestMicrophone() }
-                            } label: {
-                                Label("Microphone", systemImage: "mic.fill")
+                VStack(spacing: 6) {
+                    if permissions.microphoneStatus != .granted {
+                        Button {
+                            Task { await PermissionManager.shared.requestMicrophone() }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "mic.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(theme.warning)
+                                    .frame(width: 20, height: 20)
+                                    .background(theme.warningBackground)
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                                Text("Grant Microphone Access")
+                                    .font(.caption)
+                                    .foregroundStyle(theme.textPrimary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(theme.textTertiary)
                             }
-                            .controlSize(.small)
+                            .padding(8)
+                            .background(theme.controlBackground)
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(theme.border, lineWidth: 1)
+                            )
                         }
-
-                        if permissions.accessibilityStatus != .granted {
-                            Button {
-                                PermissionManager.shared.requestAccessibility()
-                            } label: {
-                                Label("Accessibility", systemImage: "accessibility")
-                            }
-                            .controlSize(.small)
-                        }
+                        .buttonStyle(.plain)
                     }
 
-                    Text("Permissions required for dictation")
+                    if permissions.accessibilityStatus != .granted {
+                        Button {
+                            PermissionManager.shared.requestAccessibility()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "accessibility")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(theme.warning)
+                                    .frame(width: 20, height: 20)
+                                    .background(theme.warningBackground)
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                                Text("Grant Accessibility Access")
+                                    .font(.caption)
+                                    .foregroundStyle(theme.textPrimary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(theme.textTertiary)
+                            }
+                            .padding(8)
+                            .background(theme.controlBackground)
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(theme.border, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Text("Required for dictation")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                 }
+                .animation(.smooth(duration: 0.25), value: permissions.microphoneStatus)
+                .animation(.smooth(duration: 0.25), value: permissions.accessibilityStatus)
             }
         }
         .animation(.smooth(duration: 0.25), value: permissions.allPermissionsGranted)
@@ -400,6 +482,7 @@ private struct HeroButtonStyle: ButtonStyle {
 
 private struct WaveformHeroView: View {
     @ObservedObject var dictationSession: DictationSession
+    @Environment(\.settingsTheme) private var theme
     @State private var isHeroHovered = false
 
     var body: some View {
@@ -433,20 +516,20 @@ private struct WaveformHeroView: View {
         VStack(spacing: 8) {
             ClassicBarsView(
                 levels: Array(repeating: Float(0.08), count: 20),
-                color: .secondary.opacity(0.25)
+                color: theme.textTertiary.opacity(0.4)
             )
             .frame(height: 36)
 
             HStack {
                 Text("\u{2325}Space to dictate")
                     .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
 
                 Spacer()
 
                 Image(systemName: "mic.fill")
                     .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
             }
         }
         .padding(.horizontal, 12)
@@ -454,11 +537,11 @@ private struct WaveformHeroView: View {
         .frame(height: 76)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
+                .fill(theme.cardBackground.opacity(0.8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .strokeBorder(
-                            Color.primary.opacity(isHeroHovered ? 0.15 : 0.08),
+                            theme.border.opacity(isHeroHovered ? 1 : 0.6),
                             lineWidth: 1
                         )
                 )
@@ -476,6 +559,7 @@ private struct WaveformHeroView: View {
             if !dictationSession.liveText.isEmpty {
                 Text(dictationSession.liveText)
                     .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(theme.textPrimary)
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .transition(.opacity)
@@ -508,7 +592,7 @@ private struct WaveformHeroView: View {
                 .frame(width: 16, height: 16)
             Text(dictationSession.state.displayText)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.textSecondary)
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -516,7 +600,7 @@ private struct WaveformHeroView: View {
         .padding(.horizontal, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(.quaternary.opacity(0.4))
+                .fill(theme.controlBackground)
         )
     }
 }
@@ -526,23 +610,25 @@ private struct WaveformHeroView: View {
 private struct PopoverStatTileView: View {
     let value: String
     let label: String
+    @Environment(\.settingsTheme) private var theme
 
     var body: some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.system(size: 19, weight: .semibold, design: .rounded))
                 .monospacedDigit()
+                .foregroundStyle(theme.textPrimary)
                 .contentTransition(.numericText())
 
             Text(label)
                 .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(theme.textTertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.primary.opacity(0.04))
+                .fill(theme.controlBackground.opacity(0.5))
         )
     }
 }
@@ -589,6 +675,7 @@ private struct QuickStatsView: View {
 
 private struct PopoverRecentView: View {
     let transcriptions: [TranscriptionLog]
+    @Environment(\.settingsTheme) private var theme
     @State private var hoveredID: UUID?
     @State private var copiedID: UUID?
 
@@ -599,7 +686,7 @@ private struct PopoverRecentView: View {
                 Text("RECENT")
                     .font(.system(size: 10, weight: .semibold))
                     .kerning(0.5)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
 
                 Spacer()
 
@@ -608,7 +695,7 @@ private struct PopoverRecentView: View {
                 } label: {
                     Text("View All \u{2192}")
                         .font(.system(size: 11))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(theme.controlAccent)
                 }
                 .buttonStyle(.plain)
             }
@@ -635,24 +722,24 @@ private struct PopoverRecentView: View {
                                 Text(log.text)
                                     .font(.caption)
                                     .lineLimit(1)
-                                    .foregroundStyle(.primary)
+                                    .foregroundStyle(theme.textPrimary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                 Text(relativeTime(log.timestamp))
                                     .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(theme.textTertiary)
                                     .monospacedDigit()
                             }
 
                             if copiedID == log.id {
                                 Image(systemName: "checkmark")
                                     .font(.caption2)
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(theme.success)
                                     .transition(.opacity.combined(with: .scale(scale: 0.7)))
                             } else {
                                 Image(systemName: "doc.on.doc")
                                     .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(theme.textTertiary)
                                     .transition(.opacity.combined(with: .scale(scale: 0.7)))
                             }
                         }
@@ -660,7 +747,7 @@ private struct PopoverRecentView: View {
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.primary.opacity(hoveredID == log.id ? 0.08 : 0.04))
+                                .fill(theme.controlBackground.opacity(hoveredID == log.id ? 1.0 : 0.5))
                         )
                         .contentShape(Rectangle())
                     }
@@ -689,13 +776,15 @@ private struct PopoverRecentView: View {
 // MARK: - Footer
 
 private struct PopoverFooterView: View {
+    @Environment(\.settingsTheme) private var theme
+
     var body: some View {
         HStack(spacing: 12) {
             footerButton(
                 icon: "gear",
                 label: "Settings",
-                iconColor: .secondary,
-                bgColor: Color(white: 0.5, opacity: 0.18)
+                iconColor: theme.textSecondary,
+                bgColor: theme.controlBackground
             ) {
                 NSApp.sendAction(#selector(AppDelegate.openSettingsWindow), to: nil, from: nil)
             }
@@ -712,8 +801,8 @@ private struct PopoverFooterView: View {
             footerButton(
                 icon: "power",
                 label: "Quit",
-                iconColor: .red.opacity(0.8),
-                bgColor: Color.red.opacity(0.12)
+                iconColor: theme.destructive.opacity(0.8),
+                bgColor: theme.destructiveBackground
             ) {
                 NSApplication.shared.terminate(nil)
             }
@@ -731,7 +820,7 @@ private struct PopoverFooterView: View {
 
                 Text(label)
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
             }
             .frame(maxWidth: .infinity)
         }
@@ -740,6 +829,7 @@ private struct PopoverFooterView: View {
 }
 
 private struct FooterButtonStyle: ButtonStyle {
+    @Environment(\.settingsTheme) private var theme
     @State private var isHovered = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -748,7 +838,7 @@ private struct FooterButtonStyle: ButtonStyle {
             .padding(.horizontal, 8)
             .background(
                 RoundedRectangle(cornerRadius: 7)
-                    .fill(isHovered ? Color.primary.opacity(0.08) : Color.clear)
+                    .fill(isHovered ? theme.controlBackground : Color.clear)
             )
             .onHover { hovering in
                 isHovered = hovering

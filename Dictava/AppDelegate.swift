@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 import KeyboardShortcuts
+import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -31,12 +32,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowObservers: [NSObjectProtocol] = []
     private var currentPolicy: NSApplication.ActivationPolicy = .accessory
     private var holdToRecordRetryCancellable: AnyCancellable?
+    private var appearanceObserver: NSObjectProtocol?
+    private var systemAppearanceObserver: NSKeyValueObservation?
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            openSettingsWindow()
+        }
+        return true
+    }
+
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // Safety: if both icons are hidden (e.g. crash between two @AppStorage writes),
+        // restore menu bar icon to prevent the app becoming unreachable.
+        if !settingsStore.showDockIcon && !settingsStore.showMenuBarIcon {
+            settingsStore.showMenuBarIcon = true
+        }
+
         // Set activation policy as early as possible to minimize dock icon flash
         let policy: NSApplication.ActivationPolicy = settingsStore.showDockIcon ? .regular : .accessory
         NSApp.setActivationPolicy(policy)
@@ -61,6 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupWindowObservers()
         checkFirstLaunch()
         preloadModel()
+        updateLaunchAtLogin()
     }
 
     private func setupWindowObservers() {
@@ -106,6 +123,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if desiredPolicy == .regular {
             NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    func updateLaunchAtLogin() {
+        do {
+            if settingsStore.launchAtLogin {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            NSLog("Launch at login: \(error.localizedDescription)")
         }
     }
 
@@ -218,7 +247,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
         }
 
+        window.appearance = settingsStore.settingsAppearance.nsAppearance
+        window.titlebarAppearsTransparent = true
+        window.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
         settingsWindow = window
+
+        setupAppearanceObserver()
 
         // Defer showing to let SwiftUI lay out
         DispatchQueue.main.async { [self] in
@@ -261,7 +295,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
         }
 
+        window.appearance = settingsStore.settingsAppearance.nsAppearance
+        window.titlebarAppearsTransparent = true
+        window.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
         settingsWindow = window
+
+        setupAppearanceObserver()
 
         // Defer showing to let SwiftUI lay out
         DispatchQueue.main.async { [self] in
@@ -269,6 +308,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             currentPolicy = .regular
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    private func setupAppearanceObserver() {
+        guard appearanceObserver == nil else { return }
+        appearanceObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.settingsWindow?.appearance = self.settingsStore.settingsAppearance.nsAppearance
+            self.settingsWindow?.titlebarAppearsTransparent = true
+            self.settingsWindow?.backgroundColor = self.settingsStore.settingsAppearance.windowBackgroundColor
+        }
+
+        // Also observe system appearance changes so .system mode updates the window background
+        systemAppearanceObserver = NSApp.observe(\.effectiveAppearance) { [weak self] _, _ in
+            DispatchQueue.main.async {
+                guard let self, self.settingsStore.settingsAppearance == .system else { return }
+                self.settingsWindow?.backgroundColor = self.settingsStore.settingsAppearance.windowBackgroundColor
+            }
         }
     }
 
