@@ -9,6 +9,7 @@ final class DictationIndicatorWindow {
     private let settingsStore: SettingsStore
     private let customThemeStore: CustomThemeStore
     private var isHiding = false
+    private var moveObserver: NSObjectProtocol?
 
     init(dictationSession: DictationSession, settingsStore: SettingsStore, customThemeStore: CustomThemeStore) {
         self.settingsStore = settingsStore
@@ -82,18 +83,23 @@ final class DictationIndicatorWindow {
             panel.hasShadow = false
             panel.appearance = nil
 
-            if let screen = NSScreen.main {
-                let screenFrame = screen.visibleFrame
-                let x = screenFrame.midX - 160
-                let y = screenFrame.maxY - 70
-                panel.setFrameOrigin(NSPoint(x: x, y: y))
-            }
-
             // Force layout before first show so size is correct
             hostingView.layoutSubtreeIfNeeded()
 
             self.panel = panel
+
+            // Observe drag moves to persist position per-screen
+            moveObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didMoveNotification,
+                object: panel,
+                queue: .main
+            ) { [weak self] _ in
+                self?.saveCurrentPosition()
+            }
         }
+
+        // Reposition on focused screen every time we transition from hidden → visible
+        positionOnFocusedScreen()
 
         panel?.alphaValue = 0
         panel?.orderFront(nil)
@@ -116,6 +122,40 @@ final class DictationIndicatorWindow {
             }
             DispatchQueue.main.async { [weak self] in self?.resizePanelToFit() }
         }
+    }
+
+    private func positionOnFocusedScreen() {
+        guard let panel else { return }
+        let screen = NSScreen.focused
+        let screenFrame = screen.visibleFrame
+
+        // Try saved position for this screen
+        if let displayID = screen.displayID,
+           let saved = settingsStore.savedIndicatorPosition(forDisplayID: displayID) {
+            let topCenterX = screenFrame.origin.x + saved.topCenterXRelative
+            let topY = screenFrame.maxY - saved.topOffsetFromVisibleTop
+            let origin = NSPoint(x: topCenterX - panel.frame.width / 2, y: topY - panel.frame.height)
+            // Validate: at least half the pill is on-screen
+            let proposed = NSRect(origin: origin, size: panel.frame.size)
+            let overlap = proposed.intersection(screenFrame)
+            if !overlap.isNull && overlap.width >= panel.frame.width * 0.5 {
+                panel.setFrameOrigin(origin)
+                return
+            }
+        }
+
+        // Default: center-top, 70px from top
+        panel.setFrameOrigin(NSPoint(x: screenFrame.midX - panel.frame.width / 2, y: screenFrame.maxY - 70))
+    }
+
+    private func saveCurrentPosition() {
+        guard let panel, let screen = panel.screen, let displayID = screen.displayID else { return }
+        let screenFrame = screen.visibleFrame
+        let position = IndicatorScreenPosition(
+            topCenterXRelative: panel.frame.midX - screenFrame.origin.x,
+            topOffsetFromVisibleTop: screenFrame.maxY - panel.frame.maxY
+        )
+        settingsStore.saveIndicatorPosition(position, forDisplayID: displayID)
     }
 
     private func resizePanelToFit() {

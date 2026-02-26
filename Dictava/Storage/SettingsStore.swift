@@ -56,6 +56,14 @@ enum NotchExpansionStyle: String, CaseIterable, Identifiable {
     }
 }
 
+/// Screen-relative position for the floating indicator, stored per display.
+struct IndicatorScreenPosition: Codable {
+    /// Horizontal center of the pill, relative to the screen's visibleFrame origin.
+    let topCenterXRelative: CGFloat
+    /// Distance from the top of visibleFrame down to the pill's top edge.
+    let topOffsetFromVisibleTop: CGFloat
+}
+
 final class SettingsStore: ObservableObject {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
     @AppStorage("selectedModelName") var selectedModelName = "openai_whisper-tiny.en"
@@ -181,6 +189,32 @@ final class SettingsStore: ObservableObject {
         let knownNames = Set(ModelManager.defaultModels.map(\.name))
         if !knownNames.contains(selectedModelName) {
             selectedModelName = "openai_whisper-tiny.en"
+        }
+    }
+
+    // MARK: - Per-Screen Indicator Position
+
+    @AppStorage("indicatorPositionsPerScreen") private var indicatorPositionsJSON = ""
+
+    func savedIndicatorPosition(forDisplayID id: CGDirectDisplayID) -> IndicatorScreenPosition? {
+        guard !indicatorPositionsJSON.isEmpty,
+              let data = indicatorPositionsJSON.data(using: .utf8),
+              let dict = try? JSONDecoder().decode([String: IndicatorScreenPosition].self, from: data) else {
+            return nil
+        }
+        return dict[String(id)]
+    }
+
+    func saveIndicatorPosition(_ position: IndicatorScreenPosition, forDisplayID id: CGDirectDisplayID) {
+        var dict: [String: IndicatorScreenPosition] = [:]
+        if !indicatorPositionsJSON.isEmpty,
+           let data = indicatorPositionsJSON.data(using: .utf8),
+           let existing = try? JSONDecoder().decode([String: IndicatorScreenPosition].self, from: data) {
+            dict = existing
+        }
+        dict[String(id)] = position
+        if let data = try? JSONEncoder().encode(dict), let str = String(data: data, encoding: .utf8) {
+            indicatorPositionsJSON = str
         }
     }
 

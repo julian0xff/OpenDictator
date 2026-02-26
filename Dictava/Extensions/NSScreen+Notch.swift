@@ -1,6 +1,17 @@
 import AppKit
 
 extension NSScreen {
+    /// Stable display identifier, usable as a dictionary key for per-screen storage.
+    var displayID: CGDirectDisplayID? {
+        deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+    }
+
+    /// The screen the user is currently focused on (contains the key window).
+    /// Falls back to primary screen if no key window exists.
+    static var focused: NSScreen {
+        NSScreen.main ?? NSScreen.screens.first!
+    }
+
     /// Whether this screen has a physical notch (MacBook Pro 2021+).
     /// Uses auxiliary areas which only exist on notched displays,
     /// regardless of menu bar visibility or safe area inset quirks.

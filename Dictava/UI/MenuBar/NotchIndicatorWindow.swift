@@ -57,6 +57,7 @@ final class NotchIndicatorWindow {
     private let state = NotchIndicatorState()
     private var collapseWorkItem: DispatchWorkItem?
     private var pendingExpandWorkItem: DispatchWorkItem?
+    private var lastDisplayID: CGDirectDisplayID?
 
     // Fallback dimensions for non-notch screens
     private let fallbackNotchWidth: CGFloat = 200
@@ -79,13 +80,12 @@ final class NotchIndicatorWindow {
             .store(in: &cancellables)
     }
 
-    private func createPanelIfNeeded() {
+    private func createPanelIfNeeded(for screen: NSScreen = .focused) {
         guard panel == nil else { return }
 
-        let screen = NSScreen.main
-        let hasNotch = screen?.hasNotch ?? false
-        let notchWidth = screen?.notchWidth ?? fallbackNotchWidth
-        let notchHeight = hasNotch ? (screen?.notchHeight ?? fallbackNotchHeight) : fallbackNotchHeight
+        let hasNotch = screen.hasNotch
+        let notchWidth = screen.notchWidth ?? fallbackNotchWidth
+        let notchHeight = hasNotch ? screen.notchHeight : fallbackNotchHeight
 
         // Fixed panel size — large enough for the biggest expansion style.
         // The SwiftUI view handles its own sizing inside this fixed frame.
@@ -127,11 +127,10 @@ final class NotchIndicatorWindow {
         panel.contentView = container
 
         // Position: top edge of panel = top edge of screen (flush with physical screen top)
-        if let screenFrame = screen?.frame {
-            let x = screenFrame.origin.x + (screenFrame.width / 2) - panelWidth / 2
-            let y = screenFrame.origin.y + screenFrame.height - panelHeight
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
-        }
+        let screenFrame = screen.frame
+        let x = screenFrame.origin.x + (screenFrame.width / 2) - panelWidth / 2
+        let y = screenFrame.origin.y + screenFrame.height - panelHeight
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
 
         self.panel = panel
     }
@@ -143,8 +142,18 @@ final class NotchIndicatorWindow {
         collapseWorkItem?.cancel()
         collapseWorkItem = nil
 
+        let targetScreen = NSScreen.focused
+        let targetDisplayID = targetScreen.displayID
+
+        // If screen changed, tear down panel so it's recreated with correct notch dimensions
+        if let targetDisplayID, targetDisplayID != lastDisplayID, panel != nil {
+            panel?.orderOut(nil)
+            panel = nil
+        }
+
         let isFirstShow = (panel == nil)
-        createPanelIfNeeded()
+        createPanelIfNeeded(for: targetScreen)
+        lastDisplayID = targetDisplayID
 
         if isFirstShow {
             panel?.alphaValue = 0
