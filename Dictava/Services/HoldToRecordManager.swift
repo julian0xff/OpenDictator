@@ -36,11 +36,15 @@ final class HoldToRecordManager {
     var holdSessionActive: Bool = false
 
     /// Whether the event tap is currently active and intercepting events.
-    var isTapActive: Bool { eventTap != nil }
+    var isTapActive: Bool {
+        guard let tap = eventTap else { return false }
+        return CFMachPortIsValid(tap) && CGEvent.tapIsEnabled(tap: tap)
+    }
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var isKeyHeld: Bool = false
+    private var lastStartAttemptAt: Date?
 
     // MARK: - Lifecycle
 
@@ -98,7 +102,48 @@ final class HoldToRecordManager {
         eventTap = nil
         runLoopSource = nil
         isKeyHeld = false
+        lastStartAttemptAt = nil
         HoldToRecordManager.current = nil
+    }
+
+    /// Updates the hold key while ensuring stale key state doesn't survive key rebinding.
+    func updateConfiguredKeyCode(_ newKeyCode: Int64) {
+        guard configuredKeyCode != newKeyCode else { return }
+        configuredKeyCode = newKeyCode
+
+        // If key changed mid-session, force-release hold state to avoid dead/stuck behavior.
+        if isKeyHeld || holdSessionActive {
+            isKeyHeld = false
+            lastStartAttemptAt = nil
+            holdSessionActive = true // Keep active so AppDelegate stop callback guard passes.
+            DispatchQueue.main.async { [weak self] in
+                self?.onStopDictation?()
+            }
+        }
+    }
+
+    /// Ensures the tap is valid and enabled; recreates it if needed.
+    @discardableResult
+    func ensureTapRunning() -> Bool {
+        guard isEnabled else { return false }
+
+        guard let tap = eventTap else {
+            return start()
+        }
+
+        guard CFMachPortIsValid(tap) else {
+            stop()
+            return start()
+        }
+
+        if !CGEvent.tapIsEnabled(tap: tap) {
+            CGEvent.tapEnable(tap: tap, enable: true)
+            if !CGEvent.tapIsEnabled(tap: tap) {
+                stop()
+                return start()
+            }
+        }
+        return true
     }
 
     // MARK: - Event Handling
@@ -115,8 +160,18 @@ final class HoldToRecordManager {
         // Re-enable tap if the system disabled it (e.g. callback took too long)
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             NSLog("HoldToRecord: Tap was disabled by system, re-enabling")
+            let hadHoldSession = manager.holdSessionActive
+            manager.isKeyHeld = false
+            manager.lastStartAttemptAt = nil
+            manager.holdSessionActive = false
             if let tap = manager.eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
+            }
+            if hadHoldSession {
+                DispatchQueue.main.async {
+                    manager.holdSessionActive = true // Keep active so AppDelegate stop callback guard passes.
+                    manager.onStopDictation?()
+                }
             }
             return Unmanaged.passUnretained(event)
         }
@@ -139,8 +194,22 @@ final class HoldToRecordManager {
         let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
 
         if type == .keyDown {
-            if !isRepeat && !manager.isKeyHeld {
+            if !manager.isKeyHeld {
                 manager.isKeyHeld = true
+            }
+
+            // If user keeps the key held while app is busy (e.g. transcribing), allow
+            // throttled retries so dictation can begin once state returns to idle.
+            let now = Date()
+            let enoughTimeSinceAttempt: Bool
+            if let last = manager.lastStartAttemptAt {
+                enoughTimeSinceAttempt = now.timeIntervalSince(last) >= 0.18
+            } else {
+                enoughTimeSinceAttempt = true
+            }
+
+            if !manager.holdSessionActive && (!isRepeat || enoughTimeSinceAttempt) {
+                manager.lastStartAttemptAt = now
                 DispatchQueue.main.async {
                     manager.onStartDictation?()
                 }
@@ -148,6 +217,7 @@ final class HoldToRecordManager {
             return nil // Consume the event (including repeats)
         } else if type == .keyUp {
             manager.isKeyHeld = false
+            manager.lastStartAttemptAt = nil
             DispatchQueue.main.async {
                 manager.onStopDictation?()
             }

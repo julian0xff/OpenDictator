@@ -10,6 +10,8 @@ final class DictationIndicatorWindow {
     private let customThemeStore: CustomThemeStore
     private var isHiding = false
     private var moveObserver: NSObjectProtocol?
+    private var screenConfigObserver: NSObjectProtocol?
+    private var activeSpaceObserver: NSObjectProtocol?
 
     init(dictationSession: DictationSession, settingsStore: SettingsStore, customThemeStore: CustomThemeStore) {
         self.settingsStore = settingsStore
@@ -48,6 +50,34 @@ final class DictationIndicatorWindow {
                 }
             }
             .store(in: &cancellables)
+
+        screenConfigObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.repositionIfVisible()
+        }
+
+        activeSpaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.repositionIfVisible()
+        }
+    }
+
+    deinit {
+        if let moveObserver {
+            NotificationCenter.default.removeObserver(moveObserver)
+        }
+        if let screenConfigObserver {
+            NotificationCenter.default.removeObserver(screenConfigObserver)
+        }
+        if let activeSpaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activeSpaceObserver)
+        }
     }
 
     private func show(session: DictationSession) {
@@ -146,6 +176,12 @@ final class DictationIndicatorWindow {
 
         // Default: center-top, 70px from top
         panel.setFrameOrigin(NSPoint(x: screenFrame.midX - panel.frame.width / 2, y: screenFrame.maxY - 70))
+    }
+
+    private func repositionIfVisible() {
+        guard let panel else { return }
+        guard panel.isVisible, settingsStore.indicatorMode == .floating else { return }
+        positionOnFocusedScreen()
     }
 
     private func saveCurrentPosition() {
@@ -288,4 +324,3 @@ struct DictationIndicatorView: View {
         }
     }
 }
-

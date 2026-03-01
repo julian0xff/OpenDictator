@@ -58,6 +58,8 @@ final class NotchIndicatorWindow {
     private var collapseWorkItem: DispatchWorkItem?
     private var pendingExpandWorkItem: DispatchWorkItem?
     private var lastDisplayID: CGDirectDisplayID?
+    private var screenConfigObserver: NSObjectProtocol?
+    private var activeSpaceObserver: NSObjectProtocol?
 
     // Fallback dimensions for non-notch screens
     private let fallbackNotchWidth: CGFloat = 200
@@ -78,6 +80,31 @@ final class NotchIndicatorWindow {
                 }
             }
             .store(in: &cancellables)
+
+        screenConfigObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshTargetScreenIfVisible()
+        }
+
+        activeSpaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshTargetScreenIfVisible()
+        }
+    }
+
+    deinit {
+        if let screenConfigObserver {
+            NotificationCenter.default.removeObserver(screenConfigObserver)
+        }
+        if let activeSpaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activeSpaceObserver)
+        }
     }
 
     private func createPanelIfNeeded(for screen: NSScreen = .focused) {
@@ -190,5 +217,20 @@ final class NotchIndicatorWindow {
         }
         collapseWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
+    }
+
+    private func refreshTargetScreenIfVisible() {
+        guard settingsStore.indicatorMode == .notch else { return }
+        guard dictationSession.state.isActive else { return }
+
+        let targetScreen = NSScreen.focused
+        let targetDisplayID = targetScreen.displayID
+        if targetDisplayID != lastDisplayID {
+            panel?.orderOut(nil)
+            panel = nil
+        }
+        createPanelIfNeeded(for: targetScreen)
+        lastDisplayID = targetDisplayID
+        panel?.orderFront(nil)
     }
 }

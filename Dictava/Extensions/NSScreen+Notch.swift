@@ -6,10 +6,20 @@ extension NSScreen {
         deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
     }
 
-    /// The screen the user is currently focused on (contains the key window).
-    /// Falls back to primary screen if no key window exists.
+    /// Returns the screen that currently contains the mouse cursor.
+    /// Falls back safely when the cursor position cannot be matched.
     static var focused: NSScreen {
-        NSScreen.main ?? NSScreen.screens.first!
+        let allScreens = NSScreen.screens
+        guard let fallbackScreen = NSScreen.main ?? allScreens.first else {
+            preconditionFailure("NSScreen.focused requested with no available screens")
+        }
+
+        let mouseLocation = NSEvent.mouseLocation
+        if let pointerScreen = allScreens.first(where: { $0.frame.contains(mouseLocation) }) {
+            return pointerScreen
+        }
+
+        return fallbackScreen
     }
 
     /// Whether this screen has a physical notch (MacBook Pro 2021+).

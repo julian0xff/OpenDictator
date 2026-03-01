@@ -8,7 +8,8 @@ final class FluidAudioProvider: ASRProvider {
     private(set) var loadedModelName: String? = nil
 
     private var asrManager: AsrManager?
-    private let sampleBuffer = AudioSampleBuffer()
+    private let fullSampleBuffer = AudioSampleBuffer()
+    private let partialSampleBuffer = AudioSampleBuffer(maxSamples: 16_000 * 30) // Last 30s for low-latency partials
     weak var fluidAudioModelManager: FluidAudioModelManager?
 
     func loadModel(named modelName: String?) async throws {
@@ -35,18 +36,20 @@ final class FluidAudioProvider: ASRProvider {
 
     nonisolated func appendAudioBuffer(_ samples: [Float]) {
         Task {
-            await sampleBuffer.append(samples)
+            await fullSampleBuffer.append(samples)
+            await partialSampleBuffer.append(samples)
         }
     }
 
     func flushAudioBuffer() async {
-        await sampleBuffer.flush()
+        await fullSampleBuffer.flush()
+        await partialSampleBuffer.flush()
     }
 
     func transcribe(language: String) async -> String {
         guard let asrManager else { return "" }
 
-        let samples = await sampleBuffer.getAll()
+        let samples = await fullSampleBuffer.getAll()
         guard samples.count >= 1600 else { return "" }  // Minimum ~0.1 seconds
 
         do {
@@ -61,7 +64,7 @@ final class FluidAudioProvider: ASRProvider {
     func transcribePartial(language: String) async -> String {
         guard let asrManager else { return "" }
 
-        let samples = await sampleBuffer.getAll()
+        let samples = await partialSampleBuffer.getAll()
         guard samples.count >= 1600 else { return "" }
 
         do {
@@ -73,7 +76,8 @@ final class FluidAudioProvider: ASRProvider {
     }
 
     func reset() async {
-        await sampleBuffer.clear()
+        await fullSampleBuffer.clear()
+        await partialSampleBuffer.clear()
         try? await asrManager?.resetDecoderState(for: .microphone)
     }
 }

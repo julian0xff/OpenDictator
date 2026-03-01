@@ -8,7 +8,8 @@ final class WhisperKitProvider: ASRProvider {
     private(set) var loadedModelName: String?
 
     private var whisperKit: WhisperKit?
-    private let sampleBuffer = AudioSampleBuffer()
+    private let fullSampleBuffer = AudioSampleBuffer()
+    private let partialSampleBuffer = AudioSampleBuffer(maxSamples: 16_000 * 30) // Last 30s for low-latency partials
 
     func loadModel(named modelName: String?) async throws {
         guard let modelName else { return }
@@ -29,18 +30,20 @@ final class WhisperKitProvider: ASRProvider {
 
     nonisolated func appendAudioBuffer(_ samples: [Float]) {
         Task {
-            await sampleBuffer.append(samples)
+            await fullSampleBuffer.append(samples)
+            await partialSampleBuffer.append(samples)
         }
     }
 
     func flushAudioBuffer() async {
-        await sampleBuffer.flush()
+        await fullSampleBuffer.flush()
+        await partialSampleBuffer.flush()
     }
 
     func transcribe(language: String) async -> String {
         guard let whisperKit else { return "" }
 
-        let samples = await sampleBuffer.getAll()
+        let samples = await fullSampleBuffer.getAll()
         guard !samples.isEmpty else { return "" }
 
         do {
@@ -57,7 +60,7 @@ final class WhisperKitProvider: ASRProvider {
     func transcribePartial(language: String) async -> String {
         guard let whisperKit else { return "" }
 
-        let samples = await sampleBuffer.getAll()
+        let samples = await partialSampleBuffer.getAll()
         guard !samples.isEmpty else { return "" }
 
         do {
@@ -71,7 +74,8 @@ final class WhisperKitProvider: ASRProvider {
     }
 
     func reset() async {
-        await sampleBuffer.clear()
+        await fullSampleBuffer.clear()
+        await partialSampleBuffer.clear()
     }
 
     /// Strips non-speech annotations that Whisper hallucinates from its training data (YouTube subtitles).

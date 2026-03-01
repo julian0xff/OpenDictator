@@ -1,5 +1,13 @@
 import SwiftUI
 
+struct PendingTranscriptionDraft: Codable {
+    var timestamp: Date
+    var duration: TimeInterval
+    var text: String
+    var rawText: String
+    var modelUsed: String
+}
+
 struct PeriodStats {
     let count: Int
     let duration: TimeInterval
@@ -17,6 +25,12 @@ final class TranscriptionLogStore: ObservableObject {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("transcription_logs.json")
     }()
+    private let draftFileURL: URL = {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = appSupport.appendingPathComponent("Dictava", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("pending_transcription_draft.json")
+    }()
 
     private lazy var encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -32,6 +46,7 @@ final class TranscriptionLogStore: ObservableObject {
 
     init() {
         load()
+        recoverPendingDraftIfNeeded()
     }
 
     func load() {
@@ -50,6 +65,56 @@ final class TranscriptionLogStore: ObservableObject {
     func log(_ entry: TranscriptionLog) {
         logs.append(entry)
         save()
+    }
+
+    func savePendingDraft(
+        text: String,
+        rawText: String,
+        duration: TimeInterval,
+        modelUsed: String
+    ) {
+        let cleanedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanedRaw = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedText.isEmpty || !cleanedRaw.isEmpty else { return }
+
+        let draft = PendingTranscriptionDraft(
+            timestamp: Date(),
+            duration: duration,
+            text: cleanedText,
+            rawText: cleanedRaw,
+            modelUsed: modelUsed
+        )
+
+        guard let data = try? encoder.encode(draft) else { return }
+        try? data.write(to: draftFileURL, options: .atomic)
+    }
+
+    func clearPendingDraft() {
+        try? FileManager.default.removeItem(at: draftFileURL)
+    }
+
+    private func recoverPendingDraftIfNeeded() {
+        guard let data = try? Data(contentsOf: draftFileURL),
+              let draft = try? decoder.decode(PendingTranscriptionDraft.self, from: data) else {
+            return
+        }
+
+        // Ignore tiny drafts that are likely noise from very short sessions.
+        guard draft.text.count >= 8 || draft.rawText.count >= 8 else {
+            clearPendingDraft()
+            return
+        }
+
+        let recovered = TranscriptionLog(
+            timestamp: draft.timestamp,
+            duration: draft.duration,
+            text: draft.text,
+            rawText: draft.rawText,
+            modelUsed: "\(draft.modelUsed)-recovered"
+        )
+        logs.append(recovered)
+        save()
+        clearPendingDraft()
     }
 
     // MARK: - Deletion

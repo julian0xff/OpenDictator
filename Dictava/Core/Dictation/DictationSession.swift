@@ -35,6 +35,7 @@ final class DictationSession: ObservableObject {
     private var silenceCancellable: AnyCancellable?
     private var silenceTimer: Timer?
     private var longDictationTimer: Timer?
+    private var draftCheckpointTimer: Timer?
     private var startTask: Task<Void, Never>?
     private var stopTask: Task<Void, Never>?
     private var modelLoadTask: Task<Void, Never>?
@@ -300,8 +301,11 @@ final class DictationSession: ObservableObject {
         Task { await textInjector.resetPartialTracking() }
         elapsedTimer?.invalidate()
         elapsedTimer = nil
+        draftCheckpointTimer?.invalidate()
+        draftCheckpointTimer = nil
         elapsedSeconds = 0
         sessionStartTime = nil
+        transcriptionLogStore.clearPendingDraft()
         state = .idle
     }
 
@@ -327,6 +331,7 @@ final class DictationSession: ObservableObject {
 
         sessionStartTime = Date()
         elapsedSeconds = 0
+        transcriptionLogStore.clearPendingDraft()
         elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.state == .listening else { return }
@@ -413,6 +418,7 @@ final class DictationSession: ObservableObject {
 
                 startSilenceDetection()
                 startLongDictationWarning()
+                startDraftCheckpointing()
             } catch {
                 self.error = "Failed to start recording: \(error.localizedDescription)"
                 cleanup()
@@ -429,6 +435,8 @@ final class DictationSession: ObservableObject {
         inlineInjectTask = nil
         elapsedTimer?.invalidate()
         elapsedTimer = nil
+        draftCheckpointTimer?.invalidate()
+        draftCheckpointTimer = nil
         elapsedSeconds = 0
         sessionStartTime = nil
     }
@@ -443,6 +451,8 @@ final class DictationSession: ObservableObject {
         longDictationTimer = nil
         elapsedTimer?.invalidate()
         elapsedTimer = nil
+        draftCheckpointTimer?.invalidate()
+        draftCheckpointTimer = nil
         liveTextCancellable = nil
         inlineTextCancellable = nil
         inlineInjectTask?.cancel()
@@ -453,6 +463,7 @@ final class DictationSession: ObservableObject {
 
         stopTask = Task {
             let rawText = await streamingTranscriber.stopStreaming()
+            let latestLiveText = liveText
             audioEngine.stopCapturing()
             liveText = ""
 
@@ -463,6 +474,19 @@ final class DictationSession: ObservableObject {
             }
 
             guard !rawText.isEmpty else {
+                let fallback = latestLiveText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !fallback.isEmpty {
+                    self.logTranscription(rawText: fallback, processedText: fallback)
+                    self.transcriptionLogStore.clearPendingDraft()
+
+                    if !self.settingsStore.isRealtimeActive {
+                        self.state = .injecting
+                        await self.textInjector.inject(fallback)
+                        self.lastTranscription = fallback
+                    }
+                } else {
+                    self.transcriptionLogStore.clearPendingDraft()
+                }
                 sessionStartTime = nil
                 state = .idle
                 return
@@ -474,7 +498,12 @@ final class DictationSession: ObservableObject {
 
             guard !Task.isCancelled else { return }
 
-            guard !Task.isCancelled else { return }
+            // Persist final content before attempting injection so crashes/injection failures
+            // don't lose the transcript.
+            if !result.text.isEmpty || !rawText.isEmpty {
+                logTranscription(rawText: rawText, processedText: result.text)
+                transcriptionLogStore.clearPendingDraft()
+            }
 
             // Inline mode: replace last partial with final processed text
             if settingsStore.isRealtimeActive {
@@ -491,7 +520,6 @@ final class DictationSession: ObservableObject {
                 lastTranscription = result.text
             }
 
-            logTranscription(rawText: rawText, processedText: result.text)
             sessionStartTime = nil
             state = .idle
             self.stopTask = nil
@@ -556,6 +584,24 @@ final class DictationSession: ObservableObject {
             Task { @MainActor in
                 guard let self, self.state == .listening else { return }
                 self.error = "Still recording — long sessions may reduce accuracy"
+            }
+        }
+    }
+
+    private func startDraftCheckpointing() {
+        draftCheckpointTimer?.invalidate()
+        draftCheckpointTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.state == .listening else { return }
+                let duration = self.sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
+                let modelName = self.transcriptionEngine.activeProviderID == .fluidAudio
+                    ? "parakeet-v3" : self.settingsStore.selectedModelName
+                self.transcriptionLogStore.savePendingDraft(
+                    text: self.liveText,
+                    rawText: self.liveText,
+                    duration: duration,
+                    modelUsed: modelName
+                )
             }
         }
     }

@@ -158,7 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupHoldToRecord() {
-        holdToRecordManager.configuredKeyCode = Int64(settingsStore.holdToRecordKeyCode)
+        holdToRecordManager.updateConfiguredKeyCode(Int64(settingsStore.holdToRecordKeyCode))
 
         holdToRecordManager.onStartDictation = { [weak self] in
             guard let self, self.dictationSession.state == .idle else { return }
@@ -174,7 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if settingsStore.holdToRecordEnabled {
             holdToRecordManager.isEnabled = true
-            holdToRecordManager.start()
+            holdToRecordManager.ensureTapRunning()
             settingsStore.holdToRecordTapActive = holdToRecordManager.isTapActive
         }
 
@@ -185,21 +185,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] status in
                 guard let self,
                       status == .granted,
-                      self.settingsStore.holdToRecordEnabled,
-                      !self.holdToRecordManager.isTapActive else { return }
-                NSLog("HoldToRecord: Accessibility granted, retrying tap creation")
+                      self.settingsStore.holdToRecordEnabled else { return }
+                if !self.holdToRecordManager.isTapActive {
+                    NSLog("HoldToRecord: Accessibility granted, ensuring tap is running")
+                }
                 self.holdToRecordManager.isEnabled = true
-                self.holdToRecordManager.start()
+                self.holdToRecordManager.ensureTapRunning()
                 self.settingsStore.holdToRecordTapActive = self.holdToRecordManager.isTapActive
             }
     }
 
     func updateHoldToRecord() {
-        holdToRecordManager.configuredKeyCode = Int64(settingsStore.holdToRecordKeyCode)
+        holdToRecordManager.updateConfiguredKeyCode(Int64(settingsStore.holdToRecordKeyCode))
 
         if settingsStore.holdToRecordEnabled {
             holdToRecordManager.isEnabled = true
-            if !holdToRecordManager.start() {
+            if !holdToRecordManager.ensureTapRunning() {
                 NSLog("HoldToRecord: Tap creation failed on toggle — will retry when accessibility is granted")
             }
         } else {
