@@ -96,6 +96,27 @@ final class TranscriptionEngine: ObservableObject {
         return await provider.transcribeCheckpoint(language: language)
     }
 
+    func transcribeCheckpointFlushed(language: String = "en") async -> String {
+        guard let provider else { return "" }
+
+        while isFinalInFlight {
+            try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
+        }
+
+        isFinalPending = true
+        isFinalInFlight = true
+        defer {
+            isFinalPending = false
+            isFinalInFlight = false
+        }
+
+        while isPartialInFlight {
+            try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
+        }
+
+        return await provider.transcribeCheckpointFlushed(language: language)
+    }
+
     func transcribePartial(language: String = "en") async {
         guard let provider else { return }
         guard !isPartialInFlight && !isFinalPending else { return }

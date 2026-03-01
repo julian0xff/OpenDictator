@@ -75,6 +75,11 @@ final class FluidAudioProvider: ASRProvider {
         }
     }
 
+    func transcribeCheckpointFlushed(language: String) async -> String {
+        await flushAudioBuffer()
+        return await transcribeCheckpoint(language: language)
+    }
+
     func transcribePartial(language: String) async -> String {
         guard let asrManager else { return "" }
 

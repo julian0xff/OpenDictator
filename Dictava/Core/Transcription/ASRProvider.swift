@@ -35,6 +35,9 @@ protocol ASRProvider: AnyObject {
     /// Drain any in-flight audio append Tasks before reading the buffer.
     func flushAudioBuffer() async
 
+    /// Drain any in-flight appends and transcribe+clear checkpoint audio atomically.
+    func transcribeCheckpointFlushed(language: String) async -> String
+
     /// Returns the number of buffered full-session samples.
     func bufferedSampleCount() async -> Int
 }

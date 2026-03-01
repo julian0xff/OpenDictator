@@ -483,13 +483,13 @@ final class DictationSession: ObservableObject {
         state = .transcribing
 
         stopTask = Task {
-            await runningCheckpointTask?.value
-
             let rawTextTail = await streamingTranscriber.stopStreaming()
-            let rawText = mergeSegmentedText(with: rawTextTail)
             let latestLiveText = liveText
             audioEngine.stopCapturing()
             liveText = ""
+
+            await runningCheckpointTask?.value
+            let rawText = mergeSegmentedText(with: rawTextTail)
 
             guard !Task.isCancelled else { return }
 
@@ -646,16 +646,15 @@ final class DictationSession: ObservableObject {
                 let language = self.settingsStore.selectedLanguage
                 self.checkpointTask = Task { @MainActor [weak self] in
                     guard let self else { return }
-                    let segment = await self.transcriptionEngine.transcribeCheckpoint(language: language)
+                    let segment = await self.transcriptionEngine.transcribeCheckpointFlushed(language: language)
                     guard !Task.isCancelled else { return }
                     let cleaned = segment.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !cleaned.isEmpty else { return }
 
-                    if self.segmentedRawPrefix.isEmpty {
-                        self.segmentedRawPrefix = cleaned
-                    } else {
-                        self.segmentedRawPrefix += " " + cleaned
-                    }
+                    self.segmentedRawPrefix = self.mergeWithOverlap(
+                        existing: self.segmentedRawPrefix,
+                        newSegment: cleaned
+                    )
 
                     let duration = self.sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
                     let modelName = self.transcriptionEngine.activeProviderID == .fluidAudio
@@ -681,6 +680,45 @@ final class DictationSession: ObservableObject {
 
         if prefix.isEmpty { return cleanedTail }
         if cleanedTail.isEmpty { return prefix }
-        return prefix + " " + cleanedTail
+        return mergeWithOverlap(existing: prefix, newSegment: cleanedTail)
+    }
+
+    /// Joins two transcript segments while trimming repeated boundary words.
+    private func mergeWithOverlap(existing: String, newSegment: String) -> String {
+        let left = existing.trimmingCharacters(in: .whitespacesAndNewlines)
+        let right = newSegment.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !left.isEmpty else { return right }
+        guard !right.isEmpty else { return left }
+
+        let leftWords = left.split(whereSeparator: \.isWhitespace)
+        let rightWords = right.split(whereSeparator: \.isWhitespace)
+        let maxOverlap = min(20, leftWords.count, rightWords.count)
+        var overlap = 0
+
+        if maxOverlap > 0 {
+            for k in stride(from: maxOverlap, through: 1, by: -1) {
+                let leftTail = leftWords.suffix(k).map(normalizeWord)
+                let rightHead = rightWords.prefix(k).map(normalizeWord)
+                if leftTail.elementsEqual(rightHead) {
+                    overlap = k
+                    break
+                }
+            }
+        }
+
+        if overlap == 0 {
+            return left + " " + right
+        }
+
+        let rightRemainder = rightWords.dropFirst(overlap).map(String.init).joined(separator: " ")
+        if rightRemainder.isEmpty {
+            return left
+        }
+        return left + " " + rightRemainder
+    }
+
+    private func normalizeWord(_ word: Substring) -> String {
+        word.lowercased()
+            .trimmingCharacters(in: .punctuationCharacters.union(.whitespacesAndNewlines))
     }
 }

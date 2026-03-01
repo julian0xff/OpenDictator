@@ -73,6 +73,11 @@ final class WhisperKitProvider: ASRProvider {
         }
     }
 
+    func transcribeCheckpointFlushed(language: String) async -> String {
+        await flushAudioBuffer()
+        return await transcribeCheckpoint(language: language)
+    }
+
     func transcribePartial(language: String) async -> String {
         guard let whisperKit else { return "" }
 
