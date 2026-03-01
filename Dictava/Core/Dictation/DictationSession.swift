@@ -36,10 +36,15 @@ final class DictationSession: ObservableObject {
     private var silenceTimer: Timer?
     private var longDictationTimer: Timer?
     private var draftCheckpointTimer: Timer?
+    private var segmentationTimer: Timer?
     private var startTask: Task<Void, Never>?
     private var stopTask: Task<Void, Never>?
     private var modelLoadTask: Task<Void, Never>?
     private var inlineInjectTask: Task<Void, Never>?
+    private var checkpointTask: Task<Void, Never>?
+    private var segmentedRawPrefix = ""
+
+    private let checkpointSampleThreshold = 16_000 * 90  // 90s
 
     init(settingsStore: SettingsStore, modelManager: ModelManager, fluidAudioModelManager: FluidAudioModelManager, snippetStore: SnippetStore, vocabularyStore: VocabularyStore, transcriptionLogStore: TranscriptionLogStore) {
         self.settingsStore = settingsStore
@@ -303,8 +308,13 @@ final class DictationSession: ObservableObject {
         elapsedTimer = nil
         draftCheckpointTimer?.invalidate()
         draftCheckpointTimer = nil
+        segmentationTimer?.invalidate()
+        segmentationTimer = nil
+        checkpointTask?.cancel()
+        checkpointTask = nil
         elapsedSeconds = 0
         sessionStartTime = nil
+        segmentedRawPrefix = ""
         transcriptionLogStore.clearPendingDraft()
         state = .idle
     }
@@ -331,6 +341,7 @@ final class DictationSession: ObservableObject {
 
         sessionStartTime = Date()
         elapsedSeconds = 0
+        segmentedRawPrefix = ""
         transcriptionLogStore.clearPendingDraft()
         elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
@@ -419,6 +430,7 @@ final class DictationSession: ObservableObject {
                 startSilenceDetection()
                 startLongDictationWarning()
                 startDraftCheckpointing()
+                startSegmentationCheckpointing()
             } catch {
                 self.error = "Failed to start recording: \(error.localizedDescription)"
                 cleanup()
@@ -437,8 +449,13 @@ final class DictationSession: ObservableObject {
         elapsedTimer = nil
         draftCheckpointTimer?.invalidate()
         draftCheckpointTimer = nil
+        segmentationTimer?.invalidate()
+        segmentationTimer = nil
+        checkpointTask?.cancel()
+        checkpointTask = nil
         elapsedSeconds = 0
         sessionStartTime = nil
+        segmentedRawPrefix = ""
     }
 
     func stopDictation() {
@@ -453,6 +470,10 @@ final class DictationSession: ObservableObject {
         elapsedTimer = nil
         draftCheckpointTimer?.invalidate()
         draftCheckpointTimer = nil
+        segmentationTimer?.invalidate()
+        segmentationTimer = nil
+        let runningCheckpointTask = checkpointTask
+        checkpointTask = nil
         liveTextCancellable = nil
         inlineTextCancellable = nil
         inlineInjectTask?.cancel()
@@ -462,7 +483,10 @@ final class DictationSession: ObservableObject {
         state = .transcribing
 
         stopTask = Task {
-            let rawText = await streamingTranscriber.stopStreaming()
+            await runningCheckpointTask?.value
+
+            let rawTextTail = await streamingTranscriber.stopStreaming()
+            let rawText = mergeSegmentedText(with: rawTextTail)
             let latestLiveText = liveText
             audioEngine.stopCapturing()
             liveText = ""
@@ -488,6 +512,7 @@ final class DictationSession: ObservableObject {
                     self.transcriptionLogStore.clearPendingDraft()
                 }
                 sessionStartTime = nil
+                self.segmentedRawPrefix = ""
                 state = .idle
                 return
             }
@@ -521,6 +546,7 @@ final class DictationSession: ObservableObject {
             }
 
             sessionStartTime = nil
+            segmentedRawPrefix = ""
             state = .idle
             self.stopTask = nil
         }
@@ -596,13 +622,65 @@ final class DictationSession: ObservableObject {
                 let duration = self.sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
                 let modelName = self.transcriptionEngine.activeProviderID == .fluidAudio
                     ? "parakeet-v3" : self.settingsStore.selectedModelName
+                let draftText = self.mergeSegmentedText(with: self.liveText)
                 self.transcriptionLogStore.savePendingDraft(
-                    text: self.liveText,
-                    rawText: self.liveText,
+                    text: draftText,
+                    rawText: draftText,
                     duration: duration,
                     modelUsed: modelName
                 )
             }
         }
+    }
+
+    private func startSegmentationCheckpointing() {
+        segmentationTimer?.invalidate()
+        segmentationTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.state == .listening else { return }
+                guard self.checkpointTask == nil else { return }
+
+                let bufferedSamples = await self.transcriptionEngine.bufferedSampleCount()
+                guard bufferedSamples >= self.checkpointSampleThreshold else { return }
+
+                let language = self.settingsStore.selectedLanguage
+                self.checkpointTask = Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    let segment = await self.transcriptionEngine.transcribeCheckpoint(language: language)
+                    guard !Task.isCancelled else { return }
+                    let cleaned = segment.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !cleaned.isEmpty else { return }
+
+                    if self.segmentedRawPrefix.isEmpty {
+                        self.segmentedRawPrefix = cleaned
+                    } else {
+                        self.segmentedRawPrefix += " " + cleaned
+                    }
+
+                    let duration = self.sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
+                    let modelName = self.transcriptionEngine.activeProviderID == .fluidAudio
+                        ? "parakeet-v3" : self.settingsStore.selectedModelName
+                    let draftText = self.mergeSegmentedText(with: self.liveText)
+                    self.transcriptionLogStore.savePendingDraft(
+                        text: draftText,
+                        rawText: draftText,
+                        duration: duration,
+                        modelUsed: modelName
+                    )
+                }
+
+                await self.checkpointTask?.value
+                self.checkpointTask = nil
+            }
+        }
+    }
+
+    private func mergeSegmentedText(with tail: String) -> String {
+        let prefix = segmentedRawPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanedTail = tail.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if prefix.isEmpty { return cleanedTail }
+        if cleanedTail.isEmpty { return prefix }
+        return prefix + " " + cleanedTail
     }
 }

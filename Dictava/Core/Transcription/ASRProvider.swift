@@ -23,6 +23,9 @@ protocol ASRProvider: AnyObject {
     /// Perform final transcription on accumulated audio.
     func transcribe(language: String) async -> String
 
+    /// Perform transcription on a drained checkpoint buffer and clear that buffer.
+    func transcribeCheckpoint(language: String) async -> String
+
     /// Perform partial transcription for live preview.
     func transcribePartial(language: String) async -> String
 
@@ -31,4 +34,7 @@ protocol ASRProvider: AnyObject {
 
     /// Drain any in-flight audio append Tasks before reading the buffer.
     func flushAudioBuffer() async
+
+    /// Returns the number of buffered full-session samples.
+    func bufferedSampleCount() async -> Int
 }

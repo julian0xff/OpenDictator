@@ -57,6 +57,22 @@ final class WhisperKitProvider: ASRProvider {
         }
     }
 
+    func transcribeCheckpoint(language: String) async -> String {
+        guard let whisperKit else { return "" }
+
+        let samples = await fullSampleBuffer.drainAll()
+        guard !samples.isEmpty else { return "" }
+
+        do {
+            let options = DecodingOptions(language: language)
+            let results = try await whisperKit.transcribe(audioArray: samples, decodeOptions: options)
+            let rawText = results.map { $0.text }.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+            return Self.stripNonSpeechAnnotations(rawText)
+        } catch {
+            return ""
+        }
+    }
+
     func transcribePartial(language: String) async -> String {
         guard let whisperKit else { return "" }
 
@@ -76,6 +92,10 @@ final class WhisperKitProvider: ASRProvider {
     func reset() async {
         await fullSampleBuffer.clear()
         await partialSampleBuffer.clear()
+    }
+
+    func bufferedSampleCount() async -> Int {
+        await fullSampleBuffer.count()
     }
 
     /// Strips non-speech annotations that Whisper hallucinates from its training data (YouTube subtitles).

@@ -61,6 +61,20 @@ final class FluidAudioProvider: ASRProvider {
         }
     }
 
+    func transcribeCheckpoint(language: String) async -> String {
+        guard let asrManager else { return "" }
+
+        let samples = await fullSampleBuffer.drainAll()
+        guard samples.count >= 1600 else { return "" }
+
+        do {
+            let result = try await asrManager.transcribe(samples, source: .microphone)
+            return result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch {
+            return ""
+        }
+    }
+
     func transcribePartial(language: String) async -> String {
         guard let asrManager else { return "" }
 
@@ -79,5 +93,9 @@ final class FluidAudioProvider: ASRProvider {
         await fullSampleBuffer.clear()
         await partialSampleBuffer.clear()
         try? await asrManager?.resetDecoderState(for: .microphone)
+    }
+
+    func bufferedSampleCount() async -> Int {
+        await fullSampleBuffer.count()
     }
 }

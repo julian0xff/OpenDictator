@@ -22,6 +22,18 @@ actor AudioSampleBuffer {
         samples
     }
 
+    func count() -> Int {
+        samples.count
+    }
+
+    /// Atomically returns all buffered samples and clears the buffer.
+    /// Samples appended after this call begins will remain for the next read.
+    func drainAll() -> [Float] {
+        let drained = samples
+        samples.removeAll(keepingCapacity: true)
+        return drained
+    }
+
     func clear() {
         samples.removeAll()
     }
