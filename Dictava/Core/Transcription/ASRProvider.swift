@@ -38,6 +38,9 @@ protocol ASRProvider: AnyObject {
     /// Drain any in-flight appends and transcribe+clear checkpoint audio atomically.
     func transcribeCheckpointFlushed(language: String) async -> String
 
+    /// Clear audio sample buffers only (no decoder state reset).
+    func clearBuffers() async
+
     /// Returns the number of buffered full-session samples.
     func bufferedSampleCount() async -> Int
 }

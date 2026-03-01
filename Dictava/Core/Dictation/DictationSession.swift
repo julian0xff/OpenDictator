@@ -297,6 +297,7 @@ final class DictationSession: ObservableObject {
         stopTask = nil
         audioEngine.stopCapturing()
         streamingTranscriber.cancelStreaming()
+        Task { await transcriptionEngine.clearBuffers() }
         liveText = ""
         audioLevelHistory = Array(repeating: 0, count: 20)
         receivedLiveTextThisSession = false
@@ -429,9 +430,9 @@ final class DictationSession: ObservableObject {
             state = .listening
 
             do {
-                try audioEngine.startCapturing()
                 let partialInterval: TimeInterval = settingsStore.isRealtimeActive ? 0.75 : 1.5
                 await streamingTranscriber.startStreaming(from: audioEngine, language: settingsStore.selectedLanguage, partialInterval: partialInterval)
+                try audioEngine.startCapturing()
 
                 if settingsStore.playStartStopSounds {
                     NSSound(named: "Tink")?.play()
@@ -442,6 +443,7 @@ final class DictationSession: ObservableObject {
                 startDraftCheckpointing()
                 startSegmentationCheckpointing()
             } catch {
+                streamingTranscriber.cancelStreaming()
                 self.error = "Failed to start recording: \(error.localizedDescription)"
                 cleanup()
             }
@@ -494,9 +496,9 @@ final class DictationSession: ObservableObject {
         state = .transcribing
 
         stopTask = Task {
+            audioEngine.stopCapturing()
             let rawTextTail = await streamingTranscriber.stopStreaming()
             let latestLiveText = liveText
-            audioEngine.stopCapturing()
             liveText = ""
 
             await runningCheckpointTask?.value
@@ -522,6 +524,8 @@ final class DictationSession: ObservableObject {
                 } else {
                     self.transcriptionLogStore.clearPendingDraft()
                 }
+                await transcriptionEngine.flushAudioBuffer()
+                await transcriptionEngine.clearBuffers()
                 sessionStartTime = nil
                 self.segmentedRawPrefix = ""
                 self.receivedLiveTextThisSession = false
@@ -557,6 +561,8 @@ final class DictationSession: ObservableObject {
                 lastTranscription = result.text
             }
 
+            await transcriptionEngine.flushAudioBuffer()
+            await transcriptionEngine.clearBuffers()
             sessionStartTime = nil
             segmentedRawPrefix = ""
             receivedLiveTextThisSession = false

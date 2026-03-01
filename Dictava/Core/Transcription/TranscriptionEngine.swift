@@ -133,6 +133,10 @@ final class TranscriptionEngine: ObservableObject {
         await provider?.flushAudioBuffer()
     }
 
+    func clearBuffers() async {
+        await provider?.clearBuffers()
+    }
+
     func reset() async {
         await provider?.reset()
         partialText = ""

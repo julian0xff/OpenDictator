@@ -63,6 +63,13 @@ final class WhisperKitProvider: ASRProvider {
         let samples = await fullSampleBuffer.drainAll()
         guard !samples.isEmpty else { return "" }
 
+        // Re-seed with last 5s for acoustic context after drain
+        let contextWindow = 16_000 * 5
+        if samples.count > contextWindow {
+            await fullSampleBuffer.append(Array(samples.suffix(contextWindow)))
+        }
+        await partialSampleBuffer.clear()
+
         do {
             let options = DecodingOptions(language: language)
             let results = try await whisperKit.transcribe(audioArray: samples, decodeOptions: options)
@@ -95,6 +102,11 @@ final class WhisperKitProvider: ASRProvider {
     }
 
     func reset() async {
+        await fullSampleBuffer.clear()
+        await partialSampleBuffer.clear()
+    }
+
+    func clearBuffers() async {
         await fullSampleBuffer.clear()
         await partialSampleBuffer.clear()
     }

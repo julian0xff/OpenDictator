@@ -67,6 +67,13 @@ final class FluidAudioProvider: ASRProvider {
         let samples = await fullSampleBuffer.drainAll()
         guard samples.count >= 1600 else { return "" }
 
+        // Re-seed with last 5s for acoustic context after drain
+        let contextWindow = 16_000 * 5
+        if samples.count > contextWindow {
+            await fullSampleBuffer.append(Array(samples.suffix(contextWindow)))
+        }
+        await partialSampleBuffer.clear()
+
         do {
             let result = try await asrManager.transcribe(samples, source: .microphone)
             return result.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -98,6 +105,11 @@ final class FluidAudioProvider: ASRProvider {
         await fullSampleBuffer.clear()
         await partialSampleBuffer.clear()
         try? await asrManager?.resetDecoderState(for: .microphone)
+    }
+
+    func clearBuffers() async {
+        await fullSampleBuffer.clear()
+        await partialSampleBuffer.clear()
     }
 
     func bufferedSampleCount() async -> Int {
