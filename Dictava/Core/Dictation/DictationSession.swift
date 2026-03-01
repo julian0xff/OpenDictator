@@ -43,6 +43,7 @@ final class DictationSession: ObservableObject {
     private var inlineInjectTask: Task<Void, Never>?
     private var checkpointTask: Task<Void, Never>?
     private var segmentedRawPrefix = ""
+    private var receivedLiveTextThisSession = false
 
     private let checkpointSampleThreshold = 16_000 * 90  // 90s
 
@@ -298,6 +299,7 @@ final class DictationSession: ObservableObject {
         streamingTranscriber.cancelStreaming()
         liveText = ""
         audioLevelHistory = Array(repeating: 0, count: 20)
+        receivedLiveTextThisSession = false
         liveTextCancellable = nil
         inlineTextCancellable = nil
         inlineInjectTask?.cancel()
@@ -315,6 +317,7 @@ final class DictationSession: ObservableObject {
         elapsedSeconds = 0
         sessionStartTime = nil
         segmentedRawPrefix = ""
+        receivedLiveTextThisSession = false
         transcriptionLogStore.clearPendingDraft()
         state = .idle
     }
@@ -325,6 +328,7 @@ final class DictationSession: ObservableObject {
         error = nil
         liveText = ""
         audioLevelHistory = Array(repeating: 0, count: 20)
+        receivedLiveTextThisSession = false
 
         // Reset actor's partial tracking for new session
         Task { await textInjector.resetPartialTracking() }
@@ -342,7 +346,9 @@ final class DictationSession: ObservableObject {
         sessionStartTime = Date()
         elapsedSeconds = 0
         segmentedRawPrefix = ""
+        receivedLiveTextThisSession = false
         transcriptionLogStore.clearPendingDraft()
+        streamingTranscriber.liveText = ""
         elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.state == .listening else { return }
@@ -354,7 +360,11 @@ final class DictationSession: ObservableObject {
         liveTextCancellable = streamingTranscriber.$liveText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] text in
-                self?.liveText = text
+                guard let self else { return }
+                self.liveText = text
+                if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    self.receivedLiveTextThisSession = true
+                }
             }
 
         // Wire inline mode: inject partial text directly into the active app
@@ -456,6 +466,7 @@ final class DictationSession: ObservableObject {
         elapsedSeconds = 0
         sessionStartTime = nil
         segmentedRawPrefix = ""
+        receivedLiveTextThisSession = false
     }
 
     func stopDictation() {
@@ -499,7 +510,7 @@ final class DictationSession: ObservableObject {
 
             guard !rawText.isEmpty else {
                 let fallback = latestLiveText.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !fallback.isEmpty {
+                if self.receivedLiveTextThisSession && !fallback.isEmpty {
                     self.logTranscription(rawText: fallback, processedText: fallback)
                     self.transcriptionLogStore.clearPendingDraft()
 
@@ -513,6 +524,7 @@ final class DictationSession: ObservableObject {
                 }
                 sessionStartTime = nil
                 self.segmentedRawPrefix = ""
+                self.receivedLiveTextThisSession = false
                 state = .idle
                 return
             }
@@ -547,6 +559,7 @@ final class DictationSession: ObservableObject {
 
             sessionStartTime = nil
             segmentedRawPrefix = ""
+            receivedLiveTextThisSession = false
             state = .idle
             self.stopTask = nil
         }
