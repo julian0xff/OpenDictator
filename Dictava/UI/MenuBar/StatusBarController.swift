@@ -93,6 +93,7 @@ final class StatusBarController: NSObject {
         if popover.isShown {
             closePopoverAndStopMonitor()
         } else if let button = statusItem.button {
+            PermissionManager.shared.refreshStatuses()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             if let popoverWindow = popover.contentViewController?.view.window {
                 popoverWindow.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor

@@ -14,15 +14,30 @@ final class PermissionManager: ObservableObject {
     @Published var microphoneStatus: PermissionStatus = .notDetermined
     @Published var accessibilityStatus: PermissionStatus = .denied
 
-    private var pollTimer: Timer?
+    private var activateObserver: Any?
 
     init() {
         // Set immediately so values are available right away
         microphoneStatus = currentMicrophoneStatus()
         accessibilityStatus = currentAccessibilityStatus()
-        // Poll for changes since there's no system notification for accessibility
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+
+        // Refresh when the app activates (e.g. user returns from System Settings
+        // after granting/revoking permissions). No polling needed.
+        activateObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            // Only refresh when Dictava itself activates
+            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier == Bundle.main.bundleIdentifier else { return }
             self?.refreshStatuses()
+        }
+    }
+
+    deinit {
+        if let observer = activateObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
         }
     }
 

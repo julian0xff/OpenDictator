@@ -34,6 +34,7 @@ final class StreamingTranscriber: ObservableObject {
                 self.liveText = self.transcriptionEngine.partialText
             }
         }
+        timer.tolerance = partialInterval * 0.1
         RunLoop.main.add(timer, forMode: .common)
         partialTimer = timer
     }

@@ -334,6 +334,9 @@ final class DictationSession: ObservableObject {
         // Reset actor's partial tracking for new session
         Task { await textInjector.resetPartialTracking() }
 
+        // Refresh permissions on-demand (no polling — menu bar apps don't auto-activate)
+        PermissionManager.shared.refreshStatuses()
+
         guard PermissionManager.shared.microphoneStatus == .granted else {
             error = "Microphone permission not granted"
             return
@@ -350,12 +353,14 @@ final class DictationSession: ObservableObject {
         receivedLiveTextThisSession = false
         transcriptionLogStore.clearPendingDraft()
         streamingTranscriber.liveText = ""
-        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        let elapsed = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.state == .listening else { return }
                 self.elapsedSeconds += 1
             }
         }
+        elapsed.tolerance = 0.2
+        elapsedTimer = elapsed
 
         // Subscribe to live text for this session
         liveTextCancellable = streamingTranscriber.$liveText
@@ -609,12 +614,14 @@ final class DictationSession: ObservableObject {
                 if level < silenceThreshold {
                     // Below threshold — start timer if not already running
                     if self.silenceTimer == nil {
-                        self.silenceTimer = Timer.scheduledTimer(withTimeInterval: timeout, repeats: false) { [weak self] _ in
+                        let timer = Timer.scheduledTimer(withTimeInterval: timeout, repeats: false) { [weak self] _ in
                             Task { @MainActor [weak self] in
                                 guard let self, self.state == .listening else { return }
                                 self.stopDictation()
                             }
                         }
+                        timer.tolerance = timeout * 0.1
+                        self.silenceTimer = timer
                     }
                 } else {
                     // Above threshold — reset timer
@@ -625,17 +632,19 @@ final class DictationSession: ObservableObject {
     }
 
     private func startLongDictationWarning() {
-        longDictationTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.state == .listening else { return }
                 self.error = "Still recording — long sessions may reduce accuracy"
             }
         }
+        timer.tolerance = 5.0
+        longDictationTimer = timer
     }
 
     private func startDraftCheckpointing() {
         draftCheckpointTimer?.invalidate()
-        draftCheckpointTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.state == .listening else { return }
                 let duration = self.sessionStartTime.map { Date().timeIntervalSince($0) } ?? 0
@@ -650,11 +659,13 @@ final class DictationSession: ObservableObject {
                 )
             }
         }
+        timer.tolerance = 1.0
+        draftCheckpointTimer = timer
     }
 
     private func startSegmentationCheckpointing() {
         segmentationTimer?.invalidate()
-        segmentationTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+        let segTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.state == .listening else { return }
                 guard self.checkpointTask == nil else { return }
@@ -691,6 +702,8 @@ final class DictationSession: ObservableObject {
                 self.checkpointTask = nil
             }
         }
+        segTimer.tolerance = 2.0
+        segmentationTimer = segTimer
     }
 
     private func mergeSegmentedText(with tail: String) -> String {
