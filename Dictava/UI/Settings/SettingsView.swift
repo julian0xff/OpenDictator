@@ -1,256 +1,503 @@
 import SwiftUI
-
-enum SettingsSection: String, CaseIterable, Identifiable {
-    case general
-    case appearance
-    case speechRecognition
-    case snippets
-    case history
-    case advanced
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .general: return "General"
-        case .appearance: return "Appearance"
-        case .speechRecognition: return "Speech Recognition"
-        case .snippets: return "Snippets"
-        case .history: return "History"
-        case .advanced: return "About & Data"
-        }
-    }
-
-    var sfSymbol: String {
-        switch self {
-        case .general: return "gearshape"
-        case .appearance: return "paintbrush"
-        case .speechRecognition: return "waveform"
-        case .snippets: return "text.badge.plus"
-        case .history: return "chart.bar"
-        case .advanced: return "slider.horizontal.3"
-        }
-    }
-
-    var group: SettingsSectionGroup {
-        switch self {
-        case .general, .appearance, .speechRecognition: return .top
-        case .snippets: return .automation
-        case .history, .advanced: return .bottom
-        }
-    }
-}
-
-enum SettingsSectionGroup: String, CaseIterable {
-    case top
-    case automation
-    case bottom
-
-    var title: String? {
-        switch self {
-        case .top, .bottom: return nil
-        case .automation: return "AUTOMATION"
-        }
-    }
-
-    var sections: [SettingsSection] {
-        SettingsSection.allCases.filter { $0.group == self }
-    }
-}
+import KeyboardShortcuts
+import ServiceManagement
 
 struct SettingsView: View {
-    @State private var selectedSection: SettingsSection
+    @EnvironmentObject var dictationSession: DictationSession
     @EnvironmentObject var settingsStore: SettingsStore
-    @EnvironmentObject var snippetStore: SnippetStore
     @EnvironmentObject var transcriptionLogStore: TranscriptionLogStore
-    @Environment(\.colorScheme) private var colorScheme
-
-    init(initialSection: SettingsSection = .general) {
-        _selectedSection = State(initialValue: initialSection)
-    }
-
-    private var theme: SettingsTheme {
-        .resolve(colorScheme: colorScheme, appearance: settingsStore.settingsAppearance)
-    }
+    @EnvironmentObject var modelManager: ModelManager
+    @EnvironmentObject var fluidAudioModelManager: FluidAudioModelManager
+    @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-                .frame(width: 220)
-
-            Rectangle()
-                .fill(theme.border)
-                .frame(width: 1)
-
-            detailView
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(theme.windowBackground)
-                .id(selectedSection)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.15), value: selectedSection)
+        ScrollView {
+            VStack(alignment: .leading, spacing: DictavaTheme.spacing24) {
+                header
+                hotkeysSection
+                behaviorSection
+                modelsSection
+                indicatorSection
+                dataSection
+                aboutSection
+                quitButton
+            }
+            .padding(DictavaTheme.spacing24)
         }
-        .environment(\.settingsTheme, theme)
-        .toggleStyle(ShadcnToggleStyle())
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(theme.bg)
+        .environment(\.theme, .ember)
+        .toggleStyle(DictavaToggleStyle())
     }
 
-    // MARK: - Sidebar
+    // MARK: - Header
 
-    private var sidebar: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 2) {
-                    ForEach(SettingsSectionGroup.allCases, id: \.self) { group in
-                        if let title = group.title {
-                            Text(title)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(theme.textTertiary)
-                                .tracking(0.5)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 12)
-                                .padding(.top, 16)
-                                .padding(.bottom, 4)
+    private var header: some View {
+        HStack {
+            Text("Dictava")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(theme.textPrimary)
+            Spacer()
+            Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
+                .font(.caption)
+                .foregroundStyle(theme.textMuted)
+        }
+    }
+
+    // MARK: - Hotkeys
+
+    private var hotkeysSection: some View {
+        VStack(alignment: .leading, spacing: DictavaTheme.spacing8) {
+            sectionLabel("HOTKEYS")
+
+            DictavaCard {
+                VStack(spacing: DictavaTheme.spacing12) {
+                    hotkeyRow("Toggle Dictation", name: .toggleDictation)
+                    Divider().overlay(theme.border)
+                    hotkeyRow("Copy Last", name: .copyLastTranscription)
+                }
+            }
+
+            DictavaCard {
+                VStack(spacing: DictavaTheme.spacing12) {
+                    Toggle("Hold to Record", isOn: $settingsStore.holdToRecordEnabled)
+                        .onChange(of: settingsStore.holdToRecordEnabled) { _, _ in
+                            NSApp.sendAction(#selector(AppDelegate.updateHoldToRecord), to: nil, from: nil)
                         }
 
-                        ForEach(group.sections) { section in
-                            sidebarItem(for: section)
+                    if settingsStore.holdToRecordEnabled {
+                        HStack {
+                            Text("Hold key")
+                                .foregroundStyle(theme.textPrimary)
+                            Spacer()
+                            HoldKeyRecorderButton(
+                                keyName: $settingsStore.holdToRecordKeyName,
+                                keyCode: $settingsStore.holdToRecordKeyCode
+                            )
+                        }
+                        .transition(.opacity)
+
+                        if !settingsStore.holdToRecordTapActive && PermissionManager.shared.accessibilityStatus != .granted {
+                            HStack(spacing: DictavaTheme.spacing8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(theme.warning)
+                                    .font(.caption)
+                                Text("Accessibility permission required")
+                                    .font(.caption)
+                                    .foregroundStyle(theme.warning)
+                            }
                         }
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.top, 12)
             }
+        }
+    }
 
+    private func hotkeyRow(_ label: String, name: KeyboardShortcuts.Name) -> some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(theme.textPrimary)
             Spacer()
-
-            // Appearance picker
-            appearancePicker
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
-        }
-        .background(theme.sidebarBackground)
-    }
-
-    @ViewBuilder
-    private func sidebarItem(for section: SettingsSection) -> some View {
-        let isSelected = selectedSection == section
-
-        HStack(spacing: 8) {
-            Image(systemName: section.sfSymbol)
-                .font(.system(size: 13))
-                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
-                .frame(width: 20)
-
-            Text(section.title)
-                .font(.callout)
-                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
-
-            Spacer()
-
-            if section == .snippets && !snippetStore.snippets.isEmpty {
-                badgeView("\(snippetStore.snippets.count)")
-            }
-
-            if section == .history {
-                let todayCount = transcriptionLogStore.todayCount()
-                if todayCount > 0 {
-                    badgeView("\(todayCount)")
-                }
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(
-            RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
-                .fill(isSelected ? theme.cardBackground : Color.clear)
-        )
-        .overlay(alignment: .leading) {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(theme.controlAccent)
-                    .frame(width: 2)
-                    .padding(.vertical, 6)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            selectedSection = section
-        }
-        .onHover { hovering in
-            if hovering && !isSelected {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
-            }
+            KeyboardShortcuts.Recorder(for: name)
+                .environment(\.colorScheme, .dark)
         }
     }
 
-    private func badgeView(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2)
-            .foregroundStyle(theme.textSecondary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 1)
-            .background(theme.controlBackground)
-            .clipShape(Capsule())
-    }
+    // MARK: - Behavior
 
-    // MARK: - Appearance Picker
+    private var behaviorSection: some View {
+        VStack(alignment: .leading, spacing: DictavaTheme.spacing8) {
+            sectionLabel("BEHAVIOR")
 
-    private var appearancePicker: some View {
-        HStack(spacing: 0) {
-            ForEach(SettingsAppearance.allCases, id: \.self) { mode in
-                let isActive = settingsStore.settingsAppearance == mode
+            DictavaCard {
+                VStack(spacing: DictavaTheme.spacing12) {
+                    Toggle("Play start/stop sounds", isOn: $settingsStore.playStartStopSounds)
+                    Divider().overlay(theme.border)
 
-                Button {
-                    settingsStore.settingsAppearance = mode
-                } label: {
-                    Image(systemName: iconForAppearance(mode))
-                        .font(.system(size: 12))
-                        .foregroundStyle(isActive ? theme.textPrimary : theme.textTertiary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 28)
-                        .contentShape(Rectangle())
+                    // Indicator mode picker
+                    HStack {
+                        Text("Dictation indicator")
+                            .foregroundStyle(theme.textPrimary)
+                        Spacer()
+                        HStack(spacing: 0) {
+                            ForEach(IndicatorMode.allCases) { mode in
+                                let isActive = settingsStore.indicatorMode == mode
+
+                                Button {
+                                    settingsStore.indicatorMode = mode
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: mode.sfSymbol)
+                                            .font(.system(size: 10))
+                                        Text(mode.displayName)
+                                            .font(.caption)
+                                    }
+                                    .foregroundStyle(isActive ? theme.textPrimary : theme.textMuted)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                                            .fill(isActive ? theme.surface : Color.clear)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(3)
                         .background(
-                            RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
-                                .fill(isActive ? theme.cardBackground : Color.clear)
+                            RoundedRectangle(cornerRadius: DictavaTheme.radiusSm + 3)
+                                .fill(theme.bg)
                         )
+                    }
+
+                    Divider().overlay(theme.border)
+                    Toggle("Launch at login", isOn: $settingsStore.launchAtLogin)
+                        .onChange(of: settingsStore.launchAtLogin) { _, _ in
+                            NSApp.sendAction(#selector(AppDelegate.updateLaunchAtLogin), to: nil, from: nil)
+                        }
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(3)
-        .background(
-            RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
-                .fill(theme.controlBackground)
-        )
     }
 
-    private func iconForAppearance(_ mode: SettingsAppearance) -> String {
-        switch mode {
-        case .light: return "sun.max"
-        case .system: return "desktopcomputer"
-        case .dark: return "moon"
+    // MARK: - Models
+
+    private var isParakeetActive: Bool {
+        settingsStore.preferredProvider(for: settingsStore.selectedLanguage) == .fluidAudio
+    }
+
+    private var modelsSection: some View {
+        VStack(alignment: .leading, spacing: DictavaTheme.spacing8) {
+            sectionLabel("MODELS")
+
+            // Parakeet
+            DictavaCard {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text("Parakeet v3")
+                                .font(.callout)
+                                .foregroundStyle(theme.textPrimary)
+                            if isParakeetActive && fluidAudioModelManager.isDownloaded {
+                                Text("Active")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundStyle(theme.accent)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1)
+                                    .background(Capsule().fill(theme.accentDim))
+                            }
+                        }
+                        Text("\(FluidAudioModelManager.size) \u{00B7} \(FluidAudioModelManager.speed)")
+                            .font(.caption)
+                            .foregroundStyle(theme.textMuted)
+                    }
+
+                    Spacer()
+
+                    if fluidAudioModelManager.isDownloading {
+                        HStack(spacing: 6) {
+                            ProgressView(value: fluidAudioModelManager.downloadProgress, total: 1.0)
+                                .tint(theme.accent)
+                                .frame(width: 60)
+                            Text("\(Int(fluidAudioModelManager.downloadProgress * 100))%")
+                                .font(.caption)
+                                .monospacedDigit()
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                    } else if fluidAudioModelManager.isDownloaded {
+                        if !isParakeetActive {
+                            Button("Select") {
+                                settingsStore.setPreferredProvider(.fluidAudio, for: settingsStore.selectedLanguage)
+                                dictationSession.switchProvider(to: .fluidAudio)
+                            }
+                            .buttonStyle(EmberGhostButtonStyle())
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(theme.success)
+                                .font(.caption)
+                        }
+                    } else {
+                        Button("Download") {
+                            fluidAudioModelManager.downloadModel()
+                        }
+                        .buttonStyle(AccentButtonStyle())
+                    }
+                }
+            }
+
+            // WhisperKit models
+            DictavaCard {
+                VStack(alignment: .leading, spacing: DictavaTheme.spacing12) {
+                    Text("WhisperKit Models")
+                        .font(.callout)
+                        .foregroundStyle(isParakeetActive ? theme.textMuted : theme.textPrimary)
+
+                    let models = modelManager.models(for: settingsStore.selectedLanguage)
+
+                    if models.isEmpty {
+                        Text("Loading models...")
+                            .font(.caption)
+                            .foregroundStyle(theme.textMuted)
+                    } else {
+                        ForEach(models) { model in
+                            whisperModelRow(model)
+                            if model.id != models.last?.id {
+                                Divider().overlay(theme.border)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
-    // MARK: - Detail View
+    private func whisperModelRow(_ model: WhisperModel) -> some View {
+        let isSelected = settingsStore.selectedModelName == model.name
+        let isWhisperActive = !isParakeetActive
 
-    @ViewBuilder
-    private var detailView: some View {
-        switch selectedSection {
-        case .general:
-            GeneralSettingsView()
-        case .appearance:
-            AppearanceSettingsView()
-        case .speechRecognition:
-            SpeechRecognitionSettingsView()
-        case .snippets:
-            SnippetSettingsView()
-        case .history:
-            HistoryView()
-        case .advanced:
-            AdvancedSettingsView()
+        return HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(model.displayName)
+                        .font(.callout)
+                        .foregroundStyle(isParakeetActive ? theme.textMuted : theme.textPrimary)
+                    if isSelected && isWhisperActive {
+                        Text("Active")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(theme.accent)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Capsule().fill(theme.accentDim))
+                    }
+                }
+                Text("\(model.size) \u{00B7} \(model.speed)")
+                    .font(.caption)
+                    .foregroundStyle(theme.textMuted)
+            }
+
+            Spacer()
+
+            if model.isDownloading {
+                ProgressView(value: model.downloadProgress, total: 1.0)
+                    .tint(theme.accent)
+                    .frame(width: 60)
+            } else if model.isDownloaded {
+                if !(isSelected && isWhisperActive) {
+                    Button("Select") {
+                        settingsStore.selectedModelName = model.name
+                        settingsStore.setPreferredProvider(.whisperKit, for: settingsStore.selectedLanguage)
+                        dictationSession.switchProvider(to: .whisperKit, modelName: model.name)
+                    }
+                    .buttonStyle(EmberGhostButtonStyle())
+                } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(theme.success)
+                        .font(.caption)
+                }
+            } else {
+                Button("Download") {
+                    modelManager.downloadModel(model)
+                }
+                .buttonStyle(AccentButtonStyle())
+            }
         }
+    }
+
+    // MARK: - Indicator Style
+
+    private var indicatorSection: some View {
+        VStack(alignment: .leading, spacing: DictavaTheme.spacing8) {
+            sectionLabel("INDICATOR STYLE")
+
+            DictavaCard {
+                HStack(spacing: DictavaTheme.spacing8) {
+                    ForEach(IndicatorTheme.allPresets) { preset in
+                        indicatorPresetPill(preset)
+                    }
+                }
+            }
+        }
+    }
+
+    private func indicatorPresetPill(_ preset: IndicatorTheme) -> some View {
+        let isSelected = settingsStore.indicatorThemeName == preset.id
+
+        return Button {
+            settingsStore.indicatorThemeName = preset.id
+        } label: {
+            VStack(spacing: DictavaTheme.spacing4) {
+                RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                    .fill(preset.backgroundColor)
+                    .frame(height: 32)
+                    .overlay {
+                        // Mini waveform preview
+                        HStack(spacing: 2) {
+                            ForEach(0..<5, id: \.self) { i in
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(preset.waveformColor)
+                                    .frame(width: 3, height: CGFloat([8, 14, 20, 12, 6][i]))
+                            }
+                        }
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                            .stroke(isSelected ? preset.waveformColor : theme.border, lineWidth: isSelected ? 2 : 1)
+                    )
+
+                Text(preset.label)
+                    .font(.caption)
+                    .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Data
+
+    private var dataSection: some View {
+        VStack(alignment: .leading, spacing: DictavaTheme.spacing8) {
+            sectionLabel("DATA")
+
+            DictavaCard {
+                VStack(spacing: DictavaTheme.spacing12) {
+                    dataRow("Clear History", buttonLabel: "Clear") {
+                        transcriptionLogStore.deleteAllLogs()
+                    }
+                    Divider().overlay(theme.border)
+                    dataRow("Reset Settings", buttonLabel: "Reset") {
+                        if let bundleID = Bundle.main.bundleIdentifier {
+                            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+                        }
+                        NSApp.sendAction(#selector(AppDelegate.updateLaunchAtLogin), to: nil, from: nil)
+                        NSApp.sendAction(#selector(AppDelegate.updateHoldToRecord), to: nil, from: nil)
+                    }
+                }
+            }
+        }
+    }
+
+    private func dataRow(_ label: String, buttonLabel: String, action: @escaping () -> Void) -> some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(theme.textPrimary)
+            Spacer()
+            Button(buttonLabel, action: action)
+                .buttonStyle(EmberDestructiveButtonStyle())
+        }
+    }
+
+    // MARK: - About
+
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: DictavaTheme.spacing8) {
+            sectionLabel("ABOUT")
+
+            DictavaCard {
+                VStack(alignment: .leading, spacing: DictavaTheme.spacing8) {
+                    Text("Local, private dictation for macOS")
+                        .font(.callout)
+                        .foregroundStyle(theme.textSecondary)
+
+                    Text("MIT License")
+                        .font(.caption)
+                        .foregroundStyle(theme.textMuted)
+
+                    HStack(spacing: DictavaTheme.spacing16) {
+                        Link("GitHub", destination: URL(string: "https://github.com/julian0xff/Dictava")!)
+                            .font(.callout)
+                            .foregroundStyle(theme.accent)
+
+                        Link("Releases", destination: URL(string: "https://github.com/julian0xff/Dictava/releases")!)
+                            .font(.callout)
+                            .foregroundStyle(theme.accent)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Quit
+
+    private var quitButton: some View {
+        Button {
+            NSApp.terminate(nil)
+        } label: {
+            Text("Quit Dictava")
+        }
+        .buttonStyle(EmberDestructiveButtonStyle())
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Helpers
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(theme.textMuted)
+            .tracking(0.5)
+    }
+}
+
+// MARK: - Hold Key Recorder
+
+struct HoldKeyRecorderButton: View {
+    @Binding var keyName: String
+    @Binding var keyCode: Int
+    @State private var isRecording = false
+    @State private var keyMonitor: Any?
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        Button {
+            if isRecording { stopRecording() } else { startRecording() }
+        } label: {
+            HStack(spacing: 6) {
+                Text(isRecording ? "Press a key\u{2026}" : keyName)
+                    .fontWeight(isRecording ? .regular : .medium)
+                    .foregroundStyle(isRecording ? theme.textSecondary : theme.textPrimary)
+                if !isRecording {
+                    Image(systemName: "pencil")
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                }
+            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .background(
+                RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                    .fill(isRecording ? theme.accent.opacity(0.1) : theme.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                    .stroke(isRecording ? theme.accent : theme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .onDisappear { stopRecording() }
+    }
+
+    private func startRecording() {
+        isRecording = true
+        (NSApp.delegate as? AppDelegate)?.holdToRecordManager.isCapturingKey = true
+
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let code = Int64(event.keyCode)
+            guard !HoldToRecordManager.excludedKeyCodes.contains(code) else { return nil }
+            keyCode = Int(code)
+            keyName = HoldToRecordManager.displayName(for: code)
+            stopRecording()
+            (NSApp.delegate as? AppDelegate)?.updateHoldToRecord()
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        isRecording = false
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+        (NSApp.delegate as? AppDelegate)?.holdToRecordManager.isCapturingKey = false
     }
 }

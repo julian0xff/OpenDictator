@@ -31,6 +31,7 @@ final class StatusBarController: NSObject {
         let hostingController = NSHostingController(rootView: contentView.frame(width: 340).frame(minHeight: 280))
         hostingController.sizingOptions = .preferredContentSize
         popover.contentViewController = hostingController
+        popover.appearance = NSAppearance(named: .darkAqua)
 
         if let button = statusItem.button {
             button.action = #selector(togglePopover)
@@ -43,7 +44,6 @@ final class StatusBarController: NSObject {
 
         updateIcon()
 
-        // Update icon based on dictation state
         dictationSession.$state
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
@@ -52,7 +52,6 @@ final class StatusBarController: NSObject {
             }
             .store(in: &cancellables)
 
-        // Update icon when download state changes (blue waveform while downloading)
         fluidAudioModelManager.$isDownloading
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -60,18 +59,10 @@ final class StatusBarController: NSObject {
             }
             .store(in: &cancellables)
 
-        // Sync popover appearance with settings
-        popover.appearance = settingsStore.settingsAppearance.nsAppearance
-
         settingsStore.objectWillChange
             .debounce(for: .milliseconds(150), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                self.popover.appearance = settingsStore.settingsAppearance.nsAppearance
-                if let popoverWindow = self.popover.contentViewController?.view.window {
-                    popoverWindow.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
-                }
-                // Sync menu bar icon visibility (debounced to clear activation policy transitions)
                 let shouldBeVisible = self.settingsStore.showMenuBarIcon
                 guard self.statusItem.isVisible != shouldBeVisible else { return }
                 if !shouldBeVisible && self.popover.isShown {
@@ -96,7 +87,7 @@ final class StatusBarController: NSObject {
             PermissionManager.shared.refreshStatuses()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             if let popoverWindow = popover.contentViewController?.view.window {
-                popoverWindow.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
+                popoverWindow.backgroundColor = NSColor(red: 12/255, green: 12/255, blue: 12/255, alpha: 1)
                 popoverWindow.isOpaque = false
             }
             eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
@@ -113,7 +104,6 @@ final class StatusBarController: NSObject {
         guard let button = statusItem.button else { return }
         let state = currentDictationState
 
-        // Downloading: blue waveform
         if fluidAudioModelManager.isDownloading && state == .idle {
             let icon = NSImage(named: "MenuBarIconBlue")
             icon?.isTemplate = false
@@ -121,7 +111,6 @@ final class StatusBarController: NSObject {
             return
         }
 
-        // Listening: red waveform
         if state == .listening {
             let icon = NSImage(named: "MenuBarIconRed")
             icon?.isTemplate = false
@@ -129,7 +118,6 @@ final class StatusBarController: NSObject {
             return
         }
 
-        // Idle: black waveform (template — auto-inverts for dark/light mode)
         if state == .idle {
             let icon = NSImage(named: "MenuBarIconBlack")
             icon?.isTemplate = true
@@ -137,17 +125,12 @@ final class StatusBarController: NSObject {
             return
         }
 
-        // Transient states: SF Symbols
         let symbolName: String
         switch state {
-        case .loadingModel:
-            symbolName = "arrow.down.circle"
-        case .transcribing, .processing:
-            symbolName = "text.bubble.fill"
-        case .injecting:
-            symbolName = "keyboard.fill"
-        case .idle, .listening:
-            return // handled above
+        case .loadingModel: symbolName = "arrow.down.circle"
+        case .transcribing, .processing: symbolName = "text.bubble.fill"
+        case .injecting: symbolName = "keyboard.fill"
+        case .idle, .listening: return
         }
         button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: state.displayText)
         button.image?.isTemplate = true
@@ -162,14 +145,12 @@ struct StatusBarPopoverView: View {
     @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var transcriptionLogStore: TranscriptionLogStore
-    @Environment(\.colorScheme) private var colorScheme
 
-    private var theme: SettingsTheme {
-        .resolve(colorScheme: colorScheme, appearance: settingsStore.settingsAppearance)
-    }
+    private var theme: DictavaTheme { .ember }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Header
             PopoverHeaderView(
                 state: dictationSession.state,
                 languageCode: settingsStore.selectedLanguage,
@@ -178,40 +159,42 @@ struct StatusBarPopoverView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
 
-            Divider()
+            Rectangle().fill(theme.border).frame(height: 1)
 
+            // Body
             PopoverBodyView(
                 dictationSession: dictationSession,
-                modelManager: modelManager,
                 fluidAudioModelManager: fluidAudioModelManager,
                 settingsStore: settingsStore
             )
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
 
+            // Language + Model selectors (only when idle)
             if dictationSession.state == .idle {
-                QuickStatsView(transcriptionLogStore: transcriptionLogStore)
+                PopoverSelectorRow(dictationSession: dictationSession, settingsStore: settingsStore, fluidAudioModelManager: fluidAudioModelManager)
                     .padding(.horizontal, 16)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .padding(.bottom, 12)
+                    .transition(.opacity)
 
                 let recent = transcriptionLogStore.recentTranscriptions(limit: 3)
                 if !recent.isEmpty {
-                    Divider()
+                    Rectangle().fill(theme.border).frame(height: 1)
                     PopoverRecentView(transcriptions: recent)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(.opacity)
                 }
             }
 
-            Divider()
+            Rectangle().fill(theme.border).frame(height: 1)
 
             PopoverFooterView()
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
         }
-        .background(theme.windowBackground)
-        .environment(\.settingsTheme, theme)
+        .background(theme.bg)
+        .environment(\.theme, .ember)
         .animation(.smooth(duration: 0.25), value: dictationSession.state)
     }
 }
@@ -220,20 +203,12 @@ struct StatusBarPopoverView: View {
 
 private struct StatusPillView: View {
     let state: DictationState
-    @Environment(\.settingsTheme) private var theme
+    @Environment(\.theme) private var theme
 
-    private var dotColor: Color {
+    private var color: Color {
         switch state {
         case .idle: theme.success
-        case .listening: .red
-        default: theme.textSecondary
-        }
-    }
-
-    private var tintColor: Color {
-        switch state {
-        case .idle: theme.success
-        case .listening: .red
+        case .listening: theme.accent
         default: theme.textSecondary
         }
     }
@@ -241,10 +216,10 @@ private struct StatusPillView: View {
     var body: some View {
         HStack(spacing: 5) {
             if state == .listening {
-                PulsingDot(color: .red)
+                PulsingDot(color: theme.accent)
             } else {
                 Circle()
-                    .fill(dotColor)
+                    .fill(color)
                     .frame(width: 6, height: 6)
             }
 
@@ -254,50 +229,13 @@ private struct StatusPillView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(
-            Capsule()
-                .fill(tintColor.opacity(0.12))
-        )
-        .foregroundStyle(tintColor)
-    }
-}
-
-// MARK: - Header
-
-private struct PopoverHeaderView: View {
-    let state: DictationState
-    let languageCode: String
-    let providerName: String
-    @Environment(\.settingsTheme) private var theme
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "waveform")
-                .font(.system(size: 15))
-                .foregroundStyle(theme.textPrimary)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Dictava")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(theme.textPrimary)
-
-                let showSubtitle = state == .idle || state == .listening
-                let languageName = SupportedLanguage.all.first(where: { $0.code == languageCode })?.name ?? languageCode
-                Text("\(languageName) \u{00B7} \(providerName)")
-                    .font(.caption2)
-                    .foregroundStyle(theme.textTertiary)
-                    .opacity(showSubtitle ? 1 : 0)
-            }
-
-            Spacer()
-
-            StatusPillView(state: state)
-        }
+        .background(Capsule().fill(color.opacity(0.12)))
+        .foregroundStyle(color)
     }
 }
 
 private struct PulsingDot: View {
-    var color: Color = .red
+    var color: Color
     @State private var isPulsing = false
 
     var body: some View {
@@ -313,21 +251,52 @@ private struct PulsingDot: View {
     }
 }
 
+// MARK: - Header
+
+private struct PopoverHeaderView: View {
+    let state: DictationState
+    let languageCode: String
+    let providerName: String
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "waveform")
+                .font(.system(size: 15))
+                .foregroundStyle(theme.textPrimary)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Dictava")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(theme.textPrimary)
+
+                let languageName = SupportedLanguage.all.first(where: { $0.code == languageCode })?.name ?? languageCode
+                Text("\(languageName) \u{00B7} \(providerName)")
+                    .font(.caption2)
+                    .foregroundStyle(theme.textMuted)
+                    .opacity(state == .idle || state == .listening ? 1 : 0)
+            }
+
+            Spacer()
+
+            StatusPillView(state: state)
+        }
+    }
+}
+
 // MARK: - Body
 
 private struct PopoverBodyView: View {
     @ObservedObject var dictationSession: DictationSession
-    @ObservedObject var modelManager: ModelManager
     @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject private var permissions = PermissionManager.shared
-    @Environment(\.settingsTheme) private var theme
+    @Environment(\.theme) private var theme
 
     private var isFluidAudioActive: Bool {
         settingsStore.preferredProvider(for: settingsStore.selectedLanguage) == .fluidAudio
     }
 
-    /// Whether the active provider's model is ready for dictation.
     private var isModelReady: Bool {
         if isFluidAudioActive {
             return fluidAudioModelManager.isDownloaded && !fluidAudioModelManager.isDownloading
@@ -337,7 +306,7 @@ private struct PopoverBodyView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Error banner (hide stale "not downloaded" error during download)
+            // Error banner
             if let error = dictationSession.error,
                !(isFluidAudioActive && fluidAudioModelManager.isDownloading) {
                 HStack(alignment: .top, spacing: 6) {
@@ -351,35 +320,47 @@ private struct PopoverBodyView: View {
                     Spacer()
                 }
                 .padding(8)
-                .background(theme.warningBackground)
-                .cornerRadius(6)
+                .background(theme.warningDim)
+                .cornerRadius(DictavaTheme.radiusSm)
             }
 
-            // Model download progress
+            // Model download progress (inline in hero area)
             if isFluidAudioActive && fluidAudioModelManager.isDownloading {
-                HStack(spacing: 8) {
-                    ProgressView(value: fluidAudioModelManager.downloadProgress, total: 1.0)
-                    Text("\(Int(fluidAudioModelManager.downloadProgress * 100))%")
+                VStack(spacing: 6) {
+                    HStack(spacing: 8) {
+                        ProgressView(value: fluidAudioModelManager.downloadProgress, total: 1.0)
+                            .tint(theme.accent)
+                        Text("\(Int(fluidAudioModelManager.downloadProgress * 100))%")
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(theme.textSecondary)
+                            .frame(width: 32, alignment: .trailing)
+                    }
+                    Text("Downloading Parakeet model...")
                         .font(.caption)
-                        .monospacedDigit()
                         .foregroundStyle(theme.textSecondary)
-                        .frame(width: 32, alignment: .trailing)
                 }
-                Text("Downloading Parakeet model...")
-                    .font(.caption)
-                    .foregroundStyle(theme.textSecondary)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: DictavaTheme.radiusLg)
+                        .fill(theme.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DictavaTheme.radiusLg)
+                                .stroke(theme.border, lineWidth: 1)
+                        )
+                )
             } else if isFluidAudioActive && !fluidAudioModelManager.isDownloaded {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.down.circle")
                         .foregroundStyle(theme.textSecondary)
                         .font(.caption)
-                    Text("Parakeet model required — download in Settings.")
+                    Text("Parakeet model required \u{2014} download in Settings.")
                         .font(.caption)
                         .foregroundStyle(theme.textSecondary)
                 }
                 .padding(8)
-                .background(theme.controlBackground)
-                .cornerRadius(6)
+                .background(theme.surface)
+                .cornerRadius(DictavaTheme.radiusSm)
             }
 
             if permissions.allPermissionsGranted {
@@ -390,63 +371,21 @@ private struct PopoverBodyView: View {
                 // Permission buttons
                 VStack(spacing: 6) {
                     if permissions.microphoneStatus != .granted {
-                        Button {
+                        permissionButton(
+                            icon: "mic.fill",
+                            label: "Grant Microphone Access"
+                        ) {
                             Task { await PermissionManager.shared.requestMicrophone() }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "mic.fill")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(theme.warning)
-                                    .frame(width: 20, height: 20)
-                                    .background(theme.warningBackground)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                                Text("Grant Microphone Access")
-                                    .font(.caption)
-                                    .foregroundStyle(theme.textPrimary)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption2)
-                                    .foregroundStyle(theme.textTertiary)
-                            }
-                            .padding(8)
-                            .background(theme.controlBackground)
-                            .cornerRadius(6)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(theme.border, lineWidth: 1)
-                            )
                         }
-                        .buttonStyle(.plain)
                     }
 
                     if permissions.accessibilityStatus != .granted {
-                        Button {
+                        permissionButton(
+                            icon: "accessibility",
+                            label: "Grant Accessibility Access"
+                        ) {
                             PermissionManager.shared.requestAccessibility()
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "accessibility")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(theme.warning)
-                                    .frame(width: 20, height: 20)
-                                    .background(theme.warningBackground)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                                Text("Grant Accessibility Access")
-                                    .font(.caption)
-                                    .foregroundStyle(theme.textPrimary)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption2)
-                                    .foregroundStyle(theme.textTertiary)
-                            }
-                            .padding(8)
-                            .background(theme.controlBackground)
-                            .cornerRadius(6)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(theme.border, lineWidth: 1)
-                            )
                         }
-                        .buttonStyle(.plain)
                     }
 
                     Text("Required for dictation")
@@ -459,23 +398,33 @@ private struct PopoverBodyView: View {
         }
         .animation(.smooth(duration: 0.25), value: permissions.allPermissionsGranted)
     }
-}
 
-// MARK: - Hero Button Style
-
-private struct HeroButtonStyle: ButtonStyle {
-    @State private var isHovered = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .onHover { hovering in
-                withAnimation(.easeOut(duration: 0.15)) {
-                    isHovered = hovering
-                }
+    private func permissionButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                    .foregroundStyle(theme.warning)
+                    .frame(width: 20, height: 20)
+                    .background(theme.warningDim)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(theme.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(theme.textMuted)
             }
-            .opacity(isHovered ? 1.0 : 0.92)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1.0)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+            .padding(8)
+            .background(theme.surface)
+            .cornerRadius(DictavaTheme.radiusSm)
+            .overlay(
+                RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                    .stroke(theme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -483,7 +432,7 @@ private struct HeroButtonStyle: ButtonStyle {
 
 private struct WaveformHeroView: View {
     @ObservedObject var dictationSession: DictationSession
-    @Environment(\.settingsTheme) private var theme
+    @Environment(\.theme) private var theme
     @State private var isHeroHovered = false
 
     var body: some View {
@@ -504,12 +453,9 @@ private struct WaveformHeroView: View {
     @ViewBuilder
     private var heroContent: some View {
         switch dictationSession.state {
-        case .idle:
-            idleHero
-        case .listening:
-            listeningHero
-        default:
-            processingHero
+        case .idle: idleHero
+        case .listening: listeningHero
+        default: processingHero
         }
     }
 
@@ -517,30 +463,28 @@ private struct WaveformHeroView: View {
         VStack(spacing: 8) {
             ClassicBarsView(
                 levels: Array(repeating: Float(0.08), count: 20),
-                color: theme.textTertiary.opacity(0.4)
+                color: theme.textMuted.opacity(0.4)
             )
             .frame(height: 36)
 
             HStack {
                 Text("\u{2325}Space to dictate")
                     .font(.system(size: 11))
-                    .foregroundStyle(theme.textTertiary)
-
+                    .foregroundStyle(theme.textMuted)
                 Spacer()
-
                 Image(systemName: "mic.fill")
                     .font(.system(size: 11))
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(theme.textMuted)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .frame(height: 76)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(theme.cardBackground.opacity(0.8))
+            RoundedRectangle(cornerRadius: DictavaTheme.radiusLg)
+                .fill(theme.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: DictavaTheme.radiusLg)
                         .strokeBorder(
                             theme.border.opacity(isHeroHovered ? 1 : 0.6),
                             lineWidth: 1
@@ -553,7 +497,7 @@ private struct WaveformHeroView: View {
         VStack(spacing: 8) {
             ClassicBarsView(
                 levels: dictationSession.audioLevelHistory,
-                color: .red
+                color: theme.accent
             )
             .frame(height: 36)
 
@@ -569,18 +513,18 @@ private struct WaveformHeroView: View {
             HStack {
                 Text("Tap to stop")
                     .font(.system(size: 11))
-                    .foregroundStyle(.red.opacity(0.7))
+                    .foregroundStyle(theme.accent.opacity(0.7))
                 Spacer()
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red.opacity(0.08))
+            RoundedRectangle(cornerRadius: DictavaTheme.radiusLg)
+                .fill(theme.accent.opacity(0.06))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(Color.red.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: DictavaTheme.radiusLg)
+                        .strokeBorder(theme.accent.opacity(0.2), lineWidth: 1)
                 )
         )
         .frame(minHeight: 76)
@@ -600,74 +544,129 @@ private struct WaveformHeroView: View {
         .frame(height: 52)
         .padding(.horizontal, 12)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(theme.controlBackground)
+            RoundedRectangle(cornerRadius: DictavaTheme.radiusLg)
+                .fill(theme.surface)
         )
     }
 }
 
-// MARK: - Stat Tile
+private struct HeroButtonStyle: ButtonStyle {
+    @State private var isHovered = false
 
-private struct PopoverStatTileView: View {
-    let value: String
-    let label: String
-    @Environment(\.settingsTheme) private var theme
-
-    var body: some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.system(size: 19, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(theme.textPrimary)
-                .contentTransition(.numericText())
-
-            Text(label)
-                .font(.system(size: 10))
-                .foregroundStyle(theme.textTertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(theme.controlBackground.opacity(0.5))
-        )
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onHover { hovering in
+                withAnimation(.easeOut(duration: 0.15)) {
+                    isHovered = hovering
+                }
+            }
+            .opacity(isHovered ? 1.0 : 0.92)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
-// MARK: - Quick Stats
+// MARK: - Language + Model Selectors
 
-private struct QuickStatsView: View {
-    @ObservedObject var transcriptionLogStore: TranscriptionLogStore
+private struct PopoverSelectorRow: View {
+    @ObservedObject var dictationSession: DictationSession
+    @ObservedObject var settingsStore: SettingsStore
+    @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
+    @Environment(\.theme) private var theme
+
+    private var currentLanguage: SupportedLanguage {
+        SupportedLanguage.all.first(where: { $0.code == settingsStore.selectedLanguage }) ?? SupportedLanguage.all[0]
+    }
+
+    private var currentProvider: String {
+        settingsStore.preferredProvider(for: settingsStore.selectedLanguage) == .fluidAudio ? "Parakeet" : "WhisperKit"
+    }
 
     var body: some View {
-        let count = transcriptionLogStore.todayCount()
-        if count > 0 {
-            let duration = transcriptionLogStore.todayListeningTime()
-            HStack(spacing: 8) {
-                PopoverStatTileView(
-                    value: "\(count)",
-                    label: count == 1 ? "dictation" : "dictations"
-                )
-                PopoverStatTileView(
-                    value: formatCompactDuration(duration),
-                    label: "listening"
+        HStack(spacing: 8) {
+            Menu {
+                ForEach(SupportedLanguage.all) { lang in
+                    Button {
+                        dictationSession.switchLanguage(to: lang.code)
+                    } label: {
+                        HStack {
+                            Text("\(lang.flag) \(lang.name)")
+                            if lang.code == settingsStore.selectedLanguage {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text("\(currentLanguage.flag) \(currentLanguage.name)")
+                        .font(.caption)
+                        .foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 8))
+                        .foregroundStyle(theme.textMuted)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                        .fill(theme.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                                .stroke(theme.border, lineWidth: 1)
+                        )
                 )
             }
-            .padding(.bottom, 6)
-        }
-    }
+            .menuStyle(.borderlessButton)
 
-    private func formatCompactDuration(_ seconds: TimeInterval) -> String {
-        if seconds < 60 {
-            return "\(Int(seconds))s"
-        } else if seconds < 3600 {
-            let mins = Int(seconds / 60)
-            let secs = Int(seconds.truncatingRemainder(dividingBy: 60))
-            return "\(mins)m \(secs)s"
-        } else {
-            let hours = Int(seconds / 3600)
-            let mins = Int((seconds.truncatingRemainder(dividingBy: 3600)) / 60)
-            return "\(hours)h \(mins)m"
+            Menu {
+                Button {
+                    settingsStore.setPreferredProvider(.fluidAudio, for: settingsStore.selectedLanguage)
+                    dictationSession.switchProvider(to: .fluidAudio)
+                } label: {
+                    HStack {
+                        Text("Parakeet")
+                        if settingsStore.preferredProvider(for: settingsStore.selectedLanguage) == .fluidAudio {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+
+                Button {
+                    settingsStore.setPreferredProvider(.whisperKit, for: settingsStore.selectedLanguage)
+                    dictationSession.switchProvider(to: .whisperKit)
+                } label: {
+                    HStack {
+                        Text("WhisperKit")
+                        if settingsStore.preferredProvider(for: settingsStore.selectedLanguage) == .whisperKit {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(currentProvider)
+                        .font(.caption)
+                        .foregroundStyle(theme.textPrimary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 8))
+                        .foregroundStyle(theme.textMuted)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                        .fill(theme.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                                .stroke(theme.border, lineWidth: 1)
+                        )
+                )
+            }
+            .menuStyle(.borderlessButton)
         }
     }
 }
@@ -676,29 +675,18 @@ private struct QuickStatsView: View {
 
 private struct PopoverRecentView: View {
     let transcriptions: [TranscriptionLog]
-    @Environment(\.settingsTheme) private var theme
+    @Environment(\.theme) private var theme
     @State private var hoveredID: UUID?
     @State private var copiedID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header: "RECENT" left, "View All →" right
             HStack {
                 Text("RECENT")
                     .font(.system(size: 10, weight: .semibold))
                     .kerning(0.5)
-                    .foregroundStyle(theme.textTertiary)
-
+                    .foregroundStyle(theme.textMuted)
                 Spacer()
-
-                Button {
-                    NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
-                } label: {
-                    Text("View All \u{2192}")
-                        .font(.system(size: 11))
-                        .foregroundStyle(theme.controlAccent)
-                }
-                .buttonStyle(.plain)
             }
             .padding(.bottom, 8)
 
@@ -712,9 +700,7 @@ private struct PopoverRecentView: View {
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                             withAnimation(.smooth(duration: 0.2)) {
-                                if copiedID == log.id {
-                                    copiedID = nil
-                                }
+                                if copiedID == log.id { copiedID = nil }
                             }
                         }
                     } label: {
@@ -728,7 +714,7 @@ private struct PopoverRecentView: View {
 
                                 Text(relativeTime(log.timestamp))
                                     .font(.caption2)
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(theme.textMuted)
                                     .monospacedDigit()
                             }
 
@@ -740,15 +726,15 @@ private struct PopoverRecentView: View {
                             } else {
                                 Image(systemName: "doc.on.doc")
                                     .font(.caption2)
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(theme.textMuted)
                                     .transition(.opacity.combined(with: .scale(scale: 0.7)))
                             }
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(theme.controlBackground.opacity(hoveredID == log.id ? 1.0 : 0.5))
+                            RoundedRectangle(cornerRadius: DictavaTheme.radiusSm)
+                                .fill(theme.surface.opacity(hoveredID == log.id ? 1.0 : 0.5))
                         )
                         .contentShape(Rectangle())
                     }
@@ -777,75 +763,39 @@ private struct PopoverRecentView: View {
 // MARK: - Footer
 
 private struct PopoverFooterView: View {
-    @Environment(\.settingsTheme) private var theme
+    @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack(spacing: 12) {
-            footerButton(
-                icon: "gear",
-                label: "Settings",
-                iconColor: theme.textSecondary,
-                bgColor: theme.controlBackground
-            ) {
+        HStack {
+            Button {
                 NSApp.sendAction(#selector(AppDelegate.openSettingsWindow), to: nil, from: nil)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "gear")
+                        .font(.system(size: 11))
+                    Text("Settings")
+                        .font(.system(size: 12))
+                }
+                .foregroundStyle(theme.textSecondary)
             }
-
-            footerButton(
-                icon: "clock.arrow.circlepath",
-                label: "History",
-                iconColor: .indigo,
-                bgColor: Color.indigo.opacity(0.14)
-            ) {
-                NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
-            }
-
-            footerButton(
-                icon: "power",
-                label: "Quit",
-                iconColor: theme.destructive.opacity(0.8),
-                bgColor: theme.destructiveBackground
-            ) {
-                NSApplication.shared.terminate(nil)
-            }
-        }
-    }
-
-    private func footerButton(icon: String, label: String, iconColor: Color, bgColor: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(iconColor)
-                    .frame(width: 24, height: 24)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(bgColor))
-
-                Text(label)
-                    .font(.system(size: 10))
-                    .foregroundStyle(theme.textSecondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(FooterButtonStyle())
-    }
-}
-
-private struct FooterButtonStyle: ButtonStyle {
-    @Environment(\.settingsTheme) private var theme
-    @State private var isHovered = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(isHovered ? theme.controlBackground : Color.clear)
-            )
+            .buttonStyle(.plain)
             .onHover { hovering in
-                isHovered = hovering
+                if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
             }
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: isHovered)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+
+            Spacer()
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Text("Quit")
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.textMuted)
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering in
+                if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+            }
+        }
     }
 }
