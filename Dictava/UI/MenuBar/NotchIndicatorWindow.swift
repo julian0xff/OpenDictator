@@ -65,7 +65,7 @@ final class NotchIndicatorWindow {
     private let fallbackNotchWidth: CGFloat = 200
     private let fallbackNotchHeight: CGFloat = 32
 
-    init(dictationSession: DictationSession, settingsStore: SettingsStore) {
+    init(dictationSession: DictationSession, settingsStore: SettingsStore, customThemeStore: CustomThemeStore) {
         self.dictationSession = dictationSession
         self.settingsStore = settingsStore
 

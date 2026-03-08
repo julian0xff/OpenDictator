@@ -128,6 +128,12 @@ final class SettingsStore: ObservableObject {
     @AppStorage("holdToRecordKeyName") var holdToRecordKeyName = "§"
     @Published var holdToRecordTapActive = false
 
+    // Settings appearance
+    @AppStorage("settingsAppearance") var settingsAppearanceRaw = SettingsAppearance.system.rawValue
+    var settingsAppearance: SettingsAppearance {
+        get { SettingsAppearance(rawValue: settingsAppearanceRaw) ?? .system }
+        set { settingsAppearanceRaw = newValue.rawValue }
+    }
 
     // Real-time transcription (beta)
     @AppStorage("realtimeTranscriptionEnabled") var realtimeTranscriptionEnabled = false
@@ -175,8 +181,8 @@ final class SettingsStore: ObservableObject {
         return dict.compactMapValues { ASRProviderID(rawValue: $0) }
     }
 
-    func currentIndicatorTheme() -> IndicatorTheme {
-        IndicatorTheme.resolve(id: indicatorThemeName)
+    func currentIndicatorTheme(isDarkMode: Bool, customThemes: [IndicatorTheme] = []) -> IndicatorTheme {
+        IndicatorTheme.resolve(id: indicatorThemeName, isDarkMode: isDarkMode, customThemes: customThemes)
     }
 
     func migrateModelNameIfNeeded() {

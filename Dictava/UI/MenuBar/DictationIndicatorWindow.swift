@@ -7,13 +7,15 @@ final class DictationIndicatorWindow {
     private var panel: NSPanel?
     private var cancellables = Set<AnyCancellable>()
     private let settingsStore: SettingsStore
+    private let customThemeStore: CustomThemeStore
     private var isHiding = false
     private var moveObserver: NSObjectProtocol?
     private var screenConfigObserver: NSObjectProtocol?
     private var activeSpaceObserver: NSObjectProtocol?
 
-    init(dictationSession: DictationSession, settingsStore: SettingsStore) {
+    init(dictationSession: DictationSession, settingsStore: SettingsStore, customThemeStore: CustomThemeStore) {
         self.settingsStore = settingsStore
+        self.customThemeStore = customThemeStore
 
         dictationSession.$state
             .receive(on: DispatchQueue.main)
@@ -92,7 +94,7 @@ final class DictationIndicatorWindow {
 
         if isFirstShow {
             let isDarkMode = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            let contentView = DictationIndicatorView(session: session, settingsStore: settingsStore)
+            let contentView = DictationIndicatorView(session: session, settingsStore: settingsStore, customThemeStore: customThemeStore, isDarkMode: isDarkMode)
             let hostingView = NSHostingView(rootView: contentView)
             hostingView.sizingOptions = [.intrinsicContentSize]
 
@@ -104,8 +106,8 @@ final class DictationIndicatorWindow {
             )
             panel.isOpaque = false
             panel.backgroundColor = .clear
-            panel.level = .mainMenu + 3
-            panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .stationary, .ignoresCycle]
+            panel.level = .floating
+            panel.collectionBehavior = [.canJoinAllSpaces, .stationary]
             panel.contentView = hostingView
             panel.isMovableByWindowBackground = true
             panel.hasShadow = false
@@ -225,9 +227,17 @@ final class DictationIndicatorWindow {
 struct DictationIndicatorView: View {
     @ObservedObject var session: DictationSession
     @ObservedObject var settingsStore: SettingsStore
+    @ObservedObject var customThemeStore: CustomThemeStore
+    var isDarkMode: Bool
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var effectiveIsDarkMode: Bool {
+        colorScheme == .dark || isDarkMode
+    }
 
     private var theme: IndicatorTheme {
-        settingsStore.currentIndicatorTheme()
+        settingsStore.currentIndicatorTheme(isDarkMode: effectiveIsDarkMode, customThemes: customThemeStore.themes)
     }
 
     var body: some View {
@@ -253,11 +263,11 @@ struct DictationIndicatorView: View {
             centerContent
             if session.state == .listening {
                 WaveformVisualizationView(
-                    style: .classicBars,
+                    style: settingsStore.waveformStyle,
                     level: session.audioLevel,
                     history: session.audioLevelHistory,
                     color: theme.waveformColor,
-                    metrics: IndicatorSizeMetrics.metrics(forScale: 0.5)
+                    metrics: IndicatorSizeMetrics.metrics(forScale: settingsStore.indicatorScale)
                 )
             }
         }
