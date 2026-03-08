@@ -505,74 +505,107 @@ struct AppearanceSettingsView: View {
                 Spacer()
             }
 
-            ColorPicker("Waveform Color", selection: Binding(
-                get: { Color(hex: themeBinding.wrappedValue.waveformColorHex) },
-                set: {
-                    var updated = themeBinding.wrappedValue
-                    updated.waveformColorHex = $0.toHex()
-                    themeBinding.wrappedValue = updated
+            Grid(horizontalSpacing: 12, verticalSpacing: SettingsTheme.spacing12) {
+                GridRow {
+                    Text("Waveform Color")
+                        .foregroundStyle(theme.textPrimary)
+                        .gridColumnAlignment(.trailing)
+                    HStack {
+                        ColorPicker("", selection: Binding(
+                            get: { Color(hex: themeBinding.wrappedValue.waveformColorHex) },
+                            set: {
+                                var updated = themeBinding.wrappedValue
+                                updated.waveformColorHex = $0.toHex()
+                                themeBinding.wrappedValue = updated
+                            }
+                        ), supportsOpacity: false)
+                        .labelsHidden()
+                        Spacer()
+                    }
+                    .gridColumnAlignment(.leading)
                 }
-            ), supportsOpacity: false)
-            .foregroundStyle(theme.textPrimary)
 
-            ColorPicker("Background Color", selection: Binding(
-                get: { Color(hex: themeBinding.wrappedValue.backgroundColorHex) },
-                set: {
-                    var updated = themeBinding.wrappedValue
-                    updated.backgroundColorHex = $0.toHex()
-                    themeBinding.wrappedValue = updated
+                GridRow {
+                    Text("Background Color")
+                        .foregroundStyle(theme.textPrimary)
+                    HStack {
+                        ColorPicker("", selection: Binding(
+                            get: { Color(hex: themeBinding.wrappedValue.backgroundColorHex) },
+                            set: {
+                                var updated = themeBinding.wrappedValue
+                                updated.backgroundColorHex = $0.toHex()
+                                themeBinding.wrappedValue = updated
+                            }
+                        ), supportsOpacity: false)
+                        .labelsHidden()
+                        Spacer()
+                    }
                 }
-            ), supportsOpacity: false)
-            .foregroundStyle(theme.textPrimary)
 
-            ColorPicker("Border Color", selection: Binding(
-                get: { Color(hex: themeBinding.wrappedValue.borderColorHex) },
-                set: {
-                    var updated = themeBinding.wrappedValue
-                    updated.borderColorHex = $0.toHex()
-                    themeBinding.wrappedValue = updated
+                GridRow {
+                    Text("Border Color")
+                        .foregroundStyle(theme.textPrimary)
+                    HStack {
+                        ColorPicker("", selection: Binding(
+                            get: { Color(hex: themeBinding.wrappedValue.borderColorHex) },
+                            set: {
+                                var updated = themeBinding.wrappedValue
+                                updated.borderColorHex = $0.toHex()
+                                themeBinding.wrappedValue = updated
+                            }
+                        ), supportsOpacity: false)
+                        .labelsHidden()
+                        Spacer()
+                    }
                 }
-            ), supportsOpacity: false)
-            .foregroundStyle(theme.textPrimary)
 
-            HStack {
-                Text("Corner Radius")
-                    .foregroundStyle(theme.textPrimary)
-                Slider(value: themeBinding.cornerRadius, in: 8...30, step: 1)
-                Text("\(Int(themeBinding.wrappedValue.cornerRadius))")
-                    .foregroundStyle(theme.textSecondary)
-                    .monospacedDigit()
-                    .frame(width: 24, alignment: .trailing)
-            }
+                GridRow {
+                    Text("Corner Radius")
+                        .foregroundStyle(theme.textPrimary)
+                    HStack {
+                        Slider(value: themeBinding.cornerRadius, in: 8...30, step: 1)
+                        Text("\(Int(themeBinding.wrappedValue.cornerRadius))")
+                            .foregroundStyle(theme.textSecondary)
+                            .monospacedDigit()
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                }
 
-            HStack {
-                Text("Border Width")
-                    .foregroundStyle(theme.textPrimary)
-                Slider(value: themeBinding.borderWidth, in: 0...3, step: 0.5)
-                Text(String(format: "%.1f", themeBinding.wrappedValue.borderWidth))
-                    .foregroundStyle(theme.textSecondary)
-                    .monospacedDigit()
-                    .frame(width: 24, alignment: .trailing)
-            }
+                GridRow {
+                    Text("Border Width")
+                        .foregroundStyle(theme.textPrimary)
+                    HStack {
+                        Slider(value: themeBinding.borderWidth, in: 0...3, step: 0.5)
+                        Text(String(format: "%.1f", themeBinding.wrappedValue.borderWidth))
+                            .foregroundStyle(theme.textSecondary)
+                            .monospacedDigit()
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                }
 
-            HStack {
-                Text("Background Opacity")
-                    .foregroundStyle(theme.textPrimary)
-                Slider(value: themeBinding.backgroundOpacity, in: 0.5...1.0, step: 0.05)
-                Text(String(format: "%.0f%%", themeBinding.wrappedValue.backgroundOpacity * 100))
-                    .foregroundStyle(theme.textSecondary)
-                    .monospacedDigit()
-                    .frame(width: 36, alignment: .trailing)
-            }
+                GridRow {
+                    Text("Background Opacity")
+                        .foregroundStyle(theme.textPrimary)
+                    HStack {
+                        Slider(value: themeBinding.backgroundOpacity, in: 0.5...1.0, step: 0.05)
+                        Text(String(format: "%.0f%%", themeBinding.wrappedValue.backgroundOpacity * 100))
+                            .foregroundStyle(theme.textSecondary)
+                            .monospacedDigit()
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                }
 
-            HStack {
-                Text("Padding")
-                    .foregroundStyle(theme.textPrimary)
-                Slider(value: themeBinding.horizontalPadding, in: 8...24, step: 1)
-                Text("\(Int(themeBinding.wrappedValue.horizontalPadding))")
-                    .foregroundStyle(theme.textSecondary)
-                    .monospacedDigit()
-                    .frame(width: 24, alignment: .trailing)
+                GridRow {
+                    Text("Padding")
+                        .foregroundStyle(theme.textPrimary)
+                    HStack {
+                        Slider(value: themeBinding.horizontalPadding, in: 8...24, step: 1)
+                        Text("\(Int(themeBinding.wrappedValue.horizontalPadding))")
+                            .foregroundStyle(theme.textSecondary)
+                            .monospacedDigit()
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                }
             }
 
             Button("Save as New Theme...") {

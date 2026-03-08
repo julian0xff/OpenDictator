@@ -38,43 +38,43 @@ struct SettingsTheme: Equatable {
 
 extension SettingsTheme {
     static let dark = SettingsTheme(
-        windowBackground: Color(hex: "#09090b"),
-        sidebarBackground: Color(hex: "#09090b"),
-        cardBackground: Color(hex: "#18181b"),
-        border: Color(hex: "#27272a"),
-        textPrimary: Color(hex: "#fafafa"),
-        textSecondary: Color(hex: "#a1a1aa"),
-        textTertiary: Color(hex: "#71717a"),
-        controlAccent: .white,
-        controlBackground: Color(hex: "#27272a"),
-        destructive: Color(hex: "#ef4444"),
-        destructiveBackground: Color(hex: "#ef4444").opacity(0.1),
-        infoBorder: Color(hex: "#3f3f46"),
-        success: Color(hex: "#22c55e"),
-        successBackground: Color(hex: "#22c55e").opacity(0.15),
-        warning: Color(hex: "#f59e0b"),
-        warningBackground: Color(hex: "#f59e0b").opacity(0.15),
+        windowBackground: Color(hex: "#1C1C1E"),
+        sidebarBackground: Color(hex: "#161618"),
+        cardBackground: Color(hex: "#2C2C2E"),
+        border: Color(hex: "#38383A"),
+        textPrimary: Color(hex: "#F5F5F5"),
+        textSecondary: Color(hex: "#98989D"),
+        textTertiary: Color(hex: "#6C6C70"),
+        controlAccent: Color(hex: "#0A84FF"),
+        controlBackground: Color(hex: "#3A3A3C"),
+        destructive: Color(hex: "#FF453A"),
+        destructiveBackground: Color(hex: "#FF453A").opacity(0.12),
+        infoBorder: Color(hex: "#48484A"),
+        success: Color(hex: "#30D158"),
+        successBackground: Color(hex: "#30D158").opacity(0.15),
+        warning: Color(hex: "#FF9F0A"),
+        warningBackground: Color(hex: "#FF9F0A").opacity(0.15),
         shadow: Color.black.opacity(0.4),
         isDark: true
     )
 
     static let light = SettingsTheme(
-        windowBackground: Color(hex: "#ffffff"),
-        sidebarBackground: Color(hex: "#fafafa"),
-        cardBackground: Color(hex: "#ffffff"),
-        border: Color(hex: "#e4e4e7"),
-        textPrimary: Color(hex: "#09090b"),
-        textSecondary: Color(hex: "#52525b"),
-        textTertiary: Color(hex: "#71717a"),
-        controlAccent: Color(hex: "#18181b"),
-        controlBackground: Color(hex: "#f4f4f5"),
-        destructive: Color(hex: "#ef4444"),
-        destructiveBackground: Color(hex: "#ef4444").opacity(0.06),
-        infoBorder: Color(hex: "#e4e4e7"),
-        success: Color(hex: "#16a34a"),
-        successBackground: Color(hex: "#16a34a").opacity(0.1),
-        warning: Color(hex: "#d97706"),
-        warningBackground: Color(hex: "#d97706").opacity(0.1),
+        windowBackground: Color(hex: "#F2F2F7"),
+        sidebarBackground: Color(hex: "#F2F2F7"),
+        cardBackground: Color(hex: "#FFFFFF"),
+        border: Color(hex: "#E5E5EA"),
+        textPrimary: Color(hex: "#1C1C1E"),
+        textSecondary: Color(hex: "#6C6C70"),
+        textTertiary: Color(hex: "#8E8E93"),
+        controlAccent: Color(hex: "#007AFF"),
+        controlBackground: Color(hex: "#E5E5EA"),
+        destructive: Color(hex: "#FF3B30"),
+        destructiveBackground: Color(hex: "#FF3B30").opacity(0.08),
+        infoBorder: Color(hex: "#D1D1D6"),
+        success: Color(hex: "#34C759"),
+        successBackground: Color(hex: "#34C759").opacity(0.1),
+        warning: Color(hex: "#FF9500"),
+        warningBackground: Color(hex: "#FF9500").opacity(0.1),
         shadow: Color.black.opacity(0.08),
         isDark: false
     )
@@ -135,13 +135,13 @@ enum SettingsAppearance: String, CaseIterable {
 
     var windowBackgroundColor: NSColor {
         switch self {
-        case .dark: return NSColor(red: 9/255, green: 9/255, blue: 11/255, alpha: 1)
-        case .light: return .white
+        case .dark: return NSColor(red: 28/255, green: 28/255, blue: 30/255, alpha: 1)
+        case .light: return NSColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1)
         case .system:
             let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             return isDark
-                ? NSColor(red: 9/255, green: 9/255, blue: 11/255, alpha: 1)
-                : .white
+                ? NSColor(red: 28/255, green: 28/255, blue: 30/255, alpha: 1)
+                : NSColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1)
         }
     }
 }

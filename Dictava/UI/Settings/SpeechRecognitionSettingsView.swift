@@ -217,17 +217,19 @@ struct SpeechRecognitionSettingsView: View {
     private var aiCleanupSection: some View {
         SettingsCard(title: "AI Cleanup") {
             VStack(alignment: .leading, spacing: SettingsTheme.spacing12) {
-                HStack {
-                    Toggle("Enable AI text cleanup", isOn: $settingsStore.llmEnabled)
-                        .disabled(true)
-                    Text("Coming Soon")
-                        .font(.caption2)
-                        .foregroundStyle(theme.textSecondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(theme.controlBackground)
-                        .clipShape(Capsule())
+                Toggle(isOn: $settingsStore.llmEnabled) {
+                    HStack(spacing: 6) {
+                        Text("Enable AI text cleanup")
+                        Text("Coming Soon")
+                            .font(.caption2)
+                            .foregroundStyle(theme.textSecondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(theme.controlBackground)
+                            .clipShape(Capsule())
+                    }
                 }
+                .disabled(true)
 
                 InfoBanner(.tip, "AI cleanup will use a local LLM to fix grammar, adjust tone, or shorten text via voice commands like \"fix grammar\" or \"make it formal.\"")
             }

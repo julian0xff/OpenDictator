@@ -60,7 +60,7 @@ struct PrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.callout)
             .fontWeight(.medium)
-            .foregroundStyle(theme.isDark ? Color.black : Color.white)
+            .foregroundStyle(Color.white)
             .padding(.horizontal, SettingsTheme.spacing16)
             .padding(.vertical, SettingsTheme.spacing8)
             .background(

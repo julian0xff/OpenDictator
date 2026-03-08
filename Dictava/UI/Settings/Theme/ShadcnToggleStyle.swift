@@ -24,7 +24,7 @@ struct ShadcnToggleStyle: ToggleStyle {
                 .frame(width: 36, height: 20)
 
             Circle()
-                .fill(isOn ? (theme.isDark ? Color.black : Color.white) : theme.textSecondary)
+                .fill(isOn ? Color.white : theme.textSecondary)
                 .frame(width: 16, height: 16)
                 .padding(2)
         }

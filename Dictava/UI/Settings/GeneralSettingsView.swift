@@ -11,8 +11,18 @@ struct GeneralSettingsView: View {
             VStack(spacing: SettingsTheme.spacing16) {
                 SettingsCard(title: "Hotkeys") {
                     VStack(spacing: SettingsTheme.spacing12) {
-                        KeyboardShortcuts.Recorder("Toggle Dictation:", name: .toggleDictation)
-                        KeyboardShortcuts.Recorder("Copy Last Transcription:", name: .copyLastTranscription)
+                        HStack {
+                            Text("Toggle Dictation:")
+                                .foregroundStyle(theme.textPrimary)
+                            Spacer()
+                            KeyboardShortcuts.Recorder(for: .toggleDictation)
+                        }
+                        HStack {
+                            Text("Copy Last Transcription:")
+                                .foregroundStyle(theme.textPrimary)
+                            Spacer()
+                            KeyboardShortcuts.Recorder(for: .copyLastTranscription)
+                        }
                     }
                 }
 
