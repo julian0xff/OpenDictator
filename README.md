@@ -1,8 +1,8 @@
 <p align="center">
-  <img src=".github/icon.png" width="128" height="128" alt="Dictava icon">
+  <img src=".github/icon.png" width="128" height="128" alt="OpenDictator icon">
 </p>
 
-<h1 align="center">Dictava</h1>
+<h1 align="center">OpenDictator</h1>
 
 <p align="center">
   Local voice-to-text for macOS.<br>
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/julian0xff/Dictava/releases/latest">Download</a> · <a href="#install">Install</a> · <a href="#features">Features</a>
+  <a href="https://github.com/julian0xff/OpenDictator/releases/latest">Download</a> · <a href="#install">Install</a> · <a href="#features">Features</a>
 </p>
 
 ---
@@ -27,32 +27,24 @@ Everything runs locally on your Mac using [NVIDIA Parakeet](https://github.com/A
 
 ## Install
 
-### Homebrew (recommended)
-
-```bash
-brew install --cask julian0xff/tap/dictava
-```
-
-### Download
-
-Grab the latest `.dmg` from [Releases](https://github.com/julian0xff/Dictava/releases/latest), open it, and drag Dictava to Applications.
+Download the latest `.dmg` from [Releases](https://github.com/julian0xff/OpenDictator/releases/latest), open it, and drag OpenDictator to Applications.
 
 ### Build from source
 
 ```bash
-git clone https://github.com/julian0xff/Dictava.git
-cd Dictava
+git clone https://github.com/julian0xff/OpenDictator.git
+cd OpenDictator
 xcodegen generate
-xcodebuild -project Dictava.xcodeproj -scheme Dictava -destination 'platform=macOS,arch=arm64' build
+xcodebuild -project OpenDictator.xcodeproj -scheme OpenDictator -destination 'platform=macOS,arch=arm64' build
 ```
 
-> Dictava is ad-hoc signed (not notarized). macOS may show a security warning on first launch — right-click the app and choose **Open**, or go to **System Settings > Privacy & Security > Open Anyway**.
+> OpenDictator is ad-hoc signed (not notarized). macOS may show a security warning on first launch — right-click the app and choose **Open**, or go to **System Settings > Privacy & Security > Open Anyway**.
 
 ## Getting started
 
 On first launch, a quick setup wizard asks for:
 
-1. **Microphone** — so Dictava can hear you (audio stays on-device)
+1. **Microphone** — so OpenDictator can hear you (audio stays on-device)
 2. **Accessibility** — so it can type text at your cursor
 3. **Model download** — pick Parakeet (recommended) or a WhisperKit model
 

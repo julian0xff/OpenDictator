@@ -1,4 +1,4 @@
-# Dictava
+# OpenDictator
 
 A macOS menu bar dictation app with multi-provider local speech-to-text. Supports **NVIDIA Parakeet** (FluidAudio SDK, recommended for 25 European languages) and **WhisperKit** (OpenAI Whisper models, 100+ languages). All processing happens locally — no data leaves the Mac. Works completely offline after initial model download.
 
@@ -6,9 +6,9 @@ A macOS menu bar dictation app with multi-provider local speech-to-text. Support
 
 **App type:** Menu bar only (`LSUIElement = true`) — no dock icon, no main window. Lives in the system tray with a popover for status and a floating indicator during dictation.
 
-**Entry point:** `DictavaApp.swift` uses `@NSApplicationDelegateAdaptor` → `AppDelegate.swift` owns all state objects and wires up the status bar controller, floating indicator, and global hotkey.
+**Entry point:** `OpenDictatorApp.swift` uses `@NSApplicationDelegateAdaptor` → `AppDelegate.swift` owns all state objects and wires up the status bar controller, floating indicator, and global hotkey.
 
-**Settings window:** Managed as a custom `NSWindow` + `NSHostingController` (not a SwiftUI `Settings` scene — that scene strips `.resizable` from the window). `AppDelegate.openSettingsWindow()` creates/reuses the window. The `DictavaApp.swift` `Settings` scene contains `EmptyView()` with a `CommandGroup(replacing: .appSettings)` that redirects Cmd+, to the custom window. The popover's Settings button uses `NSApp.sendAction(#selector(AppDelegate.openSettingsWindow))` to avoid `@MainActor` isolation issues.
+**Settings window:** Managed as a custom `NSWindow` + `NSHostingController` (not a SwiftUI `Settings` scene — that scene strips `.resizable` from the window). `AppDelegate.openSettingsWindow()` creates/reuses the window. The `OpenDictatorApp.swift` `Settings` scene contains `EmptyView()` with a `CommandGroup(replacing: .appSettings)` that redirects Cmd+, to the custom window. The popover's Settings button uses `NSApp.sendAction(#selector(AppDelegate.openSettingsWindow))` to avoid `@MainActor` isolation issues.
 
 ### Core Objects (all created in AppDelegate)
 
@@ -70,9 +70,9 @@ These are hallucinated by Whisper from its YouTube subtitle training data when i
 ## Project Structure
 
 ```
-Dictava/
+OpenDictator/
 ├── AppDelegate.swift              # App lifecycle, state object creation, settings window
-├── DictavaApp.swift               # SwiftUI App, empty Settings scene + Cmd+, override
+├── OpenDictatorApp.swift               # SwiftUI App, empty Settings scene + Cmd+, override
 ├── Core/
 │   ├── Audio/
 │   │   └── AudioCaptureEngine.swift    # AVAudioEngine mic capture
@@ -134,7 +134,7 @@ Dictava/
 └── Resources/
     ├── Assets.xcassets/                # App icon
     ├── Info.plist
-    └── Dictava.entitlements
+    └── OpenDictator.entitlements
 ```
 
 ## Dependencies
@@ -156,10 +156,10 @@ Also uses Apple's **Charts** framework (built-in) for the history dashboard bar 
 xcodegen generate
 
 # Build production app
-xcodebuild -project Dictava.xcodeproj -scheme Dictava -destination 'platform=macOS,arch=arm64' build
+xcodebuild -project OpenDictator.xcodeproj -scheme OpenDictator -destination 'platform=macOS,arch=arm64' build
 
 # Build dev app (can run side-by-side with production)
-xcodebuild -project Dictava.xcodeproj -scheme DictavaDev -destination 'platform=macOS,arch=arm64' build
+xcodebuild -project OpenDictator.xcodeproj -scheme OpenDictatorDev -destination 'platform=macOS,arch=arm64' build
 ```
 
 **Requirements:** macOS 14.0+, Apple Silicon (arm64 only), Xcode 26.2+ (Swift 6.2+)
@@ -168,8 +168,8 @@ xcodebuild -project Dictava.xcodeproj -scheme DictavaDev -destination 'platform=
 
 | Target | Bundle ID | Purpose |
 |--------|-----------|---------|
-| `Dictava` | `com.dictava.app` | Production build |
-| `DictavaDev` | `com.dictava.app.dev` | Dev build — separate app, separate permissions, runs alongside production |
+| `OpenDictator` | `dev.julian0xff.opendictator` | Production build |
+| `OpenDictatorDev` | `dev.julian0xff.opendictator.dev` | Dev build — separate app, separate permissions, runs alongside production |
 
 **Note:** Both targets register the same Option+Space hotkey, so only run one at a time.
 
@@ -183,10 +183,10 @@ xcodebuild -project Dictava.xcodeproj -scheme DictavaDev -destination 'platform=
 Or manually:
 
 ```bash
-osascript -e 'quit app "Dictava"'; sleep 1
-rm -rf /Applications/Dictava.app
-cp -R ~/Library/Developer/Xcode/DerivedData/Dictava-*/Build/Products/Debug/Dictava.app /Applications/Dictava.app
-open /Applications/Dictava.app
+osascript -e 'quit app "OpenDictator"'; sleep 1
+rm -rf /Applications/OpenDictator.app
+cp -R ~/Library/Developer/Xcode/DerivedData/OpenDictator-*/Build/Products/Debug/OpenDictator.app /Applications/OpenDictator.app
+open /Applications/OpenDictator.app
 ```
 
 **Important:** Use `rm -rf` then `cp -R`, not just `cp -R` over an existing `.app` bundle. macOS merges rather than replaces, leaving stale binaries.
@@ -258,20 +258,17 @@ The tag push triggers `.github/workflows/release.yml` which:
 1. Builds the app on Apple Silicon CI (`macos-15`, Xcode 26.2)
 2. Saves/restores `Package.resolved` across `xcodegen generate` (xcodegen wipes the xcodeproj)
 3. Archives with `EXCLUDED_ARCHS=x86_64` (FluidAudio's Qwen3 code has a type inference bug on x86_64)
-4. Creates a DMG (`Dictava-0.4.0.dmg`)
+4. Creates a DMG (`OpenDictator-0.4.0.dmg`)
 5. Publishes a GitHub Release with the DMG attached
-6. Triggers the Homebrew tap update at `julian0xff/homebrew-tap`
 
 ### Distribution
 
-- **GitHub Releases:** DMG download at `github.com/julian0xff/Dictava/releases`
-- **Homebrew:** `brew install --cask julian0xff/tap/dictava` (tap repo: `julian0xff/homebrew-tap`)
+- **GitHub Releases:** DMG download at `github.com/julian0xff/OpenDictator/releases`
 - **Build from source:** `xcodegen generate && xcodebuild ...`
 
 ### CI Secrets
 
 - `GITHUB_TOKEN` — auto-provided, used for creating GitHub Releases
-- `TAP_UPDATE_TOKEN` — PAT with `repo` + `workflow` scopes, used to trigger the Homebrew tap update workflow
 
 ## Hotkeys
 
@@ -284,10 +281,10 @@ The tag push triggers `.github/workflows/release.yml` which:
 
 | Data | Location | Format |
 |------|----------|--------|
-| Preferences | `~/Library/Preferences/com.dictava.app.plist` | UserDefaults |
-| Snippets | `~/Library/Application Support/Dictava/snippets.yml` | YAML |
-| Custom vocabulary | `~/Library/Application Support/Dictava/vocabulary.json` | JSON |
-| Transcription history | `~/Library/Application Support/Dictava/transcription_logs.json` | JSON |
+| Preferences | `~/Library/Preferences/dev.julian0xff.opendictator.plist` | UserDefaults |
+| Snippets | `~/Library/Application Support/OpenDictator/snippets.yml` | YAML |
+| Custom vocabulary | `~/Library/Application Support/OpenDictator/vocabulary.json` | JSON |
+| Transcription history | `~/Library/Application Support/OpenDictator/transcription_logs.json` | JSON |
 | Whisper models | `~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/` | CoreML |
 | Parakeet model | `AsrModels.defaultCacheDirectory(for: .v3)` (FluidAudio SDK managed) | CoreML (~470 MB) |
 

@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "project": "Dictava",
+  "created_at": "2026-03-05",
+  "updated_at": "2026-03-06T02:15:58+02:00",
+  "notes": "Persistent implementation tracker for the Dictava audit follow-up. Status values are pending or completed.",
+  "tasks": [
+    {
+      "id": "clipboard_restore",
+      "title": "Preserve full clipboard contents during text injection",
+      "status": "completed",
+      "files": [
+        "Dictava/Core/TextInjection/TextInjector.swift"
+      ],
+      "issue": "Current clipboard snapshot/restore flattens pasteboard items and can destroy multi-item or multi-representation clipboard content.",
+      "possible_fix": "Capture and restore an ordered set of pasteboard items with all type payloads preserved."
+    },
+    {
+      "id": "accessibility_request",
+      "title": "Make accessibility permission requests safe and non-blocking",
+      "status": "completed",
+      "files": [
+        "Dictava/Services/PermissionManager.swift",
+        "Dictava/UI/Settings/GeneralSettingsView.swift",
+        "Dictava/UI/MenuBar/StatusBarController.swift"
+      ],
+      "issue": "Accessibility permission requests currently reset TCC state and block the main thread.",
+      "possible_fix": "Remove automatic tccutil reset from the normal request path and keep prompting logic non-destructive."
+    },
+    {
+      "id": "model_download_state",
+      "title": "Align Whisper model download state with the row-based UI",
+      "status": "completed",
+      "files": [
+        "Dictava/Core/Transcription/ModelManager.swift",
+        "Dictava/UI/Settings/SpeechRecognitionSettingsView.swift",
+        "Dictava/UI/Onboarding/OnboardingView.swift"
+      ],
+      "issue": "The manager tracks one global download task while the UI exposes per-model controls.",
+      "possible_fix": "Make single-download behavior explicit and synchronize row state around the active download."
+    },
+    {
+      "id": "semantic_controls",
+      "title": "Replace mouse-only tap targets with semantic controls",
+      "status": "completed",
+      "files": [
+        "Dictava/UI/Settings/SettingsView.swift",
+        "Dictava/UI/Settings/AppearanceSettingsView.swift"
+      ],
+      "issue": "Some important settings surfaces use onTapGesture instead of Button, hurting keyboard and VoiceOver access.",
+      "possible_fix": "Wrap selectable cards in semantic buttons while preserving current styling."
+    },
+    {
+      "id": "history_performance",
+      "title": "Reduce History view recomputation overhead",
+      "status": "completed",
+      "files": [
+        "Dictava/UI/History/HistoryView.swift",
+        "Dictava/Storage/TranscriptionLogStore.swift"
+      ],
+      "issue": "History repeatedly sorts, filters, and re-aggregates logs on the main thread during view updates.",
+      "possible_fix": "Cache or centralize derived history data so recomputation only happens when inputs change."
+    },
+    {
+      "id": "timer_io_overhead",
+      "title": "Reduce timer-driven I/O and polling overhead",
+      "status": "completed",
+      "files": [
+        "Dictava/Core/Dictation/DictationSession.swift",
+        "Dictava/Storage/TranscriptionLogStore.swift",
+        "Dictava/Core/Transcription/FluidAudioModelManager.swift"
+      ],
+      "issue": "Draft persistence and download progress estimation do more periodic work than necessary.",
+      "possible_fix": "Coalesce writes and reduce or constrain polling frequency."
+    },
+    {
+      "id": "history_followup_regression",
+      "title": "Restore stable chart aggregation in History view",
+      "status": "completed",
+      "files": [
+        "Dictava/UI/History/HistoryView.swift"
+      ],
+      "issue": "The chart now aggregates from the currently filtered list and can go blank or misleading when the user narrows the list.",
+      "possible_fix": "Recompute chart buckets from the source log stream while keeping list filtering and stats separate, and use the emitted log value when store updates arrive."
+    },
+    {
+      "id": "model_download_cleanup_race",
+      "title": "Prevent stale download cleanup from clearing a newer model download",
+      "status": "completed",
+      "files": [
+        "Dictava/Core/Transcription/ModelManager.swift"
+      ],
+      "issue": "A canceled or older download task can finish later and clear active download state for a newer task.",
+      "possible_fix": "Track each active download with a unique session token and only clear state if cleanup still belongs to the current session."
+    },
+    {
+      "id": "hold_to_record_startup_retry",
+      "title": "Retry hold-to-record activation outside the Settings flow",
+      "status": "completed",
+      "files": [
+        "Dictava/AppDelegate.swift"
+      ],
+      "issue": "Hold-to-record can fail to initialize at launch and remain inactive until the app becomes active through Settings or another foreground path.",
+      "possible_fix": "Centralize hold-to-record retry logic and re-run it on startup and app activation so the event tap self-heals without opening Settings."
+    },
+    {
+      "id": "hold_to_record_model_warmup",
+      "title": "Let hold-to-record warm the model without relying on toggle hotkeys",
+      "status": "completed",
+      "files": [
+        "Dictava/Core/Dictation/DictationSession.swift"
+      ],
+      "issue": "Releasing hold while the model is still loading cancels the same startup task that would have warmed the model, so Option+Space ends up being the accidental warm-up path.",
+      "possible_fix": "Route cold-start model loading through a persistent modelLoadTask so canceling the session start does not also cancel background model warm-up."
+    },
+    {
+      "id": "accessibility_stale_entry_cleanup",
+      "title": "Restore stale accessibility-entry cleanup without blocking the UI",
+      "status": "completed",
+      "files": [
+        "Dictava/Services/PermissionManager.swift"
+      ],
+      "issue": "Fresh builds can leave stale Accessibility entries behind, and the current request flow no longer clears them before prompting.",
+      "possible_fix": "Run the targeted TCC reset asynchronously only from the explicit accessibility grant flow, then reopen the Accessibility pane and refresh status."
+    },
+    {
+      "id": "settings_first_open_activation",
+      "title": "Make the settings window key and active on first open",
+      "status": "completed",
+      "files": [
+        "Dictava/AppDelegate.swift"
+      ],
+      "issue": "The first settings-window presentation can appear inactive or unselected until the window is reopened.",
+      "possible_fix": "Use a shared presentation helper that activates the app first and then makes the settings window main/key without the deferred async first-show path."
+    },
+    {
+      "id": "hold_to_record_accessibility_sync",
+      "title": "Re-arm hold-to-record when accessibility becomes available",
+      "status": "completed",
+      "files": [
+        "Dictava/AppDelegate.swift",
+        "Dictava/UI/MenuBar/StatusBarController.swift"
+      ],
+      "issue": "After granting Accessibility, the UI can reflect the new permission before the hold-to-record event tap is fully usable, leaving hold inactive until another UI transition triggers a retry.",
+      "possible_fix": "Schedule a short post-grant retry sequence for the event tap and refresh permission state again when the menu bar popover closes."
+    },
+    {
+      "id": "hold_to_record_first_permission_flow",
+      "title": "Investigate why hold-to-record still misses the first post-permission attempt",
+      "status": "pending",
+      "files": [
+        "Dictava/AppDelegate.swift",
+        "Dictava/Services/PermissionManager.swift",
+        "Dictava/Services/HoldToRecordManager.swift",
+        "Dictava/UI/MenuBar/StatusBarController.swift",
+        "Dictava/Core/Dictation/DictationSession.swift",
+        ".agents/research/2026-03-06-hold-to-record-first-permission-flow.md"
+      ],
+      "issue": "Even after explicit post-grant reconciliation, hold-to-record can remain inactive until the menu bar popover has been opened and closed twice during a fresh permission flow.",
+      "possible_fix": "Instrument the full permission-to-key-event path, verify whether the event tap exists but does not receive events versus the tap not being armed at all, and tie the final missing state transition to the actual readiness boundary."
+    }
+  ]
+}
