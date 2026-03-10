@@ -615,14 +615,18 @@ private struct PopoverStatTileView: View {
                 .contentTransition(.numericText())
 
             Text(label)
-                .font(.system(size: 10))
-                .foregroundStyle(theme.textTertiary)
+                .font(.system(size: 11))
+                .foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(theme.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.border.opacity(0.5), lineWidth: 0.5)
         )
         .shadow(color: theme.shadow, radius: 2, y: 1)
     }
@@ -679,9 +683,9 @@ private struct PopoverRecentView: View {
             // Header: "RECENT" left, "View All →" right
             HStack {
                 Text("RECENT")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .kerning(0.5)
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(theme.textSecondary)
 
                 Spacer()
 
@@ -689,7 +693,7 @@ private struct PopoverRecentView: View {
                     NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
                 } label: {
                     Text("View All \u{2192}")
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
                         .foregroundStyle(theme.controlAccent)
                 }
                 .buttonStyle(.plain)
@@ -715,13 +719,13 @@ private struct PopoverRecentView: View {
                         HStack(spacing: 8) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(log.text)
-                                    .font(.caption)
+                                    .font(.system(size: 12))
                                     .lineLimit(1)
                                     .foregroundStyle(theme.textPrimary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                 Text(relativeTime(log.timestamp))
-                                    .font(.caption2)
+                                    .font(.system(size: 11))
                                     .foregroundStyle(theme.textTertiary)
                                     .monospacedDigit()
                             }
@@ -743,6 +747,10 @@ private struct PopoverRecentView: View {
                         .background(
                             RoundedRectangle(cornerRadius: 6)
                                 .fill(theme.cardBackground)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(theme.border.opacity(0.5), lineWidth: 0.5)
                         )
                         .shadow(color: hoveredID == log.id ? theme.shadow : .clear, radius: 2, y: 1)
                         .contentShape(Rectangle())
@@ -807,15 +815,13 @@ private struct PopoverFooterView: View {
 
     private func footerButton(icon: String, label: String, iconColor: Color, bgColor: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(iconColor)
-                    .frame(width: 24, height: 24)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(bgColor))
 
                 Text(label)
-                    .font(.system(size: 10))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(theme.textSecondary)
             }
             .frame(maxWidth: .infinity)
@@ -835,6 +841,10 @@ private struct FooterButtonStyle: ButtonStyle {
             .background(
                 RoundedRectangle(cornerRadius: 7)
                     .fill(isHovered ? theme.controlBackground : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(theme.border, lineWidth: 1)
             )
             .onHover { hovering in
                 isHovered = hovering

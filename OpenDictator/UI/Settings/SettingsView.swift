@@ -121,14 +121,14 @@ struct SettingsView: View {
 
         HStack(spacing: 8) {
             Image(systemName: section.sfSymbol)
-                .font(.system(size: 13))
+                .font(.system(size: 14))
                 .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
                 .frame(width: 20)
 
             Text(section.title)
                 .font(isSelected
-                    ? .system(size: 13, weight: .semibold, design: .rounded)
-                    : .system(size: 13))
+                    ? .system(size: 14, weight: .semibold, design: .rounded)
+                    : .system(size: 14, weight: .medium))
                 .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
 
             Spacer()

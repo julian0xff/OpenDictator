@@ -40,10 +40,10 @@ extension SettingsTheme {
         windowBackground: Color(hex: "#F5F1EC"),
         sidebarBackground: Color(hex: "#EDE8E1"),
         cardBackground: Color(hex: "#FEFCFA"),
-        border: Color(hex: "#E5DFD8"),
+        border: Color(hex: "#D8D1C8"),
         textPrimary: Color(hex: "#2D2A26"),
-        textSecondary: Color(hex: "#7A756E"),
-        textTertiary: Color(hex: "#A09A93"),
+        textSecondary: Color(hex: "#5C5750"),
+        textTertiary: Color(hex: "#8A847D"),
         sectionHeader: Color(hex: "#B5AFA8"),
         controlAccent: Color(hex: "#C4703E"),
         controlBackground: Color(hex: "#DED8D0"),
@@ -55,7 +55,7 @@ extension SettingsTheme {
         successBackground: Color(hex: "#F0F7F2"),
         warning: Color(hex: "#D4960A"),
         warningBackground: Color(hex: "#D4960A").opacity(0.1),
-        shadow: Color.black.opacity(0.04)
+        shadow: Color.black.opacity(0.08)
     )
 
     /// Always returns the warm theme — appearance parameter kept for source compatibility.

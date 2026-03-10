@@ -30,6 +30,10 @@ struct SettingsCard<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusLg))
-        .shadow(color: theme.shadow, radius: 3, y: 1)
+        .overlay(
+            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                .stroke(theme.border.opacity(0.5), lineWidth: 0.5)
+        )
+        .shadow(color: theme.shadow, radius: 4, y: 2)
     }
 }
