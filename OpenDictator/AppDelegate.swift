@@ -144,11 +144,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupHotkey() {
         KeyboardShortcuts.onKeyDown(for: .toggleDictation) { [weak self] in
-            self?.dictationSession.toggle()
+            guard let self, self.settingsStore.hasOpenedSettings else { return }
+            self.dictationSession.toggle()
         }
 
         KeyboardShortcuts.onKeyDown(for: .copyLastTranscription) { [weak self] in
-            guard let text = self?.dictationSession.lastTranscription, !text.isEmpty else { return }
+            guard let self, self.settingsStore.hasOpenedSettings else { return }
+            guard let text = self.dictationSession.lastTranscription, !text.isEmpty else { return }
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
             NSSound(named: "Tink")?.play()
@@ -170,7 +172,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.dictationSession.holdRelease()
         }
 
-        if settingsStore.holdToRecordEnabled {
+        if settingsStore.holdToRecordEnabled && settingsStore.hasOpenedSettings {
             holdToRecordManager.isEnabled = true
             holdToRecordManager.ensureTapRunning()
             settingsStore.holdToRecordTapActive = holdToRecordManager.isTapActive
@@ -183,6 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] status in
                 guard let self,
                       status == .granted,
+                      self.settingsStore.hasOpenedSettings,
                       self.settingsStore.holdToRecordEnabled else { return }
                 if !self.holdToRecordManager.isTapActive {
                     NSLog("HoldToRecord: Accessibility granted, ensuring tap is running")
@@ -215,6 +218,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func openSettingsWindow() {
+        statusBarController?.closePopover()
+        settingsStore.hasOpenedSettings = true
+
         if let existing = settingsWindow {
             NSApp.setActivationPolicy(.regular)
             currentPolicy = .regular
@@ -253,16 +259,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupAppearanceObserver()
 
-        // Defer showing to let SwiftUI lay out
-        DispatchQueue.main.async { [self] in
-            NSApp.setActivationPolicy(.regular)
-            currentPolicy = .regular
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        NSApp.setActivationPolicy(.regular)
+        currentPolicy = .regular
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc func openHistoryWindow() {
+        statusBarController?.closePopover()
+        settingsStore.hasOpenedSettings = true
+
         if let existing = settingsWindow {
             NSApp.setActivationPolicy(.regular)
             currentPolicy = .regular
@@ -301,13 +307,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupAppearanceObserver()
 
-        // Defer showing to let SwiftUI lay out
-        DispatchQueue.main.async { [self] in
-            NSApp.setActivationPolicy(.regular)
-            currentPolicy = .regular
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        NSApp.setActivationPolicy(.regular)
+        currentPolicy = .regular
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func setupAppearanceObserver() {

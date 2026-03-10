@@ -101,6 +101,12 @@ final class StatusBarController: NSObject {
         }
     }
 
+    func closePopover() {
+        if popover.isShown {
+            popover.performClose(nil)
+        }
+    }
+
     private func closePopoverAndStopMonitor() {
         popover.performClose(nil)
     }
@@ -330,6 +336,41 @@ private struct PopoverBodyView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Setup required banner
+            if !settingsStore.hasOpenedSettings {
+                Button {
+                    NSApp.sendAction(#selector(AppDelegate.openSettingsWindow), to: nil, from: nil)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "gear.badge")
+                            .font(.system(size: 13))
+                            .foregroundStyle(theme.controlAccent)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Open Settings to get started")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(theme.textPrimary)
+                            Text("Dictation is disabled until you configure the app.")
+                                .font(.caption)
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(theme.textTertiary)
+                    }
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(theme.controlAccent.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(theme.controlAccent.opacity(0.2), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
             // Error banner (hide stale "not downloaded" error during download)
             if let error = dictationSession.error,
                !(isFluidAudioActive && fluidAudioModelManager.isDownloading) {
@@ -375,11 +416,11 @@ private struct PopoverBodyView: View {
                 .cornerRadius(6)
             }
 
-            if permissions.allPermissionsGranted {
+            if permissions.allPermissionsGranted && settingsStore.hasOpenedSettings {
                 if isModelReady {
                     WaveformHeroView(dictationSession: dictationSession)
                 }
-            } else {
+            } else if !permissions.allPermissionsGranted {
                 // Permission buttons
                 VStack(spacing: 6) {
                     if permissions.microphoneStatus != .granted {

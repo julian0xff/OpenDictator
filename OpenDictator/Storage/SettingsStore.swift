@@ -66,6 +66,7 @@ struct IndicatorScreenPosition: Codable {
 
 final class SettingsStore: ObservableObject {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
+    @AppStorage("hasOpenedSettings") var hasOpenedSettings = false
     @AppStorage("selectedModelName") var selectedModelName = "openai_whisper-tiny.en"
     @AppStorage("silenceTimeoutSeconds") var silenceTimeoutSeconds = 5.0
     @AppStorage("removeFillerWords") var removeFillerWords = true
