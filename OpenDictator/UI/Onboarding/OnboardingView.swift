@@ -232,18 +232,15 @@ struct OnboardingView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(theme.success)
 
-            Text("You're All Set!")
+            Text("Almost There!")
                 .font(.largeTitle.bold())
                 .foregroundStyle(theme.textPrimary)
 
-            Text("Press Option+Space to start dictating. Text will appear wherever your cursor is.")
+            Text("Open Settings from the menu bar icon to finish setup and enable dictation.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(theme.textSecondary)
 
-            KeyboardShortcuts.Recorder("Customize hotkey:", name: .toggleDictation)
-                .padding(.top)
-
-            Text("You can change settings anytime from the menu bar icon.")
+            Text("Once you've opened Settings, press Option+Space to start dictating anywhere.")
                 .font(.caption)
                 .foregroundStyle(theme.textTertiary)
         }
