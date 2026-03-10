@@ -151,6 +151,7 @@ struct SpeechRecognitionSettingsView: View {
                 if fluidAudioModelManager.isDownloading {
                     HStack(spacing: 8) {
                         ProgressView(value: fluidAudioModelManager.downloadProgress, total: 1.0)
+                            .tint(theme.controlAccent)
                             .frame(width: 100)
                         Text("\(Int(fluidAudioModelManager.downloadProgress * 100))%")
                             .font(.caption)
@@ -423,7 +424,7 @@ private struct ProviderRow: View {
             onSelect()
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
                     .foregroundStyle(isSelected ? theme.controlAccent : theme.textTertiary)
                     .font(.title3)
 
@@ -455,7 +456,16 @@ private struct ProviderRow: View {
                 Spacer()
             }
             .contentShape(Rectangle())
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
+                    .fill(isSelected ? theme.selectedBackground : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
+                    .stroke(isSelected ? theme.controlAccent : Color.clear, lineWidth: 1.5)
+            )
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
@@ -609,6 +619,7 @@ private struct ModelRow: View {
             if model.isDownloading {
                 HStack(spacing: 8) {
                     ProgressView(value: model.downloadProgress, total: 1.0)
+                        .tint(theme.controlAccent)
                         .frame(width: 100)
                     Text("\(Int(model.downloadProgress * 100))%")
                         .font(.caption)

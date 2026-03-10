@@ -207,8 +207,15 @@ struct PermissionStatusRow: View {
             Spacer()
             switch status {
             case .granted:
-                Label("Granted", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(theme.success)
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(theme.success)
+                        .padding(4)
+                        .background(theme.successBackground)
+                        .clipShape(Circle())
+                    Text("Granted")
+                        .foregroundStyle(theme.success)
+                }
             case .denied:
                 Button("Grant Access") { action() }
                     .buttonStyle(GhostButtonStyle())

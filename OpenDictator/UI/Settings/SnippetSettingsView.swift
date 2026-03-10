@@ -40,8 +40,8 @@ struct SnippetSettingsView: View {
                                         .font(.caption.monospaced())
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 3)
-                                        .background(theme.controlBackground)
-                                        .foregroundStyle(theme.textPrimary)
+                                        .background(theme.windowBackground)
+                                        .foregroundStyle(theme.controlAccent)
                                         .clipShape(Capsule())
 
                                     Text(snippet.replacement)
@@ -152,8 +152,13 @@ struct SnippetEditorSheet: View {
                         } label: {
                             Text(variable.0)
                                 .font(.caption2.monospaced())
+                                .foregroundStyle(theme.controlAccent)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(theme.windowBackground)
+                                .clipShape(Capsule())
                         }
-                        .buttonStyle(GhostButtonStyle())
+                        .buttonStyle(.plain)
                         .help(variable.1)
                     }
                 }

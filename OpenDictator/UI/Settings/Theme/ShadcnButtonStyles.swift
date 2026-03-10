@@ -13,11 +13,11 @@ struct GhostButtonStyle: ButtonStyle {
             .padding(.horizontal, SettingsTheme.spacing12)
             .padding(.vertical, SettingsTheme.spacing8)
             .background(
-                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
                     .fill(isHovered || configuration.isPressed ? theme.controlBackground : Color.clear)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
                     .stroke(theme.border, lineWidth: 1)
             )
             .opacity(configuration.isPressed ? 0.8 : 1)
@@ -38,11 +38,11 @@ struct DestructiveButtonStyle: ButtonStyle {
             .padding(.horizontal, SettingsTheme.spacing12)
             .padding(.vertical, SettingsTheme.spacing8)
             .background(
-                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
                     .fill(isHovered || configuration.isPressed ? theme.destructiveBackground : Color.clear)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
                     .stroke(isHovered || configuration.isPressed ? theme.destructive.opacity(0.3) : theme.border, lineWidth: 1)
             )
             .opacity(configuration.isPressed ? 0.8 : 1)
@@ -64,7 +64,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .padding(.horizontal, SettingsTheme.spacing16)
             .padding(.vertical, SettingsTheme.spacing8)
             .background(
-                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
                     .fill(theme.controlAccent)
             )
             .opacity(isHovered ? 0.9 : (configuration.isPressed ? 0.75 : 1))

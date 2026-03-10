@@ -8,10 +8,10 @@ struct ShadcnTextFieldModifier: ViewModifier {
             .textFieldStyle(.plain)
             .padding(.horizontal, SettingsTheme.spacing12)
             .padding(.vertical, SettingsTheme.spacing8)
-            .background(theme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusMd))
+            .background(theme.windowBackground)
+            .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusSm))
             .overlay(
-                RoundedRectangle(cornerRadius: SettingsTheme.radiusMd)
+                RoundedRectangle(cornerRadius: SettingsTheme.radiusSm)
                     .stroke(theme.border, lineWidth: 1)
             )
     }

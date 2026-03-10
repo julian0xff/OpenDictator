@@ -32,8 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowObservers: [NSObjectProtocol] = []
     private var currentPolicy: NSApplication.ActivationPolicy = .accessory
     private var holdToRecordRetryCancellable: AnyCancellable?
-    private var appearanceObserver: NSObjectProtocol?
-    private var systemAppearanceObserver: NSKeyValueObservation?
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
@@ -248,9 +246,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
         }
 
-        window.appearance = settingsStore.settingsAppearance.nsAppearance
+        window.appearance = NSAppearance(named: .aqua)
         window.titlebarAppearsTransparent = true
-        window.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
+        window.backgroundColor = NSColor(red: 245/255, green: 241/255, blue: 236/255, alpha: 1)
         settingsWindow = window
 
         setupAppearanceObserver()
@@ -296,9 +294,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
         }
 
-        window.appearance = settingsStore.settingsAppearance.nsAppearance
+        window.appearance = NSAppearance(named: .aqua)
         window.titlebarAppearsTransparent = true
-        window.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
+        window.backgroundColor = NSColor(red: 245/255, green: 241/255, blue: 236/255, alpha: 1)
         settingsWindow = window
 
         setupAppearanceObserver()
@@ -313,25 +311,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupAppearanceObserver() {
-        guard appearanceObserver == nil else { return }
-        appearanceObserver = NotificationCenter.default.addObserver(
-            forName: UserDefaults.didChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            self.settingsWindow?.appearance = self.settingsStore.settingsAppearance.nsAppearance
-            self.settingsWindow?.titlebarAppearsTransparent = true
-            self.settingsWindow?.backgroundColor = self.settingsStore.settingsAppearance.windowBackgroundColor
-        }
-
-        // Also observe system appearance changes so .system mode updates the window background
-        systemAppearanceObserver = NSApp.observe(\.effectiveAppearance) { [weak self] _, _ in
-            DispatchQueue.main.async {
-                guard let self, self.settingsStore.settingsAppearance == .system else { return }
-                self.settingsWindow?.backgroundColor = self.settingsStore.settingsAppearance.windowBackgroundColor
-            }
-        }
+        // No-op: warm theme uses fixed colors, no appearance syncing needed.
     }
 
     func showOnboarding() {

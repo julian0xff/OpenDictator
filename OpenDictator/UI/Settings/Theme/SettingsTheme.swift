@@ -15,10 +15,12 @@ struct SettingsTheme: Equatable {
     let textPrimary: Color
     let textSecondary: Color
     let textTertiary: Color
+    let sectionHeader: Color
 
     // Controls
     let controlAccent: Color
     let controlBackground: Color
+    let selectedBackground: Color
 
     // Semantic
     let destructive: Color
@@ -29,62 +31,36 @@ struct SettingsTheme: Equatable {
     let warning: Color
     let warningBackground: Color
     let shadow: Color
-
-    // Whether this is a dark theme
-    let isDark: Bool
 }
 
-// MARK: - Presets
+// MARK: - Warm Theme (Single Theme)
 
 extension SettingsTheme {
-    static let dark = SettingsTheme(
-        windowBackground: Color(hex: "#1C1C1E"),
-        sidebarBackground: Color(hex: "#161618"),
-        cardBackground: Color(hex: "#2C2C2E"),
-        border: Color(hex: "#38383A"),
-        textPrimary: Color(hex: "#F5F5F5"),
-        textSecondary: Color(hex: "#98989D"),
-        textTertiary: Color(hex: "#6C6C70"),
-        controlAccent: Color(hex: "#0A84FF"),
-        controlBackground: Color(hex: "#3A3A3C"),
-        destructive: Color(hex: "#FF453A"),
-        destructiveBackground: Color(hex: "#FF453A").opacity(0.12),
-        infoBorder: Color(hex: "#48484A"),
-        success: Color(hex: "#30D158"),
-        successBackground: Color(hex: "#30D158").opacity(0.15),
-        warning: Color(hex: "#FF9F0A"),
-        warningBackground: Color(hex: "#FF9F0A").opacity(0.15),
-        shadow: Color.black.opacity(0.4),
-        isDark: true
+    static let warm = SettingsTheme(
+        windowBackground: Color(hex: "#F5F1EC"),
+        sidebarBackground: Color(hex: "#EDE8E1"),
+        cardBackground: Color(hex: "#FEFCFA"),
+        border: Color(hex: "#E5DFD8"),
+        textPrimary: Color(hex: "#2D2A26"),
+        textSecondary: Color(hex: "#7A756E"),
+        textTertiary: Color(hex: "#A09A93"),
+        sectionHeader: Color(hex: "#B5AFA8"),
+        controlAccent: Color(hex: "#C4703E"),
+        controlBackground: Color(hex: "#DED8D0"),
+        selectedBackground: Color(hex: "#FEF7F2"),
+        destructive: Color(hex: "#C8503C"),
+        destructiveBackground: Color(hex: "#C8503C").opacity(0.15),
+        infoBorder: Color(hex: "#E5DFD8"),
+        success: Color(hex: "#6B9E7A"),
+        successBackground: Color(hex: "#F0F7F2"),
+        warning: Color(hex: "#D4960A"),
+        warningBackground: Color(hex: "#D4960A").opacity(0.1),
+        shadow: Color.black.opacity(0.04)
     )
 
-    static let light = SettingsTheme(
-        windowBackground: Color(hex: "#F2F2F7"),
-        sidebarBackground: Color(hex: "#F2F2F7"),
-        cardBackground: Color(hex: "#FFFFFF"),
-        border: Color(hex: "#E5E5EA"),
-        textPrimary: Color(hex: "#1C1C1E"),
-        textSecondary: Color(hex: "#6C6C70"),
-        textTertiary: Color(hex: "#8E8E93"),
-        controlAccent: Color(hex: "#007AFF"),
-        controlBackground: Color(hex: "#E5E5EA"),
-        destructive: Color(hex: "#FF3B30"),
-        destructiveBackground: Color(hex: "#FF3B30").opacity(0.08),
-        infoBorder: Color(hex: "#D1D1D6"),
-        success: Color(hex: "#34C759"),
-        successBackground: Color(hex: "#34C759").opacity(0.1),
-        warning: Color(hex: "#FF9500"),
-        warningBackground: Color(hex: "#FF9500").opacity(0.1),
-        shadow: Color.black.opacity(0.08),
-        isDark: false
-    )
-
+    /// Always returns the warm theme — appearance parameter kept for source compatibility.
     static func resolve(colorScheme: ColorScheme, appearance: SettingsAppearance) -> SettingsTheme {
-        switch appearance {
-        case .dark: return .dark
-        case .light: return .light
-        case .system: return colorScheme == .dark ? .dark : .light
-        }
+        .warm
     }
 }
 
@@ -99,16 +75,17 @@ extension SettingsTheme {
     static let spacing24: CGFloat = 24
     static let spacing32: CGFloat = 32
 
-    static let radiusSm: CGFloat = 4
-    static let radiusMd: CGFloat = 6
-    static let radiusLg: CGFloat = 8
-    static let radiusXl: CGFloat = 12
+    static let radiusSm: CGFloat = 8     // buttons, inputs
+    static let radiusMd: CGFloat = 10    // sidebar items
+    static let radiusLg: CGFloat = 12    // cards
+    static let radiusXl: CGFloat = 12    // large cards
+    static let radiusPill: CGFloat = 99  // badges, toggles
 }
 
 // MARK: - Environment Key
 
 private struct SettingsThemeKey: EnvironmentKey {
-    static let defaultValue: SettingsTheme = .dark
+    static let defaultValue: SettingsTheme = .warm
 }
 
 extension EnvironmentValues {
@@ -118,30 +95,20 @@ extension EnvironmentValues {
     }
 }
 
-// MARK: - Settings Appearance
+// MARK: - Settings Appearance (kept for source compat — always uses warm theme)
 
 enum SettingsAppearance: String, CaseIterable {
     case system
     case dark
     case light
 
+    /// Always returns light appearance to match the warm theme.
     var nsAppearance: NSAppearance? {
-        switch self {
-        case .system: return nil
-        case .dark: return NSAppearance(named: .darkAqua)
-        case .light: return NSAppearance(named: .aqua)
-        }
+        NSAppearance(named: .aqua)
     }
 
+    /// Always returns warm window background.
     var windowBackgroundColor: NSColor {
-        switch self {
-        case .dark: return NSColor(red: 28/255, green: 28/255, blue: 30/255, alpha: 1)
-        case .light: return NSColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1)
-        case .system:
-            let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            return isDark
-                ? NSColor(red: 28/255, green: 28/255, blue: 30/255, alpha: 1)
-                : NSColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1)
-        }
+        NSColor(red: 245/255, green: 241/255, blue: 236/255, alpha: 1) // #F5F1EC
     }
 }

@@ -121,8 +121,8 @@ struct AdvancedSettingsView: View {
                                 .foregroundStyle(theme.textPrimary)
                             Spacer()
                             Text(storageSizes.whisperKit)
-                                .font(.caption)
-                                .foregroundStyle(theme.textSecondary)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(theme.textTertiary)
                         }
 
                         HStack {
@@ -131,8 +131,8 @@ struct AdvancedSettingsView: View {
                                 .foregroundStyle(theme.textPrimary)
                             Spacer()
                             Text(storageSizes.parakeet)
-                                .font(.caption)
-                                .foregroundStyle(theme.textSecondary)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(theme.textTertiary)
                         }
 
                         HStack(spacing: 12) {
@@ -160,7 +160,8 @@ struct AdvancedSettingsView: View {
                                 .foregroundStyle(theme.textPrimary)
                             Spacer()
                             Text(storageSizes.total)
-                                .foregroundStyle(theme.textSecondary)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(theme.controlAccent)
                         }
                     }
                 }
@@ -228,8 +229,8 @@ struct AdvancedSettingsView: View {
                 .foregroundStyle(theme.textPrimary)
             Spacer()
             Text(fileSize(at: appDataDir.appendingPathComponent(file)))
-                .font(.caption)
-                .foregroundStyle(theme.textSecondary)
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(theme.textTertiary)
         }
     }
 

@@ -26,14 +26,10 @@ struct SettingsCard<Content: View>: View {
 
             content()
         }
-        .padding(SettingsTheme.spacing16)
+        .padding(SettingsTheme.spacing20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusLg))
-        .overlay(
-            RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
-                .stroke(theme.border, lineWidth: 1)
-        )
-        .shadow(color: theme.shadow, radius: theme.isDark ? 0 : 3, y: theme.isDark ? 0 : 1)
+        .shadow(color: theme.shadow, radius: 3, y: 1)
     }
 }

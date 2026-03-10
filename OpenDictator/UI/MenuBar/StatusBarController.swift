@@ -60,17 +60,13 @@ final class StatusBarController: NSObject {
             }
             .store(in: &cancellables)
 
-        // Sync popover appearance with settings
-        popover.appearance = settingsStore.settingsAppearance.nsAppearance
+        // Force light appearance to match warm theme
+        popover.appearance = NSAppearance(named: .aqua)
 
         settingsStore.objectWillChange
             .debounce(for: .milliseconds(150), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                self.popover.appearance = settingsStore.settingsAppearance.nsAppearance
-                if let popoverWindow = self.popover.contentViewController?.view.window {
-                    popoverWindow.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
-                }
                 // Sync menu bar icon visibility (debounced to clear activation policy transitions)
                 let shouldBeVisible = self.settingsStore.showMenuBarIcon
                 guard self.statusItem.isVisible != shouldBeVisible else { return }
@@ -96,7 +92,7 @@ final class StatusBarController: NSObject {
             PermissionManager.shared.refreshStatuses()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             if let popoverWindow = popover.contentViewController?.view.window {
-                popoverWindow.backgroundColor = settingsStore.settingsAppearance.windowBackgroundColor
+                popoverWindow.backgroundColor = NSColor(red: 245/255, green: 241/255, blue: 236/255, alpha: 1)
                 popoverWindow.isOpaque = false
             }
             eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
@@ -162,11 +158,8 @@ struct StatusBarPopoverView: View {
     @ObservedObject var fluidAudioModelManager: FluidAudioModelManager
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var transcriptionLogStore: TranscriptionLogStore
-    @Environment(\.colorScheme) private var colorScheme
 
-    private var theme: SettingsTheme {
-        .resolve(colorScheme: colorScheme, appearance: settingsStore.settingsAppearance)
-    }
+    private var theme: SettingsTheme { .warm }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -274,7 +267,7 @@ private struct PopoverHeaderView: View {
         HStack(spacing: 8) {
             Image(systemName: "waveform")
                 .font(.system(size: 15))
-                .foregroundStyle(theme.textPrimary)
+                .foregroundStyle(theme.controlAccent)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("OpenDictator")
@@ -629,8 +622,9 @@ private struct PopoverStatTileView: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(theme.controlBackground.opacity(0.5))
+                .fill(theme.cardBackground)
         )
+        .shadow(color: theme.shadow, radius: 2, y: 1)
     }
 }
 
@@ -748,8 +742,9 @@ private struct PopoverRecentView: View {
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 6)
-                                .fill(theme.controlBackground.opacity(hoveredID == log.id ? 1.0 : 0.5))
+                                .fill(theme.cardBackground)
                         )
+                        .shadow(color: hoveredID == log.id ? theme.shadow : .clear, radius: 2, y: 1)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -785,7 +780,7 @@ private struct PopoverFooterView: View {
                 icon: "gear",
                 label: "Settings",
                 iconColor: theme.textSecondary,
-                bgColor: theme.controlBackground
+                bgColor: theme.cardBackground
             ) {
                 NSApp.sendAction(#selector(AppDelegate.openSettingsWindow), to: nil, from: nil)
             }
@@ -793,8 +788,8 @@ private struct PopoverFooterView: View {
             footerButton(
                 icon: "clock.arrow.circlepath",
                 label: "History",
-                iconColor: .indigo,
-                bgColor: Color.indigo.opacity(0.14)
+                iconColor: theme.controlAccent,
+                bgColor: theme.controlAccent.opacity(0.1)
             ) {
                 NSApp.sendAction(#selector(AppDelegate.openHistoryWindow), to: nil, from: nil)
             }

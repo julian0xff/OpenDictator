@@ -136,8 +136,12 @@ struct HistoryView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(theme.controlBackground)
+                    .background(theme.cardBackground)
                     .cornerRadius(SettingsTheme.radiusLg)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: SettingsTheme.radiusLg)
+                            .stroke(theme.border, lineWidth: 1)
+                    )
 
                     exportMenu
                 }
@@ -409,7 +413,7 @@ private struct HistoryStatCard: View {
             HStack(spacing: 5) {
                 Image(systemName: icon)
                     .font(.caption)
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(theme.controlAccent.opacity(0.7))
                 Text(label.uppercased())
                     .font(.caption)
                     .fontWeight(.medium)
@@ -418,8 +422,7 @@ private struct HistoryStatCard: View {
             }
 
             Text(value)
-                .font(.title2)
-                .fontWeight(.semibold)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(theme.textPrimary)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -429,11 +432,8 @@ private struct HistoryStatCard: View {
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusXl))
-        .overlay(
-            RoundedRectangle(cornerRadius: SettingsTheme.radiusXl)
-                .stroke(theme.border, lineWidth: 1)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: SettingsTheme.radiusLg))
+        .shadow(color: theme.shadow, radius: 3, y: 1)
     }
 }
 

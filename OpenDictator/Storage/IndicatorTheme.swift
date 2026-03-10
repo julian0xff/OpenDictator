@@ -291,10 +291,26 @@ extension IndicatorTheme {
 // MARK: - Resolve
 
 extension IndicatorTheme {
+    /// The warm system default — terracotta waveform on cream background.
+    static let warmDefault = IndicatorTheme(
+        id: "system",
+        label: "System",
+        isBuiltIn: true,
+        waveformColorHex: "#C4703E",
+        backgroundColorHex: "#FEFCFA",
+        borderColorHex: "#E5DFD8",
+        cornerRadius: 22,
+        borderWidth: 1,
+        borderOpacity: 0.6,
+        horizontalPadding: 16,
+        verticalPadding: 10,
+        backgroundOpacity: 0.92
+    )
+
     static func resolve(id: String, isDarkMode: Bool, customThemes: [IndicatorTheme] = []) -> IndicatorTheme {
         switch id {
         case "system":
-            return isDarkMode ? .midnight : .frost
+            return .warmDefault
         default:
             if let preset = allPresets.first(where: { $0.id == id }) {
                 return preset
@@ -302,7 +318,7 @@ extension IndicatorTheme {
             if let custom = customThemes.first(where: { $0.id == id }) {
                 return custom
             }
-            return isDarkMode ? .midnight : .frost
+            return .warmDefault
         }
     }
 }
