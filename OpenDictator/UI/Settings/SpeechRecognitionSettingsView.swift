@@ -257,12 +257,14 @@ struct SpeechRecognitionSettingsView: View {
                 }
 
                 HStack {
-                    TextField("Misrecognized", text: $newMisrecognized)
-                        .shadcnTextField()
-                    Image(systemName: "arrow.right")
-                        .foregroundStyle(theme.textTertiary)
-                    TextField("Correct", text: $newCorrected)
-                        .shadcnTextField()
+                    HStack {
+                        TextField("Misrecognized", text: $newMisrecognized)
+                            .shadcnTextField()
+                        Image(systemName: "arrow.right")
+                            .foregroundStyle(theme.textTertiary)
+                        TextField("Correct", text: $newCorrected)
+                            .shadcnTextField()
+                    }
                     Button("Add") {
                         guard !newMisrecognized.isEmpty, !newCorrected.isEmpty else { return }
                         vocabularyStore.addEntry(VocabularyEntry(
@@ -286,19 +288,29 @@ struct SpeechRecognitionSettingsView: View {
 
                 ForEach(vocabularyStore.entries) { entry in
                     HStack {
-                        Text(entry.misrecognized)
-                            .strikethrough()
-                            .foregroundStyle(theme.textSecondary)
-                        Image(systemName: "arrow.right")
-                            .font(.caption)
-                            .foregroundStyle(theme.textTertiary)
-                        Text(entry.corrected)
-                            .fontWeight(.medium)
-                            .foregroundStyle(theme.textPrimary)
+                        HStack {
+                            Text(entry.misrecognized)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .foregroundStyle(theme.textSecondary)
+                            Image(systemName: "arrow.right")
+                                .font(.caption)
+                                .foregroundStyle(theme.textTertiary)
+                            Text(entry.corrected)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .fontWeight(.medium)
+                                .foregroundStyle(theme.textPrimary)
+                        }
+                        Button {
+                            if let index = vocabularyStore.entries.firstIndex(where: { $0.id == entry.id }) {
+                                vocabularyStore.removeEntry(at: IndexSet(integer: index))
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(theme.textTertiary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                }
-                .onDelete { offsets in
-                    vocabularyStore.removeEntry(at: offsets)
                 }
             }
         }
