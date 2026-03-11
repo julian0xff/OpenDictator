@@ -42,7 +42,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.julian0xff.opendictator
         PRODUCT_NAME: OpenDictator
-        MARKETING_VERSION: "0.11.0"
+        MARKETING_VERSION: "0.11.1"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: OpenDictator/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: OpenDictator/Resources/OpenDictator.entitlements
@@ -69,7 +69,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.julian0xff.opendictator.dev
         PRODUCT_NAME: "OpenDictator Dev"
-        MARKETING_VERSION: "0.11.0"
+        MARKETING_VERSION: "0.11.1"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: OpenDictator/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: OpenDictator/Resources/OpenDictator.entitlements
