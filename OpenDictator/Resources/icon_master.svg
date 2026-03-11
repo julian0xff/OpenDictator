@@ -1,0 +1,26 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="170" y1="100" x2="854" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D4833F"/>
+      <stop offset="40%" stop-color="#C4703E"/>
+      <stop offset="100%" stop-color="#B05A2E"/>
+    </linearGradient>
+    <!-- Subtle shadow for depth -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <!-- Icon shape: 824x824 centered in 1024 canvas = 100px padding each side -->
+  <!-- macOS squircle radius ~185px at this scale -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#shadow)"/>
+  <!-- Subtle top highlight -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <!-- Three waveform bars, centered at (512, 512) -->
+  <!-- Side bars: 48px wide, 206px tall. Center bar: 48px wide, 370px tall -->
+  <!-- Left bar: x=365, center y=512 → y=409 to y=615 -->
+  <rect x="365" y="409" width="48" height="206" rx="24" fill="white" fill-opacity="0.95"/>
+  <!-- Center bar: x=488, center y=512 → y=327 to y=697 -->
+  <rect x="488" y="327" width="48" height="370" rx="24" fill="white" fill-opacity="0.95"/>
+  <!-- Right bar: x=611, center y=512 → y=409 to y=615 -->
+  <rect x="611" y="409" width="48" height="206" rx="24" fill="white" fill-opacity="0.95"/>
+</svg>
