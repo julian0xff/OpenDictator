@@ -30,7 +30,7 @@ struct GeneralSettingsView: View {
                     VStack(alignment: .leading, spacing: SettingsTheme.spacing12) {
                         Toggle("Enable hold-to-record", isOn: $settingsStore.holdToRecordEnabled)
                             .onChange(of: settingsStore.holdToRecordEnabled) { _, _ in
-                                (NSApp.delegate as? AppDelegate)?.updateHoldToRecord()
+                                AppDelegate.shared?.updateHoldToRecord()
                             }
 
                         if settingsStore.holdToRecordEnabled {
@@ -71,18 +71,18 @@ struct GeneralSettingsView: View {
                                 if !newValue && !settingsStore.showMenuBarIcon {
                                     settingsStore.showMenuBarIcon = true
                                 }
-                                (NSApp.delegate as? AppDelegate)?.updateDockIconPolicy()
+                                AppDelegate.shared?.updateDockIconPolicy()
                             }
                         Toggle("Show menu bar icon", isOn: $settingsStore.showMenuBarIcon)
                             .onChange(of: settingsStore.showMenuBarIcon) { _, newValue in
                                 if !newValue && !settingsStore.showDockIcon {
                                     settingsStore.showDockIcon = true
                                 }
-                                (NSApp.delegate as? AppDelegate)?.updateDockIconPolicy()
+                                AppDelegate.shared?.updateDockIconPolicy()
                             }
                         Toggle("Launch at login", isOn: $settingsStore.launchAtLogin)
                             .onChange(of: settingsStore.launchAtLogin) { _, _ in
-                                (NSApp.delegate as? AppDelegate)?.updateLaunchAtLogin()
+                                AppDelegate.shared?.updateLaunchAtLogin()
                             }
                         Toggle("Log transcription history", isOn: $settingsStore.logTranscriptionHistory)
                     }
@@ -158,7 +158,7 @@ struct HoldKeyRecorderButton: View {
 
     private func startRecording() {
         isRecording = true
-        (NSApp.delegate as? AppDelegate)?.holdToRecordManager.isCapturingKey = true
+        AppDelegate.shared?.holdToRecordManager.isCapturingKey = true
 
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
             let code = Int64(event.keyCode)
@@ -171,7 +171,7 @@ struct HoldKeyRecorderButton: View {
             keyCode = Int(code)
             keyName = HoldToRecordManager.displayName(for: code)
             stopRecording()
-            (NSApp.delegate as? AppDelegate)?.updateHoldToRecord()
+            AppDelegate.shared?.updateHoldToRecord()
             return nil
         }
     }
@@ -182,7 +182,7 @@ struct HoldKeyRecorderButton: View {
             NSEvent.removeMonitor(monitor)
             keyMonitor = nil
         }
-        (NSApp.delegate as? AppDelegate)?.holdToRecordManager.isCapturingKey = false
+        AppDelegate.shared?.holdToRecordManager.isCapturingKey = false
     }
 }
 

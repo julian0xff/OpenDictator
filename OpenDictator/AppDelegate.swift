@@ -6,6 +6,11 @@ import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Direct reference to the AppDelegate instance.
+    /// `NSApp.delegate as? AppDelegate` fails when using `@NSApplicationDelegateAdaptor`
+    /// because SwiftUI wraps the delegate. Use this instead.
+    static var shared: AppDelegate?
+
     let settingsStore = SettingsStore()
     let modelManager = ModelManager()
     let fluidAudioModelManager = FluidAudioModelManager()
@@ -32,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowObservers: [NSObjectProtocol] = []
     private var currentPolicy: NSApplication.ActivationPolicy = .accessory
     private var holdToRecordRetryCancellable: AnyCancellable?
+    private var holdToRecordRetryGeneration = 0
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
@@ -45,6 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        Self.shared = self
+
         // Safety: if both icons are hidden (e.g. crash between two @AppStorage writes),
         // restore menu bar icon to prevent the app becoming unreachable.
         if !settingsStore.showDockIcon && !settingsStore.showMenuBarIcon {
@@ -187,11 +195,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                       status == .granted,
                       self.settingsStore.hasOpenedSettings,
                       self.settingsStore.holdToRecordEnabled else { return }
-                if !self.holdToRecordManager.isTapActive {
-                    NSLog("HoldToRecord: Accessibility granted, ensuring tap is running")
-                }
                 self.holdToRecordManager.isEnabled = true
-                self.holdToRecordManager.ensureTapRunning()
+                if !self.holdToRecordManager.ensureTapRunning() {
+                    self.retryHoldToRecordTapStartup(reason: "accessibility-granted")
+                }
                 self.settingsStore.holdToRecordTapActive = self.holdToRecordManager.isTapActive
             }
     }
@@ -202,13 +209,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsStore.holdToRecordEnabled {
             holdToRecordManager.isEnabled = true
             if !holdToRecordManager.ensureTapRunning() {
-                NSLog("HoldToRecord: Tap creation failed on toggle — will retry when accessibility is granted")
+                retryHoldToRecordTapStartup(reason: "toggle")
             }
         } else {
             holdToRecordManager.stop()
             holdToRecordManager.isEnabled = false
         }
         settingsStore.holdToRecordTapActive = holdToRecordManager.isTapActive
+    }
+
+    /// Retries hold-to-record tap creation with increasing delays.
+    /// Guards each retry against stale state (feature disabled, accessibility revoked).
+    /// Uses a generation counter to cancel previous retry waves.
+    private func retryHoldToRecordTapStartup(reason: String) {
+        holdToRecordRetryGeneration += 1
+        let generation = holdToRecordRetryGeneration
+
+        for (i, delay) in [0.5, 1.0, 2.0].enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self,
+                      self.holdToRecordRetryGeneration == generation,
+                      self.settingsStore.holdToRecordEnabled,
+                      self.holdToRecordManager.isEnabled,
+                      PermissionManager.shared.accessibilityStatus == .granted,
+                      !self.holdToRecordManager.isTapActive else { return }
+                let result = self.holdToRecordManager.ensureTapRunning()
+                self.settingsStore.holdToRecordTapActive = self.holdToRecordManager.isTapActive
+                if result {
+                    NSLog("HoldToRecord: tap started on retry %d (%@, delay=%.1fs)", i + 1, reason, delay)
+                }
+            }
+        }
     }
 
     private func checkFirstLaunch() {
@@ -317,17 +348,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // No-op: warm theme uses fixed colors, no appearance syncing needed.
     }
 
+    @objc func completeOnboarding() {
+        // 1. Mark onboarding complete and unlock features FIRST,
+        //    so the retry subscription (holdToRecordRetryCancellable) passes
+        //    its hasOpenedSettings guard when refreshStatuses() republishes .granted.
+        settingsStore.hasCompletedOnboarding = true
+        settingsStore.hasOpenedSettings = true
+
+        // 2. Refresh permissions to pick up any grants made during onboarding.
+        //    This republishes $accessibilityStatus which triggers the retry subscription.
+        PermissionManager.shared.refreshStatuses()
+
+        // 3. Apply provider + model to the live DictationSession.
+        //    switchProvider() sets the provider and starts model load.
+        //    It guards against loading FluidAudio if not downloaded.
+        let language = settingsStore.selectedLanguage
+        let preferred = settingsStore.preferredProvider(for: language)
+        dictationSession.switchProvider(to: preferred)
+
+        // 4. Retry hold-to-record tap now that accessibility may be granted.
+        if settingsStore.holdToRecordEnabled {
+            holdToRecordManager.isEnabled = true
+            if !holdToRecordManager.ensureTapRunning() {
+                retryHoldToRecordTapStartup(reason: "onboarding")
+            }
+            settingsStore.holdToRecordTapActive = holdToRecordManager.isTapActive
+        }
+
+        // 5. Open Settings window
+        openSettingsWindow()
+    }
+
     func showOnboarding() {
         guard !hasShownOnboarding else { return }
         hasShownOnboarding = true
 
-        let onboardingView = OnboardingView(settingsStore: settingsStore, modelManager: modelManager)
+        let onboardingView = OnboardingView(
+            settingsStore: settingsStore,
+            modelManager: modelManager,
+            fluidAudioModelManager: fluidAudioModelManager
+        )
         let hostingController = NSHostingController(rootView: onboardingView)
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Welcome to OpenDictator"
         window.styleMask = [.titled, .closable]
         window.setContentSize(NSSize(width: 500, height: 600))
         window.center()
+
+        // If the user closes mid-flow, allow onboarding to re-show on next launch
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, !self.settingsStore.hasCompletedOnboarding else { return }
+            self.hasShownOnboarding = false
+        }
+
         NSApp.setActivationPolicy(.regular)
         currentPolicy = .regular
         window.makeKeyAndOrderFront(nil)
