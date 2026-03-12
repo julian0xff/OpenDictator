@@ -40,9 +40,11 @@ struct ClassicBarsView: View {
     var color: Color = .blue
     var maxHeight: CGFloat = 24
 
-    private let barCount = 20
+    var barSpacing: CGFloat = 2
+
     private let barWidth: CGFloat = 3
-    private let barSpacing: CGFloat = 2
+
+    private var barCount: Int { levels.count }
 
     var body: some View {
         HStack(spacing: barSpacing) {

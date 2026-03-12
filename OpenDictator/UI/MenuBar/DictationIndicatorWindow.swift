@@ -29,7 +29,7 @@ final class DictationIndicatorWindow {
             }
             .store(in: &cancellables)
 
-        // Resize panel on dictation state changes (e.g. waveform appears/disappears)
+        // Resize panel on state changes (content cross-fades need layout pass)
         dictationSession.$state
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -44,7 +44,7 @@ final class DictationIndicatorWindow {
         settingsStore.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in
-                guard let self, self.panel != nil else { return }
+                guard let self, self.panel != nil, !self.isHiding else { return }
                 DispatchQueue.main.async {
                     self.resizePanelToFit()
                 }
@@ -83,10 +83,9 @@ final class DictationIndicatorWindow {
     private func show(session: DictationSession) {
         isHiding = false
 
-        // If already visible, just ensure it's in front and resize
-        if let panel, panel.alphaValue >= 1, !isHiding {
+        // If already visible, just ensure it's in front
+        if let panel, panel.alphaValue >= 1 {
             panel.orderFront(nil)
-            DispatchQueue.main.async { [weak self] in self?.resizePanelToFit() }
             return
         }
 
@@ -131,26 +130,23 @@ final class DictationIndicatorWindow {
         // Reposition on focused screen every time we transition from hidden → visible
         positionOnFocusedScreen()
 
-        panel?.alphaValue = 0
-        panel?.orderFront(nil)
+        // Opacity-only fade-in — no frame scaling (SwiftUI content handles sizing)
+        let animateIn = { [weak self] in
+            guard let self, let panel = self.panel else { return }
+            self.resizePanelToFit()
+            panel.alphaValue = 0
+            panel.orderFront(nil)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.25
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().alphaValue = 1
+            }
+        }
 
         if isFirstShow {
-            // Let SwiftUI render the initial state, then fade in
-            DispatchQueue.main.async { [weak self] in
-                self?.resizePanelToFit()
-                NSAnimationContext.runAnimationGroup { context in
-                    context.duration = 0.2
-                    context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                    self?.panel?.animator().alphaValue = 1
-                }
-            }
+            DispatchQueue.main.async(execute: animateIn)
         } else {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.2
-                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                self.panel?.animator().alphaValue = 1
-            }
-            DispatchQueue.main.async { [weak self] in self?.resizePanelToFit() }
+            animateIn()
         }
     }
 
@@ -208,8 +204,10 @@ final class DictationIndicatorWindow {
     }
 
     private func hide() {
-        guard let panel, !isHiding else { return }
+        guard let panel, panel.alphaValue > 0, !isHiding else { return }
         isHiding = true
+
+        // Opacity-only fade-out — no frame scaling (prevents Capsule distortion)
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.15
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
@@ -230,97 +228,81 @@ struct DictationIndicatorView: View {
     @ObservedObject var customThemeStore: CustomThemeStore
     var isDarkMode: Bool
 
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var effectiveIsDarkMode: Bool {
-        colorScheme == .dark || isDarkMode
-    }
-
-    private var theme: IndicatorTheme {
-        settingsStore.currentIndicatorTheme(isDarkMode: effectiveIsDarkMode, customThemes: customThemeStore.themes)
-    }
-
     var body: some View {
-        compactView
+        // Single persistent capsule container — content cross-fades inside
+        ZStack {
+            listeningRow
+                .opacity(session.state == .listening ? 1 : 0)
+
+            iconTextRow(
+                icon: AnyView(
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 16, height: 16)
+                        .tint(Color(hex: "7A756E"))
+                ),
+                text: "Loading model...",
+                color: Color(hex: "7A756E")
+            )
+            .opacity(session.state == .loadingModel ? 1 : 0)
+
+            iconTextRow(
+                icon: AnyView(
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 16, height: 16)
+                        .tint(Color(hex: "7A756E"))
+                ),
+                text: "Transcribing...",
+                color: Color(hex: "7A756E")
+            )
+            .opacity(session.state == .transcribing || session.state == .processing ? 1 : 0)
+
+            iconTextRow(
+                icon: AnyView(
+                    Image(systemName: "keyboard.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color(hex: "6B9E7A"))
+                ),
+                text: "Typing...",
+                color: Color(hex: "6B9E7A")
+            )
+            .opacity(session.state == .injecting ? 1 : 0)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .fill(theme.backgroundColor.opacity(theme.backgroundOpacity))
+            Capsule()
+                .fill(Color(hex: "FEFCFA"))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .stroke(theme.borderColor.opacity(theme.borderOpacity), lineWidth: theme.borderWidth)
-        )
-        .shadow(color: .black.opacity(0.2), radius: 12, y: 4)
-        .fixedSize()
-        .animation(.easeInOut(duration: 0.3), value: session.state)
+        .shadow(color: .black.opacity(0.08), radius: 16, y: 4)
+        .fixedSize(horizontal: true, vertical: true)
+        .animation(.easeInOut(duration: 0.2), value: session.state)
     }
 
-    // MARK: - Compact (original pill)
-
-    private var compactView: some View {
+    private var listeningRow: some View {
         HStack(spacing: 10) {
-            stateIcon
-            centerContent
-            if session.state == .listening {
-                WaveformVisualizationView(
-                    style: settingsStore.waveformStyle,
-                    level: session.audioLevel,
-                    history: session.audioLevelHistory,
-                    color: theme.waveformColor,
-                    metrics: IndicatorSizeMetrics.metrics(forScale: settingsStore.indicatorScale)
-                )
-            }
-        }
-        .padding(.horizontal, theme.horizontalPadding)
-        .padding(.vertical, theme.verticalPadding)
-    }
+            // Show only the 8 most recent levels so all bars fit — no clipping, no hidden bars
+            ClassicBarsView(
+                levels: Array(session.audioLevelHistory.suffix(8)),
+                color: Color(hex: "C4703E"),
+                maxHeight: 30,
+                barSpacing: 2
+            )
+            .frame(width: 42, height: 30)
 
-    // MARK: - State Icon (compact mode)
-
-    @ViewBuilder
-    private var stateIcon: some View {
-        switch session.state {
-        case .listening:
-            EmptyView()
-        case .loadingModel, .transcribing, .processing:
-            ProgressView()
-                .scaleEffect(0.6)
-                .frame(width: 16, height: 16)
-                .tint(theme.textColor)
-        case .injecting:
-            Image(systemName: "keyboard.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(theme.textColor)
-        case .idle:
-            EmptyView()
+            Text("Listening")
+                .font(.custom("Inter", size: 12).weight(.medium))
+                .foregroundStyle(Color(hex: "A09A93"))
         }
     }
 
-    // MARK: - Center Content (compact mode)
-
-    @ViewBuilder
-    private var centerContent: some View {
-        switch session.state {
-        case .listening:
-            EmptyView()
-        case .loadingModel:
-            Text("Loading model...")
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(theme.textColor)
-        case .transcribing:
-            Text("Transcribing...")
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(theme.textColor)
-        case .processing:
-            Text("Processing...")
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(theme.textColor)
-        case .injecting:
-            Text("Typing...")
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(theme.textColor)
-        case .idle:
-            EmptyView()
+    private func iconTextRow(icon: AnyView, text: String, color: Color) -> some View {
+        HStack(spacing: 8) {
+            icon
+            Text(text)
+                .font(.custom("Inter", size: 12).weight(.medium))
+                .foregroundStyle(color)
         }
     }
 }

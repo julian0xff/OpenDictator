@@ -16,6 +16,9 @@ echo "Quitting OpenDictator..."
 osascript -e 'quit app "OpenDictator"' 2>/dev/null || true
 sleep 1
 
+echo "Resetting holdToRecordEnabled..."
+defaults write dev.julian0xff.opendictator holdToRecordEnabled -bool false 2>/dev/null || true
+
 echo "Deploying to /Applications..."
 rm -rf /Applications/OpenDictator.app
 cp -R "$BUILD_DIR" /Applications/OpenDictator.app

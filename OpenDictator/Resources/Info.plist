@@ -28,5 +28,7 @@
     <string>OpenDictator needs microphone access to capture your voice for transcription. All processing happens locally on your Mac.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>ATSApplicationFontsPath</key>
+    <string>.</string>
 </dict>
 </plist>

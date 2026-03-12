@@ -18,6 +18,7 @@
 		0F0EDEF27914B2417E2EDA3B /* AppearanceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C62FB58A0FE96CA11DF37F /* AppearanceSettingsView.swift */; };
 		112FC61B332705251C9E95DE /* PhosphorSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 1A628A582772BF2FF0024BDE /* PhosphorSwift */; };
 		1242F9D08F723BE078669B23 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 696B14DBE15CBC469B6B6F5D /* Yams */; };
+		12966A27D46A17CC88308E1C /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 87DF3C4CDCF20204DB1279E1 /* Inter-Variable.ttf */; };
 		14509FDF23E5E11EE9400B4E /* IndicatorSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A72EF1266E6B00BF6CE5727 /* IndicatorSize.swift */; };
 		14C005011DD21F5B40E7253B /* ASRProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8053B26369FB67EE2ADBD3B5 /* ASRProvider.swift */; };
 		14FB218444D632DE957CE3DB /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AEB18B18DAED7323DA4C77 /* HotkeyManager.swift */; };
@@ -37,6 +38,7 @@
 		34622584F58A4EC37CDE28AD /* DictationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E79BB5DBF296468878ABDE /* DictationSession.swift */; };
 		3519360166F0968EC24C4A2E /* ProviderCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFE636DF939B4C29B12D2ADB /* ProviderCatalog.swift */; };
 		352ACB6EEE624C16218FEFF1 /* AudioCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0F0AFF566FF1F7B686B9D7F /* AudioCaptureEngine.swift */; };
+		3564B04AFE01AD218404C15C /* icon_master.svg in Resources */ = {isa = PBXBuildFile; fileRef = 420D66407B2CD7CAC5A576A8 /* icon_master.svg */; };
 		3944DC3CB7EBF60CACDA6055 /* FillerWordFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF25EB212A64DB26CDF0A71 /* FillerWordFilter.swift */; };
 		39CFC94693011537FAA8FBAC /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AEB18B18DAED7323DA4C77 /* HotkeyManager.swift */; };
 		3AE7CB2737B8BC8A90A35482 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A5D2B722E1606CD07CEFB4B0 /* Assets.xcassets */; };
@@ -44,6 +46,7 @@
 		423EA996A8B154C90CC80433 /* HoldToRecordManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988AD1F3BC2F13354622C79F /* HoldToRecordManager.swift */; };
 		4764665D002CC74FC5FFDBF6 /* NotchIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A591E17010B76BAA1BCE272 /* NotchIndicatorWindow.swift */; };
 		494E385A8CC1478FB4D1BA7F /* SentenceCapitalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CFF98085279AC071DC5DB91 /* SentenceCapitalizer.swift */; };
+		49D7BD75C412C455226DF1EF /* JetBrainsMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DCCAE906C9004950328BBD7C /* JetBrainsMono-Medium.ttf */; };
 		4B160D5B07E55BA827136CC1 /* SyntheticEventMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC532B5AE60ECADCE25FC60 /* SyntheticEventMarker.swift */; };
 		4FA4776E9E46C0188EC95DA8 /* NSScreen+Notch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A093C0884396942BC79C3912 /* NSScreen+Notch.swift */; };
 		50CC89A26A3272AF8A383C32 /* CustomVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = F64570A14B56E2110D0CAA7B /* CustomVocabulary.swift */; };
@@ -79,6 +82,7 @@
 		80D3FB2EE98251A4B0A8A835 /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37EB1F31C6BF49C8C943E90 /* AdvancedSettingsView.swift */; };
 		815A9107FF0EFE78DAAABD98 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBC219E17555ED48CE1A589 /* HistoryView.swift */; };
 		827046A344177987DB58F6D6 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D743B7EFBA65A4C06E1C233 /* SettingsStore.swift */; };
+		82CEFDD310302EEF661DD544 /* JetBrainsMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DCCAE906C9004950328BBD7C /* JetBrainsMono-Medium.ttf */; };
 		83991B55FB7D44972B203990 /* SupportedLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0385130750F2D38DF647919 /* SupportedLanguage.swift */; };
 		889B822FF74E18013DBFB11B /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9101DEB034FF3B66E6D9872 /* ModelManager.swift */; };
 		88A26D81B7FDB38F78E4A219 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C72A6308EA8F9CEDDCCED39 /* PermissionManager.swift */; };
@@ -96,6 +100,7 @@
 		A514900E3E6F9FF19B0AE1E0 /* TranscriptionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086A9CB942C4985626D29CD2 /* TranscriptionLog.swift */; };
 		A5355D122FF5566F8B4991CF /* SnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3748BEDD302277C629F27636 /* SnippetStore.swift */; };
 		A9717C9BA090FB09C869EC97 /* WhisperKitProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDAD85654AE2448180ADB12 /* WhisperKitProvider.swift */; };
+		AC86088AAB4C79EED058235C /* Nunito-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3547A5C90B25F53CAA2EE980 /* Nunito-Variable.ttf */; };
 		ADBEBB1EA4CCC89A54A31834 /* NSScreen+Notch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A093C0884396942BC79C3912 /* NSScreen+Notch.swift */; };
 		B08510BCAFCBC03BEED9D2E8 /* CustomThemeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EFE304C12D8D229938B6EB /* CustomThemeStore.swift */; };
 		B3A1451A5C03F64926BB273B /* VisualEffectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654A9EA3BBF3AE08646260F3 /* VisualEffectView.swift */; };
@@ -103,6 +108,7 @@
 		B61337A38F361C515BC33867 /* IndicatorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17B25E8A1079DF9E18EC2A96 /* IndicatorTheme.swift */; };
 		B6C757A37A6EB79D67962DCC /* StreamingTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AEDC578335886C2FC4CEB59 /* StreamingTranscriber.swift */; };
 		B7850EF83BE67A844E5890C0 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBC219E17555ED48CE1A589 /* HistoryView.swift */; };
+		B9E5F75A4C43F0445C289AD8 /* icon_master.svg in Resources */ = {isa = PBXBuildFile; fileRef = 420D66407B2CD7CAC5A576A8 /* icon_master.svg */; };
 		BDFAEE89F683046579DB5F83 /* FluidAudioModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B83E53F5AE397E1567F5C898 /* FluidAudioModelManager.swift */; };
 		C055A991A1C171861149EE78 /* TextPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5CE723FF4A9B39DB7A3AAB8 /* TextPipeline.swift */; };
 		C211CCC99A02E3E0F9562A97 /* TranscriptionLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8E5267944B407D364DAC1EF /* TranscriptionLogStore.swift */; };
@@ -118,6 +124,7 @@
 		D13D8601D9407B3FF0415ED0 /* ShadcnToggleStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D3BA69CA6431E965335BEBE /* ShadcnToggleStyle.swift */; };
 		D1C7B13AE8C98556DAA94A82 /* DictationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F4D3752E0B76AFA2A79484 /* DictationState.swift */; };
 		D406B220BA43FEEF602FACFC /* PunctuationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6B6C3916BEFEAEE7CC0CF14 /* PunctuationHandler.swift */; };
+		D4494F80141AFD754AC36496 /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 87DF3C4CDCF20204DB1279E1 /* Inter-Variable.ttf */; };
 		D702727C71058ECD37C7DDC0 /* ASRProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8053B26369FB67EE2ADBD3B5 /* ASRProvider.swift */; };
 		D82CEC74D3F33CDEEEFF96EE /* AudioSampleBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF9FF2B1D951125F8C7856D /* AudioSampleBuffer.swift */; };
 		D9BA552B8CCE792D89423635 /* SnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3052B5C84541CF55B5F3C0D0 /* SnippetExpander.swift */; };
@@ -131,6 +138,7 @@
 		EFDEC746ACABCB72E2BCCE38 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = B43FFF48CA0075D87CB1A8E0 /* WhisperKit */; };
 		F02AA3DDFEEAD16DA041E971 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = FEDFCC4B9317E9D5857D2396 /* WhisperKit */; };
 		F5225854A17EBE511B2A22E6 /* IndicatorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17B25E8A1079DF9E18EC2A96 /* IndicatorTheme.swift */; };
+		F7CE4BD738BEDF5B81859B74 /* Nunito-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3547A5C90B25F53CAA2EE980 /* Nunito-Variable.ttf */; };
 		F87161CD81F241A7A3B3FCFB /* TranscriptionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086A9CB942C4985626D29CD2 /* TranscriptionLog.swift */; };
 		F900850ACFD2C4E50A098C1C /* SnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3052B5C84541CF55B5F3C0D0 /* SnippetExpander.swift */; };
 		F9E70AA51F9ED81D25FF4FAF /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1268C71A05EBBA6C5D14F3BD /* TranscriptionEngine.swift */; };
@@ -151,12 +159,14 @@
 		2A083691C55A9A6D8AB93718 /* LLMProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProcessor.swift; sourceTree = "<group>"; };
 		2AEDC578335886C2FC4CEB59 /* StreamingTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingTranscriber.swift; sourceTree = "<group>"; };
 		3052B5C84541CF55B5F3C0D0 /* SnippetExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetExpander.swift; sourceTree = "<group>"; };
+		3547A5C90B25F53CAA2EE980 /* Nunito-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nunito-Variable.ttf"; sourceTree = "<group>"; };
 		360993152B72F3ABE0019C46 /* VocabularyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyStore.swift; sourceTree = "<group>"; };
 		3748BEDD302277C629F27636 /* SnippetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetStore.swift; sourceTree = "<group>"; };
 		3B22A0F73DAA3C51BDF4AA16 /* WaveformVisualizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformVisualizationView.swift; sourceTree = "<group>"; };
 		3C72A6308EA8F9CEDDCCED39 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
 		3D3BA69CA6431E965335BEBE /* ShadcnToggleStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShadcnToggleStyle.swift; sourceTree = "<group>"; };
 		3FDAD85654AE2448180ADB12 /* WhisperKitProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitProvider.swift; sourceTree = "<group>"; };
+		420D66407B2CD7CAC5A576A8 /* icon_master.svg */ = {isa = PBXFileReference; path = icon_master.svg; sourceTree = "<group>"; };
 		4A72EF1266E6B00BF6CE5727 /* IndicatorSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndicatorSize.swift; sourceTree = "<group>"; };
 		4DD04C5A5DC816C324D2734A /* SettingsComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsComponents.swift; sourceTree = "<group>"; };
 		518050386D9B06DA2419822F /* OpenDictator.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenDictator.entitlements; sourceTree = "<group>"; };
@@ -169,6 +179,7 @@
 		7FF25EB212A64DB26CDF0A71 /* FillerWordFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FillerWordFilter.swift; sourceTree = "<group>"; };
 		8053B26369FB67EE2ADBD3B5 /* ASRProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASRProvider.swift; sourceTree = "<group>"; };
 		86A78EACDDB021D9B1C4D1AB /* FluidAudioProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidAudioProvider.swift; sourceTree = "<group>"; };
+		87DF3C4CDCF20204DB1279E1 /* Inter-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Variable.ttf"; sourceTree = "<group>"; };
 		8C4C1C9D1642D5D301318F4F /* OpenDictatorDev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenDictatorDev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94BADDCE50AB43BC6002C647 /* OpenDictator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenDictator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		987802EBB80C87C471BA4C99 /* DictationIndicatorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationIndicatorWindow.swift; sourceTree = "<group>"; };
@@ -193,6 +204,7 @@
 		C9DE923D534FE68EB36ED0D2 /* SettingsTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTheme.swift; sourceTree = "<group>"; };
 		D5CE723FF4A9B39DB7A3AAB8 /* TextPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPipeline.swift; sourceTree = "<group>"; };
 		DC6530FE42C0C32D17152EC8 /* SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCard.swift; sourceTree = "<group>"; };
+		DCCAE906C9004950328BBD7C /* JetBrainsMono-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "JetBrainsMono-Medium.ttf"; sourceTree = "<group>"; };
 		E0F0AFF566FF1F7B686B9D7F /* AudioCaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureEngine.swift; sourceTree = "<group>"; };
 		E1123FDA43A462EF50A51197 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		E33DB808EBFACD369AD55EF9 /* ShadcnTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShadcnTextField.swift; sourceTree = "<group>"; };
@@ -262,12 +274,24 @@
 			);
 			sourceTree = "<group>";
 		};
+		33A14F8AF3629311BCC50BE2 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				87DF3C4CDCF20204DB1279E1 /* Inter-Variable.ttf */,
+				DCCAE906C9004950328BBD7C /* JetBrainsMono-Medium.ttf */,
+				3547A5C90B25F53CAA2EE980 /* Nunito-Variable.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		33C26C290C37B5BDCDEECAC6 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
 				A5D2B722E1606CD07CEFB4B0 /* Assets.xcassets */,
+				420D66407B2CD7CAC5A576A8 /* icon_master.svg */,
 				BC0B5B7668A8AD81295564F1 /* Info.plist */,
 				518050386D9B06DA2419822F /* OpenDictator.entitlements */,
+				33A14F8AF3629311BCC50BE2 /* Fonts */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -553,6 +577,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				3AE7CB2737B8BC8A90A35482 /* Assets.xcassets in Resources */,
+				D4494F80141AFD754AC36496 /* Inter-Variable.ttf in Resources */,
+				82CEFDD310302EEF661DD544 /* JetBrainsMono-Medium.ttf in Resources */,
+				F7CE4BD738BEDF5B81859B74 /* Nunito-Variable.ttf in Resources */,
+				3564B04AFE01AD218404C15C /* icon_master.svg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -561,6 +589,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				6BE3BB1E5B91B5E56F5D1A26 /* Assets.xcassets in Resources */,
+				12966A27D46A17CC88308E1C /* Inter-Variable.ttf in Resources */,
+				49D7BD75C412C455226DF1EF /* JetBrainsMono-Medium.ttf in Resources */,
+				AC86088AAB4C79EED058235C /* Nunito-Variable.ttf in Resources */,
+				B9E5F75A4C43F0445C289AD8 /* icon_master.svg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -778,7 +810,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenDictator/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.9.1;
+				MARKETING_VERSION = 0.11.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.julian0xff.opendictator.dev;
 				PRODUCT_NAME = "OpenDictator Dev";
 				SDKROOT = macosx;
@@ -797,7 +829,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenDictator/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.9.1;
+				MARKETING_VERSION = 0.11.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.julian0xff.opendictator.dev;
 				PRODUCT_NAME = "OpenDictator Dev";
 				SDKROOT = macosx;
@@ -816,7 +848,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenDictator/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.9.1;
+				MARKETING_VERSION = 0.11.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.julian0xff.opendictator;
 				PRODUCT_NAME = OpenDictator;
 				SDKROOT = macosx;
@@ -894,7 +926,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenDictator/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.9.1;
+				MARKETING_VERSION = 0.11.2;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.julian0xff.opendictator;
 				PRODUCT_NAME = OpenDictator;
 				SDKROOT = macosx;
